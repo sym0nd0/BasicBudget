@@ -321,11 +321,12 @@ Output is written to the `dist/` directory. Serve it from any static file host o
 
 ## Docker Deployment
 
-A multi-stage Dockerfile is included. Stage 1 builds the app with Node.js; Stage 2 serves the static output with Nginx Alpine, keeping the final image small.
+The app is published as a pre-built image to GitHub Container Registry (GHCR) on every push to `master`. A multi-stage Dockerfile (Node.js build → Nginx Alpine serve) keeps the image small.
 
-### Build and run with Docker Compose
+### Pull and run with Docker Compose
 
 ```bash
+docker compose pull
 docker compose up -d
 ```
 
@@ -337,10 +338,10 @@ The container restarts automatically unless explicitly stopped (`restart: unless
 docker compose down
 ```
 
-### Rebuild after code changes
+### Update to the latest image
 
 ```bash
-docker compose up -d --build
+docker compose pull && docker compose up -d
 ```
 
 ---

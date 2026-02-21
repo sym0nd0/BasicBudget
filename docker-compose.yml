@@ -1,6 +1,6 @@
 services:
   basicbudget:
-    build: .
+    image: ghcr.io/sym0nd0/basicbudget:latest
     ports:
       - "8080:80"
     restart: unless-stopped
