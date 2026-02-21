@@ -1,0 +1,201 @@
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { useBudget } from '../context/BudgetContext';
+import { useDebt } from '../context/DebtContext';
+import { PageShell } from '../components/layout/PageShell';
+import { Card, CardHeader } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { IncomeVsExpensesBar } from '../components/charts/IncomeVsExpensesBar';
+import { ExpenseDonut } from '../components/charts/ExpenseDonut';
+import { DebtPayoffChart } from '../components/charts/DebtPayoffLine';
+import { formatCurrency, formatMonths } from '../utils/formatters';
+import { calculateBudgetSummary, amortizeAllDebts } from '../utils/calculations';
+
+interface DashboardProps {
+  onMenuClick: () => void;
+}
+
+interface SummaryCardProps {
+  label: string;
+  value: string;
+  sub?: string;
+  colorClass: string;
+  iconBgClass: string;
+  icon: React.ReactNode;
+  to: string;
+}
+
+function SummaryCard({ label, value, sub, colorClass, iconBgClass, icon, to }: SummaryCardProps) {
+  return (
+    <Link to={to} className="block group">
+      <Card className="transition-all duration-150 group-hover:shadow-md group-hover:border-[var(--color-primary)]">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-medium">{label}</p>
+            <p className={`text-2xl font-bold mt-1.5 ${colorClass}`}>{value}</p>
+            {sub && <p className="text-xs text-[var(--color-text-muted)] mt-1">{sub}</p>}
+          </div>
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBgClass}`}>
+            {icon}
+          </div>
+        </div>
+      </Card>
+    </Link>
+  );
+}
+
+export function Dashboard({ onMenuClick }: DashboardProps) {
+  const { state: budgetState } = useBudget();
+  const { state: debtState } = useDebt();
+
+  const summary = useMemo(
+    () => calculateBudgetSummary(budgetState.incomes, budgetState.expenses, debtState.debts),
+    [budgetState.incomes, budgetState.expenses, debtState.debts],
+  );
+
+  const debtSummaries = useMemo(() => amortizeAllDebts(debtState.debts), [debtState.debts]);
+
+  const totalDebt = debtState.debts.reduce((s, d) => s + d.balance, 0);
+  const maxPayoffMonths = debtSummaries.reduce((m, s) => Math.max(m, s.monthsToPayoff), 0);
+  const disposableVariant = summary.disposableIncome >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
+
+  return (
+    <PageShell title="Dashboard" onMenuClick={onMenuClick}>
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <SummaryCard
+          label="Monthly Income"
+          value={formatCurrency(summary.totalIncome)}
+          sub={`${budgetState.incomes.length} source${budgetState.incomes.length !== 1 ? 's' : ''}`}
+          colorClass="text-[var(--color-success)]"
+          iconBgClass="bg-[var(--color-success-light)]"
+          to="/income"
+          icon={
+            <svg className="w-5 h-5 text-[var(--color-success)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7 11l5-5m0 0l5 5m-5-5v12" />
+            </svg>
+          }
+        />
+        <SummaryCard
+          label="Monthly Expenses"
+          value={formatCurrency(summary.totalExpenses)}
+          sub={`${budgetState.expenses.length} expenses`}
+          colorClass="text-[var(--color-danger)]"
+          iconBgClass="bg-[var(--color-danger-light)]"
+          to="/expenses"
+          icon={
+            <svg className="w-5 h-5 text-[var(--color-danger)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
+            </svg>
+          }
+        />
+        <SummaryCard
+          label="Debt Payments"
+          value={formatCurrency(summary.totalDebtPayments)}
+          sub={`${debtState.debts.length} debts — ${formatCurrency(totalDebt)} total`}
+          colorClass="text-[var(--color-warning)]"
+          iconBgClass="bg-[var(--color-warning-light)]"
+          to="/debt"
+          icon={
+            <svg className="w-5 h-5 text-[var(--color-warning)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          }
+        />
+        <SummaryCard
+          label="Disposable Income"
+          value={formatCurrency(summary.disposableIncome)}
+          sub={maxPayoffMonths > 0 ? `Debt-free in ${formatMonths(maxPayoffMonths)}` : undefined}
+          colorClass={disposableVariant}
+          iconBgClass={summary.disposableIncome >= 0 ? 'bg-[var(--color-primary-light)]' : 'bg-[var(--color-danger-light)]'}
+          to="/"
+          icon={
+            <svg
+              className={`w-5 h-5 ${summary.disposableIncome >= 0 ? 'text-[var(--color-primary)]' : 'text-[var(--color-danger)]'}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          }
+        />
+      </div>
+
+      {/* Charts row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <Card>
+          <CardHeader
+            title="Income vs Outgoings"
+            subtitle="Monthly overview"
+          />
+          <IncomeVsExpensesBar
+            income={summary.totalIncome}
+            expenses={summary.totalExpenses}
+            debtPayments={summary.totalDebtPayments}
+          />
+        </Card>
+
+        <Card>
+          <CardHeader
+            title="Expense Breakdown"
+            subtitle="By category (your share)"
+          />
+          <ExpenseDonut breakdown={summary.categoryBreakdown} />
+        </Card>
+      </div>
+
+      {/* Debt payoff chart */}
+      {debtState.debts.length > 0 && (
+        <div className="mb-4">
+          <DebtPayoffChart summaries={debtSummaries} />
+        </div>
+      )}
+
+      {/* Category breakdown table */}
+      {summary.categoryBreakdown.length > 0 && (
+        <Card padding={false}>
+          <div className="px-5 pt-5">
+            <CardHeader
+              title="Category Breakdown"
+              subtitle="Your share of expenses by category"
+            />
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-2)]">
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Category</th>
+                  <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Amount</th>
+                  <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">% of Expenses</th>
+                  <th className="px-5 py-3 w-40 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Share</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.categoryBreakdown.map(cat => (
+                  <tr key={cat.category} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors">
+                    <td className="px-5 py-3 font-medium text-[var(--color-text)]">
+                      <Badge variant="default">{cat.category}</Badge>
+                    </td>
+                    <td className="px-5 py-3 text-right font-mono text-[var(--color-danger)]">
+                      {formatCurrency(cat.total)}
+                    </td>
+                    <td className="px-5 py-3 text-right text-[var(--color-text-muted)]">
+                      {cat.percentage.toFixed(1)}%
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="w-full bg-[var(--color-surface-2)] rounded-full h-1.5">
+                        <div
+                          className="h-1.5 rounded-full bg-[var(--color-primary)]"
+                          style={{ width: `${cat.percentage}%` }}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+    </PageShell>
+  );
+}

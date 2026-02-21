@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+/* ─── CSS Variable Themes ─────────────────────────────────────────────────── */
+
+:root {
+  /* Backgrounds */
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-2: #f1f5f9;
+  --color-border: #e2e8f0;
+
+  /* Text */
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  --color-text-inverse: #ffffff;
+
+  /* Brand */
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-primary-light: #eef2ff;
+
+  /* Status */
+  --color-success: #16a34a;
+  --color-success-light: #dcfce7;
+  --color-warning: #d97706;
+  --color-warning-light: #fef3c7;
+  --color-danger: #dc2626;
+  --color-danger-light: #fee2e2;
+  --color-info: #0284c7;
+  --color-info-light: #e0f2fe;
+
+  /* Charts */
+  --color-chart-1: #4f46e5;
+  --color-chart-2: #0284c7;
+  --color-chart-3: #16a34a;
+  --color-chart-4: #d97706;
+  --color-chart-5: #dc2626;
+  --color-chart-6: #7c3aed;
+  --color-chart-7: #0891b2;
+  --color-chart-8: #65a30d;
+
+  /* Sidebar */
+  --color-sidebar-bg: #1e293b;
+  --color-sidebar-text: #cbd5e1;
+  --color-sidebar-active: #818cf8;
+  --color-sidebar-active-bg: rgba(129, 140, 248, 0.2);
+  --color-sidebar-hover: rgba(255, 255, 255, 0.06);
+}
+
+.dark {
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-surface-2: #293548;
+  --color-border: #334155;
+
+  --color-text: #f1f5f9;
+  --color-text-muted: #94a3b8;
+  --color-text-inverse: #0f172a;
+
+  --color-primary: #818cf8;
+  --color-primary-hover: #6366f1;
+  --color-primary-light: rgba(79, 70, 229, 0.15);
+
+  --color-success: #4ade80;
+  --color-success-light: rgba(22, 163, 74, 0.15);
+  --color-warning: #fbbf24;
+  --color-warning-light: rgba(217, 119, 6, 0.15);
+  --color-danger: #f87171;
+  --color-danger-light: rgba(220, 38, 38, 0.15);
+  --color-info: #38bdf8;
+  --color-info-light: rgba(2, 132, 199, 0.15);
+
+  --color-chart-1: #818cf8;
+  --color-chart-2: #38bdf8;
+  --color-chart-3: #4ade80;
+  --color-chart-4: #fbbf24;
+  --color-chart-5: #f87171;
+  --color-chart-6: #c084fc;
+  --color-chart-7: #22d3ee;
+  --color-chart-8: #a3e635;
+
+  --color-sidebar-bg: #0f172a;
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-active: #818cf8;
+  --color-sidebar-active-bg: rgba(129, 140, 248, 0.15);
+  --color-sidebar-hover: rgba(255, 255, 255, 0.04);
+}
+
+/* ─── Base Styles ─────────────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ─── Scrollbar ───────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
