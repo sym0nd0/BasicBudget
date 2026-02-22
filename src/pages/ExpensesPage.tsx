@@ -1,14 +1,15 @@
 import { useState, useMemo } from 'react';
 import { useBudget } from '../context/BudgetContext';
+import { useFilter } from '../context/FilterContext';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { ExpenseForm } from '../components/forms/ExpenseForm';
 import { Badge } from '../components/ui/Badge';
-import { Select } from '../components/ui/Input';
+import { FilterBar } from '../components/layout/FilterBar';
 import { formatCurrency, formatOrdinal } from '../utils/formatters';
-import { EXPENSE_CATEGORIES } from '../types';
+import { findDuplicateExpense } from '../utils/duplicates';
 import type { Expense } from '../types';
 
 interface ExpensesPageProps {
@@ -16,31 +17,41 @@ interface ExpensesPageProps {
 }
 
 export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
-  const { state, dispatch } = useBudget();
+  const { expenses, accounts, addExpense, updateExpense, deleteExpense } = useBudget();
+  const { filterCategory } = useFilter();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | undefined>();
-  const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
-    return state.expenses.filter(e => {
+    return expenses.filter(e => {
       if (filterCategory !== 'all' && e.category !== filterCategory) return false;
       if (filterType !== 'all' && e.type !== filterType) return false;
       return true;
     });
-  }, [state.expenses, filterCategory, filterType]);
+  }, [expenses, filterCategory, filterType]);
 
-  const totalEffective = filtered.reduce((sum, e) => sum + e.amount * e.splitRatio, 0);
-  const totalAll = state.expenses.reduce((sum, e) => sum + e.amount * e.splitRatio, 0);
+  const totalEffective = filtered.reduce((sum, e) => sum + Math.round(e.amount_pence * e.split_ratio), 0);
+  const totalAll = expenses.reduce((sum, e) => sum + Math.round(e.amount_pence * e.split_ratio), 0);
 
-  const handleSave = (expense: Expense) => {
-    if (editing) {
-      dispatch({ type: 'UPDATE_EXPENSE', payload: expense });
-    } else {
-      dispatch({ type: 'ADD_EXPENSE', payload: expense });
+  const handleSave = async (data: Omit<Expense, 'id' | 'created_at' | 'updated_at'>) => {
+    if (!editing) {
+      const dup = findDuplicateExpense(expenses, data);
+      if (dup && !confirm('An expense with identical details already exists. Add anyway?')) return;
     }
-    setModalOpen(false);
-    setEditing(undefined);
+    try {
+      if (editing) {
+        await updateExpense(editing.id, data);
+      } else {
+        await addExpense(data);
+      }
+      setModalOpen(false);
+      setEditing(undefined);
+      setErrorMsg(null);
+    } catch (err) {
+      setErrorMsg((err as Error).message);
+    }
   };
 
   const handleEdit = (expense: Expense) => {
@@ -48,9 +59,12 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
     setModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Delete this expense?')) {
-      dispatch({ type: 'DELETE_EXPENSE', payload: id });
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this expense?')) return;
+    try {
+      await deleteExpense(id);
+    } catch (err) {
+      alert((err as Error).message);
     }
   };
 
@@ -60,6 +74,12 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
   };
 
   const typeVariant = (type: string) => type === 'fixed' ? 'info' : 'warning';
+
+  // Find account name from accounts list
+  const accountName = (accountId: string | null | undefined) => {
+    if (!accountId) return '—';
+    return accounts.find(a => a.id === accountId)?.name ?? '—';
+  };
 
   return (
     <PageShell
@@ -74,55 +94,40 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
         </Button>
       }
     >
+      {/* Filter bar */}
+      <div className="mb-5">
+        <Card>
+          <FilterBar showCategory />
+        </Card>
+      </div>
+
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
-        <Card>
+        <Card className="h-full">
           <p className="text-sm text-[var(--color-text-muted)]">Your Share (All Expenses)</p>
           <p className="text-2xl font-bold text-[var(--color-danger)] mt-1">{formatCurrency(totalAll)}</p>
-          <p className="text-xs text-[var(--color-text-muted)] mt-1">{state.expenses.length} expenses total</p>
+          <p className="text-xs text-[var(--color-text-muted)] mt-1">{expenses.length} expenses total</p>
         </Card>
-        <Card>
+        <Card className="h-full">
           <p className="text-sm text-[var(--color-text-muted)]">Filtered Total</p>
           <p className="text-2xl font-bold text-[var(--color-text)] mt-1">{formatCurrency(totalEffective)}</p>
           <p className="text-xs text-[var(--color-text-muted)] mt-1">{filtered.length} shown</p>
         </Card>
       </div>
 
-      {/* Filter bar */}
+      {/* Type filter */}
       <Card className="mb-5">
-        <div className="flex flex-wrap gap-4 items-end">
-          <div className="flex-1 min-w-40">
-            <Select
-              label="Category"
-              value={filterCategory}
-              onChange={e => setFilterCategory(e.target.value)}
-              options={[
-                { value: 'all', label: 'All Categories' },
-                ...EXPENSE_CATEGORIES.map(c => ({ value: c, label: c })),
-              ]}
-            />
-          </div>
-          <div className="flex-1 min-w-40">
-            <Select
-              label="Type"
-              value={filterType}
-              onChange={e => setFilterType(e.target.value)}
-              options={[
-                { value: 'all', label: 'All Types' },
-                { value: 'fixed', label: 'Fixed' },
-                { value: 'variable', label: 'Variable' },
-              ]}
-            />
-          </div>
-          {(filterCategory !== 'all' || filterType !== 'all') && (
+        <div className="flex flex-wrap gap-2">
+          {(['all', 'fixed', 'variable'] as const).map(t => (
             <Button
-              variant="ghost"
+              key={t}
               size="sm"
-              onClick={() => { setFilterCategory('all'); setFilterType('all'); }}
+              variant={filterType === t ? 'primary' : 'ghost'}
+              onClick={() => setFilterType(t)}
             >
-              Clear
+              {t === 'all' ? 'All Types' : t.charAt(0).toUpperCase() + t.slice(1)}
             </Button>
-          )}
+          ))}
         </div>
       </Card>
 
@@ -131,7 +136,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
         <div className="px-5 pt-5">
           <CardHeader
             title="Expenses"
-            subtitle={`Showing ${filtered.length} of ${state.expenses.length} — your share: ${formatCurrency(totalEffective)}`}
+            subtitle={`Showing ${filtered.length} of ${expenses.length} — your share: ${formatCurrency(totalEffective)}`}
           />
         </div>
         <div className="overflow-x-auto">
@@ -164,19 +169,22 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                   <td className="px-5 py-3 font-medium text-[var(--color-text)]">
                     <div className="flex items-center gap-2">
                       {expense.name}
-                      {expense.isHousehold && (
+                      {expense.is_household && (
                         <Badge variant="primary" className="text-[10px]">½</Badge>
+                      )}
+                      {expense.is_recurring && (
+                        <Badge variant="default" className="text-[10px]">{expense.recurrence_type}</Badge>
                       )}
                     </div>
                   </td>
                   <td className="px-5 py-3 text-right font-mono text-[var(--color-text-muted)]">
-                    {formatCurrency(expense.amount)}
+                    {formatCurrency(expense.amount_pence)}
                   </td>
                   <td className="px-5 py-3 text-right font-mono font-semibold text-[var(--color-danger)]">
-                    {formatCurrency(expense.amount * expense.splitRatio)}
+                    {formatCurrency(Math.round(expense.amount_pence * expense.split_ratio))}
                   </td>
                   <td className="px-5 py-3 text-center">
-                    <Badge variant="default">{formatOrdinal(expense.dayOfMonth)}</Badge>
+                    <Badge variant="default">{formatOrdinal(expense.posting_day)}</Badge>
                   </td>
                   <td className="px-5 py-3">
                     <Badge variant="default">{expense.category}</Badge>
@@ -186,7 +194,9 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                       {expense.type}
                     </Badge>
                   </td>
-                  <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs">{expense.account}</td>
+                  <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs">
+                    {accountName(expense.account_id)}
+                  </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-1 justify-end">
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(expense)}>
@@ -210,8 +220,8 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                   <td className="px-5 py-3 font-semibold text-[var(--color-text)]">
                     Total ({filtered.length})
                   </td>
-                  <td colSpan={1} className="px-5 py-3 text-right font-mono text-[var(--color-text-muted)]">
-                    {formatCurrency(filtered.reduce((s, e) => s + e.amount, 0))}
+                  <td className="px-5 py-3 text-right font-mono text-[var(--color-text-muted)]">
+                    {formatCurrency(filtered.reduce((s, e) => s + e.amount_pence, 0))}
                   </td>
                   <td className="px-5 py-3 text-right font-mono font-bold text-[var(--color-danger)]">
                     {formatCurrency(totalEffective)}
@@ -226,13 +236,19 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
 
       <Modal
         isOpen={modalOpen}
-        onClose={() => { setModalOpen(false); setEditing(undefined); }}
+        onClose={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
         title={editing ? 'Edit Expense' : 'Add Expense'}
       >
+        {errorMsg && (
+          <p className="mb-3 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">
+            {errorMsg}
+          </p>
+        )}
         <ExpenseForm
           initial={editing}
+          accounts={accounts}
           onSave={handleSave}
-          onCancel={() => { setModalOpen(false); setEditing(undefined); }}
+          onCancel={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
         />
       </Modal>
     </PageShell>

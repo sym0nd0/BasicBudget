@@ -1,79 +1,120 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import type { Income, Expense } from '../types';
-import { useLocalStorage } from '../hooks/useLocalStorage';
-import { DEFAULT_INCOMES, DEFAULT_EXPENSES } from '../constants/defaults';
+import React, { createContext, useContext, useCallback } from 'react';
+import type { Income, Expense, Account } from '../types';
+import { useApi } from '../hooks/useApi';
+import { api } from '../api/client';
+import { useFilter } from './FilterContext';
 
-// ─── State ─────────────────────────────────────────────────────────────────────
-
-interface BudgetState {
-  incomes: Income[];
-  expenses: Expense[];
-}
-
-// ─── Actions ───────────────────────────────────────────────────────────────────
-
-type BudgetAction =
-  | { type: 'SET_STATE'; payload: BudgetState }
-  | { type: 'ADD_INCOME'; payload: Income }
-  | { type: 'UPDATE_INCOME'; payload: Income }
-  | { type: 'DELETE_INCOME'; payload: string }
-  | { type: 'ADD_EXPENSE'; payload: Expense }
-  | { type: 'UPDATE_EXPENSE'; payload: Expense }
-  | { type: 'DELETE_EXPENSE'; payload: string };
-
-function budgetReducer(state: BudgetState, action: BudgetAction): BudgetState {
-  switch (action.type) {
-    case 'SET_STATE':
-      return action.payload;
-    case 'ADD_INCOME':
-      return { ...state, incomes: [...state.incomes, action.payload] };
-    case 'UPDATE_INCOME':
-      return {
-        ...state,
-        incomes: state.incomes.map(i => i.id === action.payload.id ? action.payload : i),
-      };
-    case 'DELETE_INCOME':
-      return { ...state, incomes: state.incomes.filter(i => i.id !== action.payload) };
-    case 'ADD_EXPENSE':
-      return { ...state, expenses: [...state.expenses, action.payload] };
-    case 'UPDATE_EXPENSE':
-      return {
-        ...state,
-        expenses: state.expenses.map(e => e.id === action.payload.id ? action.payload : e),
-      };
-    case 'DELETE_EXPENSE':
-      return { ...state, expenses: state.expenses.filter(e => e.id !== action.payload) };
-    default:
-      return state;
-  }
-}
-
-// ─── Context ───────────────────────────────────────────────────────────────────
+// ─── Context Value ─────────────────────────────────────────────────────────────
 
 interface BudgetContextValue {
-  state: BudgetState;
-  dispatch: React.Dispatch<BudgetAction>;
+  incomes: Income[];
+  expenses: Expense[];
+  accounts: Account[];
+  loading: boolean;
+  addIncome: (data: Omit<Income, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  updateIncome: (id: string, data: Partial<Omit<Income, 'id'>>) => Promise<void>;
+  deleteIncome: (id: string) => Promise<void>;
+  addExpense: (data: Omit<Expense, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  updateExpense: (id: string, data: Partial<Omit<Expense, 'id'>>) => Promise<void>;
+  deleteExpense: (id: string) => Promise<void>;
+  addAccount: (data: Pick<Account, 'name' | 'sort_order'>) => Promise<void>;
+  updateAccount: (id: string, data: Partial<Pick<Account, 'name' | 'sort_order'>>) => Promise<void>;
+  deleteAccount: (id: string) => Promise<void>;
+  refetchIncomes: () => void;
+  refetchExpenses: () => void;
+  refetchAccounts: () => void;
 }
 
 const BudgetContext = createContext<BudgetContextValue | null>(null);
 
-const STORAGE_KEY = 'bb-budget';
-
 export function BudgetProvider({ children }: { children: React.ReactNode }) {
-  const [stored, setStored] = useLocalStorage<BudgetState>(STORAGE_KEY, {
-    incomes: DEFAULT_INCOMES,
-    expenses: DEFAULT_EXPENSES,
-  });
+  const { activeMonth } = useFilter();
 
-  const [state, dispatch] = useReducer(budgetReducer, stored);
+  const {
+    data: incomes,
+    loading: incomesLoading,
+    refetch: refetchIncomes,
+  } = useApi<Income[]>(`/incomes?month=${activeMonth}`);
 
-  // Sync state → localStorage on every change
-  useEffect(() => {
-    setStored(state);
-  }, [state, setStored]);
+  const {
+    data: expenses,
+    loading: expensesLoading,
+    refetch: refetchExpenses,
+  } = useApi<Expense[]>(`/expenses?month=${activeMonth}`);
+
+  const {
+    data: accounts,
+    loading: accountsLoading,
+    refetch: refetchAccounts,
+  } = useApi<Account[]>('/accounts');
+
+  const addIncome = useCallback(async (data: Omit<Income, 'id' | 'created_at' | 'updated_at'>) => {
+    await api.createIncome(data);
+    refetchIncomes();
+  }, [refetchIncomes]);
+
+  const updateIncome = useCallback(async (id: string, data: Partial<Omit<Income, 'id'>>) => {
+    await api.updateIncome(id, data);
+    refetchIncomes();
+  }, [refetchIncomes]);
+
+  const deleteIncome = useCallback(async (id: string) => {
+    await api.deleteIncome(id);
+    refetchIncomes();
+  }, [refetchIncomes]);
+
+  const addExpense = useCallback(async (data: Omit<Expense, 'id' | 'created_at' | 'updated_at'>) => {
+    await api.createExpense(data);
+    refetchExpenses();
+  }, [refetchExpenses]);
+
+  const updateExpense = useCallback(async (id: string, data: Partial<Omit<Expense, 'id'>>) => {
+    await api.updateExpense(id, data);
+    refetchExpenses();
+  }, [refetchExpenses]);
+
+  const deleteExpense = useCallback(async (id: string) => {
+    await api.deleteExpense(id);
+    refetchExpenses();
+  }, [refetchExpenses]);
+
+  const addAccount = useCallback(async (data: Pick<Account, 'name' | 'sort_order'>) => {
+    await api.createAccount(data);
+    refetchAccounts();
+  }, [refetchAccounts]);
+
+  const updateAccount = useCallback(async (id: string, data: Partial<Pick<Account, 'name' | 'sort_order'>>) => {
+    await api.updateAccount(id, data);
+    refetchAccounts();
+  }, [refetchAccounts]);
+
+  const deleteAccount = useCallback(async (id: string) => {
+    await api.deleteAccount(id);
+    refetchAccounts();
+    refetchExpenses();
+  }, [refetchAccounts, refetchExpenses]);
 
   return (
-    <BudgetContext.Provider value={{ state, dispatch }}>
+    <BudgetContext.Provider
+      value={{
+        incomes: incomes ?? [],
+        expenses: expenses ?? [],
+        accounts: accounts ?? [],
+        loading: incomesLoading || expensesLoading || accountsLoading,
+        addIncome,
+        updateIncome,
+        deleteIncome,
+        addExpense,
+        updateExpense,
+        deleteExpense,
+        addAccount,
+        updateAccount,
+        deleteAccount,
+        refetchIncomes,
+        refetchExpenses,
+        refetchAccounts,
+      }}
+    >
       {children}
     </BudgetContext.Provider>
   );

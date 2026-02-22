@@ -1,21 +1,31 @@
 import { useState } from 'react';
 import type { Debt } from '../../types';
-import { Input } from '../ui/Input';
+import { Input, Select } from '../ui/Input';
 import { Button } from '../ui/Button';
-import { generateId } from '../../utils/id';
+import { poundsToPence, penceToPoundsStr } from '../../utils/formatters';
 
 interface DebtFormProps {
   initial?: Debt;
-  onSave: (debt: Debt) => void;
+  onSave: (data: Omit<Debt, 'id' | 'created_at' | 'updated_at'>) => void;
   onCancel: () => void;
 }
 
 export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
   const [name, setName] = useState(initial?.name ?? '');
-  const [balance, setBalance] = useState(String(initial?.balance ?? ''));
-  const [apr, setApr] = useState(String(initial?.apr ?? '0'));
-  const [minimumPayment, setMinimumPayment] = useState(String(initial?.minimumPayment ?? ''));
-  const [currentPayment, setCurrentPayment] = useState(String(initial?.currentPayment ?? ''));
+  const [balance, setBalance] = useState(initial ? penceToPoundsStr(initial.balance_pence) : '');
+  const [interestRate, setInterestRate] = useState(String(initial?.interest_rate ?? '0'));
+  const [minimumPayment, setMinimumPayment] = useState(
+    initial ? penceToPoundsStr(initial.minimum_payment_pence) : '',
+  );
+  const [overpayment, setOverpayment] = useState(
+    initial ? penceToPoundsStr(initial.overpayment_pence) : '0',
+  );
+  const [postingDay, setPostingDay] = useState(String(initial?.posting_day ?? '1'));
+  const [isRecurring, setIsRecurring] = useState(initial?.is_recurring ?? true);
+  const [recurrenceType, setRecurrenceType] = useState<string>(initial?.recurrence_type ?? 'monthly');
+  const [startDate, setStartDate] = useState(initial?.start_date ?? '');
+  const [endDate, setEndDate] = useState(initial?.end_date ?? '');
+  const [isHousehold, setIsHousehold] = useState(initial?.is_household ?? false);
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -23,10 +33,9 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = 'Name is required';
     if (isNaN(parseFloat(balance)) || parseFloat(balance) < 0) e.balance = 'Enter a valid balance';
-    if (isNaN(parseFloat(apr)) || parseFloat(apr) < 0) e.apr = 'Enter a valid APR (0 for interest-free)';
+    if (isNaN(parseFloat(interestRate)) || parseFloat(interestRate) < 0) e.interestRate = 'Enter a valid APR (0 for interest-free)';
     if (isNaN(parseFloat(minimumPayment)) || parseFloat(minimumPayment) < 0) e.minimumPayment = 'Enter a valid minimum payment';
-    const cp = parseFloat(currentPayment);
-    if (isNaN(cp) || cp < 0) e.currentPayment = 'Enter a valid payment';
+    if (isNaN(parseFloat(overpayment)) || parseFloat(overpayment) < 0) e.overpayment = 'Enter a valid overpayment (0 if none)';
     return e;
   };
 
@@ -38,13 +47,20 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
       return;
     }
     onSave({
-      id: initial?.id ?? generateId(),
       name: name.trim(),
-      balance: parseFloat(balance),
-      apr: parseFloat(apr),
-      minimumPayment: parseFloat(minimumPayment),
-      currentPayment: parseFloat(currentPayment),
-      notes: notes.trim() || undefined,
+      balance_pence: poundsToPence(balance),
+      interest_rate: parseFloat(interestRate),
+      minimum_payment_pence: poundsToPence(minimumPayment),
+      overpayment_pence: poundsToPence(overpayment),
+      compounding_frequency: 'monthly',
+      is_recurring: isRecurring,
+      recurrence_type: recurrenceType,
+      posting_day: parseInt(postingDay),
+      start_date: startDate || null,
+      end_date: endDate || null,
+      is_household: isHousehold,
+      split_ratio: isHousehold ? 0.5 : 1.0,
+      notes: notes.trim() || null,
     });
   };
 
@@ -73,11 +89,11 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
           type="number"
           step="0.1"
           min="0"
-          value={apr}
-          onChange={e => setApr(e.target.value)}
+          value={interestRate}
+          onChange={e => setInterestRate(e.target.value)}
           suffix="%"
           placeholder="0"
-          error={errors.apr}
+          error={errors.interestRate}
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -92,16 +108,69 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
           error={errors.minimumPayment}
         />
         <Input
-          label="Current Payment"
+          label="Overpayment"
           type="number"
           step="0.01"
           min="0"
-          value={currentPayment}
-          onChange={e => setCurrentPayment(e.target.value)}
+          value={overpayment}
+          onChange={e => setOverpayment(e.target.value)}
           prefix="£"
-          error={errors.currentPayment}
+          error={errors.overpayment}
         />
       </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Input
+          label="Posting Day"
+          type="number"
+          min="1"
+          max="31"
+          value={postingDay}
+          onChange={e => setPostingDay(e.target.value)}
+        />
+        <Select
+          label="Recurrence"
+          value={isRecurring ? recurrenceType : 'one-off'}
+          onChange={e => {
+            const v = e.target.value;
+            if (v === 'one-off') {
+              setIsRecurring(false);
+            } else {
+              setIsRecurring(true);
+              setRecurrenceType(v);
+            }
+          }}
+          options={[
+            { value: 'monthly', label: 'Monthly' },
+            { value: 'yearly', label: 'Yearly' },
+            { value: 'one-off', label: 'One-off' },
+          ]}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Input
+          label="Start Date (optional)"
+          type="date"
+          value={startDate}
+          onChange={e => setStartDate(e.target.value)}
+        />
+        <Input
+          label="End Date (optional)"
+          type="date"
+          value={endDate}
+          onChange={e => setEndDate(e.target.value)}
+        />
+      </div>
+      <label className="flex items-center gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={isHousehold}
+          onChange={e => setIsHousehold(e.target.checked)}
+          className="w-4 h-4 rounded border-[var(--color-border)] accent-[var(--color-primary)]"
+        />
+        <span className="text-sm text-[var(--color-text)]">
+          Household debt <span className="text-[var(--color-text-muted)]">(split 50/50 with partner)</span>
+        </span>
+      </label>
       <Input
         label="Notes (optional)"
         value={notes}

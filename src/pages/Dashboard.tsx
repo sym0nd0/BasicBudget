@@ -1,15 +1,15 @@
-import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { useBudget } from '../context/BudgetContext';
+import { useApi } from '../hooks/useApi';
 import { useDebt } from '../context/DebtContext';
+import { useFilter } from '../context/FilterContext';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { FilterBar } from '../components/layout/FilterBar';
 import { IncomeVsExpensesBar } from '../components/charts/IncomeVsExpensesBar';
 import { ExpenseDonut } from '../components/charts/ExpenseDonut';
-import { DebtPayoffChart } from '../components/charts/DebtPayoffLine';
-import { formatCurrency, formatMonths } from '../utils/formatters';
-import { calculateBudgetSummary, amortizeAllDebts } from '../utils/calculations';
+import { formatCurrency } from '../utils/formatters';
+import type { BudgetSummary } from '../types';
 
 interface DashboardProps {
   onMenuClick: () => void;
@@ -27,8 +27,8 @@ interface SummaryCardProps {
 
 function SummaryCard({ label, value, sub, colorClass, iconBgClass, icon, to }: SummaryCardProps) {
   return (
-    <Link to={to} className="block group">
-      <Card className="transition-all duration-150 group-hover:shadow-md group-hover:border-[var(--color-primary)]">
+    <Link to={to} className="block group h-full">
+      <Card className="h-full transition-all duration-150 group-hover:shadow-md group-hover:border-[var(--color-primary)]">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-medium">{label}</p>
@@ -45,28 +45,31 @@ function SummaryCard({ label, value, sub, colorClass, iconBgClass, icon, to }: S
 }
 
 export function Dashboard({ onMenuClick }: DashboardProps) {
-  const { state: budgetState } = useBudget();
-  const { state: debtState } = useDebt();
+  const { debts } = useDebt();
+  const { activeMonth } = useFilter();
 
-  const summary = useMemo(
-    () => calculateBudgetSummary(budgetState.incomes, budgetState.expenses, debtState.debts),
-    [budgetState.incomes, budgetState.expenses, debtState.debts],
-  );
+  const { data: summary } = useApi<BudgetSummary>(`/summary?month=${activeMonth}`);
 
-  const debtSummaries = useMemo(() => amortizeAllDebts(debtState.debts), [debtState.debts]);
+  const totalDebtPence = debts.reduce((s, d) => s + d.balance_pence, 0);
+  const totalPaymentsPence = debts.reduce((s, d) => s + Math.round((d.minimum_payment_pence + d.overpayment_pence) * d.split_ratio), 0);
 
-  const totalDebt = debtState.debts.reduce((s, d) => s + d.balance, 0);
-  const maxPayoffMonths = debtSummaries.reduce((m, s) => Math.max(m, s.monthsToPayoff), 0);
-  const disposableVariant = summary.disposableIncome >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
+  const disposablePence = summary?.disposable_income_pence ?? 0;
+  const disposableVariant = disposablePence >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
 
   return (
     <PageShell title="Dashboard" onMenuClick={onMenuClick}>
+      {/* Filter bar */}
+      <div className="mb-5">
+        <Card>
+          <FilterBar />
+        </Card>
+      </div>
+
       {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 items-stretch">
         <SummaryCard
           label="Monthly Income"
-          value={formatCurrency(summary.totalIncome)}
-          sub={`${budgetState.incomes.length} source${budgetState.incomes.length !== 1 ? 's' : ''}`}
+          value={formatCurrency(summary?.total_income_pence ?? 0)}
           colorClass="text-[var(--color-success)]"
           iconBgClass="bg-[var(--color-success-light)]"
           to="/income"
@@ -78,8 +81,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
         />
         <SummaryCard
           label="Monthly Expenses"
-          value={formatCurrency(summary.totalExpenses)}
-          sub={`${budgetState.expenses.length} expenses`}
+          value={formatCurrency(summary?.total_expenses_pence ?? 0)}
           colorClass="text-[var(--color-danger)]"
           iconBgClass="bg-[var(--color-danger-light)]"
           to="/expenses"
@@ -91,8 +93,8 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
         />
         <SummaryCard
           label="Debt Payments"
-          value={formatCurrency(summary.totalDebtPayments)}
-          sub={`${debtState.debts.length} debts — ${formatCurrency(totalDebt)} total`}
+          value={formatCurrency(summary?.total_debt_payments_pence ?? 0)}
+          sub={`${debts.length} debt${debts.length !== 1 ? 's' : ''} — ${formatCurrency(totalDebtPence)} total`}
           colorClass="text-[var(--color-warning)]"
           iconBgClass="bg-[var(--color-warning-light)]"
           to="/debt"
@@ -104,14 +106,14 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
         />
         <SummaryCard
           label="Disposable Income"
-          value={formatCurrency(summary.disposableIncome)}
-          sub={maxPayoffMonths > 0 ? `Debt-free in ${formatMonths(maxPayoffMonths)}` : undefined}
+          value={formatCurrency(disposablePence)}
+          sub={totalPaymentsPence > 0 ? `${formatCurrency(totalDebtPence)} in debts` : undefined}
           colorClass={disposableVariant}
-          iconBgClass={summary.disposableIncome >= 0 ? 'bg-[var(--color-primary-light)]' : 'bg-[var(--color-danger-light)]'}
+          iconBgClass={disposablePence >= 0 ? 'bg-[var(--color-primary-light)]' : 'bg-[var(--color-danger-light)]'}
           to="/"
           icon={
             <svg
-              className={`w-5 h-5 ${summary.disposableIncome >= 0 ? 'text-[var(--color-primary)]' : 'text-[var(--color-danger)]'}`}
+              className={`w-5 h-5 ${disposablePence >= 0 ? 'text-[var(--color-primary)]' : 'text-[var(--color-danger)]'}`}
               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -120,7 +122,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
         />
       </div>
 
-      {/* Charts row 1 */}
+      {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <Card>
           <CardHeader
@@ -128,9 +130,9 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
             subtitle="Monthly overview"
           />
           <IncomeVsExpensesBar
-            income={summary.totalIncome}
-            expenses={summary.totalExpenses}
-            debtPayments={summary.totalDebtPayments}
+            income={summary?.total_income_pence ?? 0}
+            expenses={summary?.total_expenses_pence ?? 0}
+            debtPayments={summary?.total_debt_payments_pence ?? 0}
           />
         </Card>
 
@@ -139,19 +141,12 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
             title="Expense Breakdown"
             subtitle="By category (your share)"
           />
-          <ExpenseDonut breakdown={summary.categoryBreakdown} />
+          <ExpenseDonut breakdown={summary?.category_breakdown ?? []} />
         </Card>
       </div>
 
-      {/* Debt payoff chart */}
-      {debtState.debts.length > 0 && (
-        <div className="mb-4">
-          <DebtPayoffChart summaries={debtSummaries} />
-        </div>
-      )}
-
       {/* Category breakdown table */}
-      {summary.categoryBreakdown.length > 0 && (
+      {(summary?.category_breakdown?.length ?? 0) > 0 && (
         <Card padding={false}>
           <div className="px-5 pt-5">
             <CardHeader
@@ -170,13 +165,13 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
                 </tr>
               </thead>
               <tbody>
-                {summary.categoryBreakdown.map(cat => (
+                {summary?.category_breakdown.map(cat => (
                   <tr key={cat.category} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors">
                     <td className="px-5 py-3 font-medium text-[var(--color-text)]">
                       <Badge variant="default">{cat.category}</Badge>
                     </td>
                     <td className="px-5 py-3 text-right font-mono text-[var(--color-danger)]">
-                      {formatCurrency(cat.total)}
+                      {formatCurrency(cat.total_pence)}
                     </td>
                     <td className="px-5 py-3 text-right text-[var(--color-text-muted)]">
                       {cat.percentage.toFixed(1)}%
@@ -185,7 +180,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
                       <div className="w-full bg-[var(--color-surface-2)] rounded-full h-1.5">
                         <div
                           className="h-1.5 rounded-full bg-[var(--color-primary)]"
-                          style={{ width: `${cat.percentage}%` }}
+                          style={{ width: `${Math.min(cat.percentage, 100)}%` }}
                         />
                       </div>
                     </td>

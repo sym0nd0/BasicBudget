@@ -1,11 +1,11 @@
-/** Format a number as GBP currency */
-export const formatCurrency = (amount: number): string =>
+/** Format a pence integer as GBP currency (divides by 100 internally) */
+export const formatCurrency = (pence: number): string =>
   new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency: 'GBP',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount);
+  }).format(pence / 100);
 
 /** Format a percentage (e.g. 37.7 → "37.70%") */
 export const formatPercent = (value: number): string =>
@@ -36,3 +36,11 @@ export const formatYearMonth = (ym: string): string => {
     year: 'numeric',
   });
 };
+
+/** Convert pounds string to pence integer for form submission */
+export const poundsToPence = (pounds: string): number =>
+  Math.round(parseFloat(pounds) * 100);
+
+/** Convert pence integer to pounds string for form display */
+export const penceToPoundsStr = (pence: number): string =>
+  (pence / 100).toFixed(2);

@@ -47,7 +47,7 @@ export function ExpenseDonut({ breakdown }: ExpenseDonutProps) {
 
   const data = breakdown.map((item, idx) => ({
     name: item.category,
-    value: item.total,
+    value: item.total_pence,
     percentage: item.percentage,
     fill: CHART_COLORS[idx % CHART_COLORS.length],
   }));

@@ -1,24 +1,31 @@
 import { useState } from 'react';
-import type { Expense, ExpenseCategory } from '../../types';
-import { EXPENSE_CATEGORIES, ACCOUNTS } from '../../types';
+import type { Expense, ExpenseCategory, Account } from '../../types';
+import { EXPENSE_CATEGORIES } from '../../types';
 import { Input, Select } from '../ui/Input';
 import { Button } from '../ui/Button';
-import { generateId } from '../../utils/id';
+import { poundsToPence, penceToPoundsStr } from '../../utils/formatters';
 
 interface ExpenseFormProps {
   initial?: Expense;
-  onSave: (expense: Expense) => void;
+  accounts: Account[];
+  onSave: (data: Omit<Expense, 'id' | 'created_at' | 'updated_at'>) => void;
   onCancel: () => void;
 }
 
-export function ExpenseForm({ initial, onSave, onCancel }: ExpenseFormProps) {
+export function ExpenseForm({ initial, accounts, onSave, onCancel }: ExpenseFormProps) {
   const [name, setName] = useState(initial?.name ?? '');
-  const [amount, setAmount] = useState(String(initial?.amount ?? ''));
-  const [dayOfMonth, setDayOfMonth] = useState(String(initial?.dayOfMonth ?? '1'));
-  const [account, setAccount] = useState<Expense['account']>(initial?.account ?? 'First Direct');
-  const [type, setType] = useState<Expense['type']>(initial?.type ?? 'fixed');
+  const [amount, setAmount] = useState(initial ? penceToPoundsStr(initial.amount_pence) : '');
+  const [postingDay, setPostingDay] = useState(String(initial?.posting_day ?? '1'));
+  const [accountId, setAccountId] = useState(initial?.account_id ?? '');
+  const [type, setType] = useState<'fixed' | 'variable'>(initial?.type ?? 'fixed');
   const [category, setCategory] = useState<ExpenseCategory>(initial?.category ?? 'Other');
-  const [isHousehold, setIsHousehold] = useState(initial?.isHousehold ?? false);
+  const [isHousehold, setIsHousehold] = useState(initial?.is_household ?? false);
+  const [isRecurring, setIsRecurring] = useState(initial?.is_recurring ?? true);
+  const [recurrenceType, setRecurrenceType] = useState<'monthly' | 'weekly' | 'yearly'>(
+    initial?.recurrence_type ?? 'monthly',
+  );
+  const [startDate, setStartDate] = useState(initial?.start_date ?? '');
+  const [endDate, setEndDate] = useState(initial?.end_date ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -27,8 +34,8 @@ export function ExpenseForm({ initial, onSave, onCancel }: ExpenseFormProps) {
     if (!name.trim()) e.name = 'Name is required';
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt <= 0) e.amount = 'Enter a valid amount';
-    const day = parseInt(dayOfMonth);
-    if (isNaN(day) || day < 1 || day > 31) e.dayOfMonth = 'Enter a day between 1–31';
+    const day = parseInt(postingDay);
+    if (isNaN(day) || day < 1 || day > 31) e.postingDay = 'Enter a day between 1–31';
     return e;
   };
 
@@ -39,18 +46,21 @@ export function ExpenseForm({ initial, onSave, onCancel }: ExpenseFormProps) {
       setErrors(errs);
       return;
     }
-    const splitRatio = isHousehold ? 0.5 : 1.0;
+    const split_ratio = isHousehold ? 0.5 : 1.0;
     onSave({
-      id: initial?.id ?? generateId(),
       name: name.trim(),
-      amount: parseFloat(amount),
-      dayOfMonth: parseInt(dayOfMonth),
-      account,
+      amount_pence: poundsToPence(amount),
+      posting_day: parseInt(postingDay),
+      account_id: accountId || null,
       type,
       category,
-      isHousehold,
-      splitRatio,
-      notes: notes.trim() || undefined,
+      is_household: isHousehold,
+      split_ratio,
+      is_recurring: isRecurring,
+      recurrence_type: recurrenceType,
+      start_date: startDate || null,
+      end_date: endDate || null,
+      notes: notes.trim() || null,
     });
   };
 
@@ -75,26 +85,29 @@ export function ExpenseForm({ initial, onSave, onCancel }: ExpenseFormProps) {
           error={errors.amount}
         />
         <Input
-          label="Day of Month"
+          label="Posting Day"
           type="number"
           min="1"
           max="31"
-          value={dayOfMonth}
-          onChange={e => setDayOfMonth(e.target.value)}
-          error={errors.dayOfMonth}
+          value={postingDay}
+          onChange={e => setPostingDay(e.target.value)}
+          error={errors.postingDay}
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <Select
           label="Account"
-          value={account}
-          onChange={e => setAccount(e.target.value as Expense['account'])}
-          options={ACCOUNTS.map(a => ({ value: a, label: a }))}
+          value={accountId}
+          onChange={e => setAccountId(e.target.value)}
+          options={[
+            { value: '', label: 'None' },
+            ...accounts.map(a => ({ value: a.id, label: a.name })),
+          ]}
         />
         <Select
           label="Type"
           value={type}
-          onChange={e => setType(e.target.value as Expense['type'])}
+          onChange={e => setType(e.target.value as 'fixed' | 'variable')}
           options={[
             { value: 'fixed', label: 'Fixed' },
             { value: 'variable', label: 'Variable' },
@@ -107,6 +120,41 @@ export function ExpenseForm({ initial, onSave, onCancel }: ExpenseFormProps) {
         onChange={e => setCategory(e.target.value as ExpenseCategory)}
         options={EXPENSE_CATEGORIES.map(c => ({ value: c, label: c }))}
       />
+      <div className="grid grid-cols-2 gap-3">
+        <Select
+          label="Recurrence"
+          value={isRecurring ? recurrenceType : 'one-off'}
+          onChange={e => {
+            const v = e.target.value;
+            if (v === 'one-off') {
+              setIsRecurring(false);
+            } else {
+              setIsRecurring(true);
+              setRecurrenceType(v as 'monthly' | 'weekly' | 'yearly');
+            }
+          }}
+          options={[
+            { value: 'monthly', label: 'Monthly' },
+            { value: 'weekly', label: 'Weekly' },
+            { value: 'yearly', label: 'Yearly' },
+            { value: 'one-off', label: 'One-off' },
+          ]}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Input
+          label="Start Date (optional)"
+          type="date"
+          value={startDate}
+          onChange={e => setStartDate(e.target.value)}
+        />
+        <Input
+          label="End Date (optional)"
+          type="date"
+          value={endDate}
+          onChange={e => setEndDate(e.target.value)}
+        />
+      </div>
       <label className="flex items-center gap-3 cursor-pointer">
         <input
           type="checkbox"

@@ -15,7 +15,7 @@ function getSystemTheme(): 'light' | 'dark' {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeStored] = useLocalStorage<Theme>('bb-theme', 'system');
+  const [theme, setThemeStored] = useLocalStorage<Theme>('bb-theme', 'dark');
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(getSystemTheme);
 
   // Listen for OS theme changes

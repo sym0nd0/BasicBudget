@@ -46,7 +46,7 @@ export function IncomeVsExpensesBar({ income, expenses, debtPayments }: IncomeVs
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
         <XAxis dataKey="name" tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} />
         <YAxis
-          tickFormatter={v => `£${(v / 1000).toFixed(1)}k`}
+          tickFormatter={v => `£${(v / 100000).toFixed(1)}k`}
           tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }}
         />
         <Tooltip content={<CustomTooltip />} />

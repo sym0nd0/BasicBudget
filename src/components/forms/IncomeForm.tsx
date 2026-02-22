@@ -1,19 +1,27 @@
 import { useState } from 'react';
 import type { Income } from '../../types';
-import { Input } from '../ui/Input';
+import { Input, Select } from '../ui/Input';
 import { Button } from '../ui/Button';
-import { generateId } from '../../utils/id';
+import { poundsToPence, penceToPoundsStr } from '../../utils/formatters';
 
 interface IncomeFormProps {
   initial?: Income;
-  onSave: (income: Income) => void;
+  onSave: (data: Omit<Income, 'id' | 'created_at' | 'updated_at'>) => void;
   onCancel: () => void;
 }
 
 export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
   const [name, setName] = useState(initial?.name ?? '');
-  const [amount, setAmount] = useState(String(initial?.amount ?? ''));
-  const [dayOfMonth, setDayOfMonth] = useState(String(initial?.dayOfMonth ?? '28'));
+  const [amount, setAmount] = useState(initial ? penceToPoundsStr(initial.amount_pence) : '');
+  const [postingDay, setPostingDay] = useState(String(initial?.posting_day ?? '28'));
+  const [contributorName, setContributorName] = useState(initial?.contributor_name ?? '');
+  const [grossOrNet, setGrossOrNet] = useState<'gross' | 'net'>(initial?.gross_or_net ?? 'net');
+  const [isRecurring, setIsRecurring] = useState(initial?.is_recurring ?? true);
+  const [recurrenceType, setRecurrenceType] = useState<'monthly' | 'weekly' | 'yearly'>(
+    initial?.recurrence_type ?? 'monthly',
+  );
+  const [startDate, setStartDate] = useState(initial?.start_date ?? '');
+  const [endDate, setEndDate] = useState(initial?.end_date ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -22,8 +30,8 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
     if (!name.trim()) e.name = 'Name is required';
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt <= 0) e.amount = 'Enter a valid amount';
-    const day = parseInt(dayOfMonth);
-    if (isNaN(day) || day < 1 || day > 31) e.dayOfMonth = 'Enter a day between 1–31';
+    const day = parseInt(postingDay);
+    if (isNaN(day) || day < 1 || day > 31) e.postingDay = 'Enter a day between 1–31';
     return e;
   };
 
@@ -35,11 +43,16 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
       return;
     }
     onSave({
-      id: initial?.id ?? generateId(),
       name: name.trim(),
-      amount: parseFloat(amount),
-      dayOfMonth: parseInt(dayOfMonth),
-      notes: notes.trim() || undefined,
+      amount_pence: poundsToPence(amount),
+      posting_day: parseInt(postingDay),
+      contributor_name: contributorName.trim() || null,
+      gross_or_net: grossOrNet,
+      is_recurring: isRecurring,
+      recurrence_type: recurrenceType,
+      start_date: startDate || null,
+      end_date: endDate || null,
+      notes: notes.trim() || null,
     });
   };
 
@@ -52,25 +65,79 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
         placeholder="e.g. Salary"
         error={errors.name}
       />
-      <Input
-        label="Monthly Amount"
-        type="number"
-        step="0.01"
-        min="0"
-        value={amount}
-        onChange={e => setAmount(e.target.value)}
-        prefix="£"
-        error={errors.amount}
-      />
-      <Input
-        label="Day of Month Received"
-        type="number"
-        min="1"
-        max="31"
-        value={dayOfMonth}
-        onChange={e => setDayOfMonth(e.target.value)}
-        error={errors.dayOfMonth}
-      />
+      <div className="grid grid-cols-2 gap-3">
+        <Input
+          label="Monthly Amount"
+          type="number"
+          step="0.01"
+          min="0"
+          value={amount}
+          onChange={e => setAmount(e.target.value)}
+          prefix="£"
+          error={errors.amount}
+        />
+        <Input
+          label="Posting Day"
+          type="number"
+          min="1"
+          max="31"
+          value={postingDay}
+          onChange={e => setPostingDay(e.target.value)}
+          error={errors.postingDay}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Input
+          label="Contributor (optional)"
+          value={contributorName}
+          onChange={e => setContributorName(e.target.value)}
+          placeholder="e.g. Partner"
+        />
+        <Select
+          label="Gross or Net"
+          value={grossOrNet}
+          onChange={e => setGrossOrNet(e.target.value as 'gross' | 'net')}
+          options={[
+            { value: 'net', label: 'Net (take-home)' },
+            { value: 'gross', label: 'Gross (before tax)' },
+          ]}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Select
+          label="Recurrence"
+          value={isRecurring ? recurrenceType : 'one-off'}
+          onChange={e => {
+            const v = e.target.value;
+            if (v === 'one-off') {
+              setIsRecurring(false);
+            } else {
+              setIsRecurring(true);
+              setRecurrenceType(v as 'monthly' | 'weekly' | 'yearly');
+            }
+          }}
+          options={[
+            { value: 'monthly', label: 'Monthly' },
+            { value: 'weekly', label: 'Weekly' },
+            { value: 'yearly', label: 'Yearly' },
+            { value: 'one-off', label: 'One-off' },
+          ]}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Input
+          label="Start Date (optional)"
+          type="date"
+          value={startDate}
+          onChange={e => setStartDate(e.target.value)}
+        />
+        <Input
+          label="End Date (optional)"
+          type="date"
+          value={endDate}
+          onChange={e => setEndDate(e.target.value)}
+        />
+      </div>
       <Input
         label="Notes (optional)"
         value={notes}

@@ -1,25 +1,20 @@
-# ── Stage 1: Build ───────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
-
+FROM node:20-alpine AS build
 WORKDIR /app
-
-# Install dependencies first (layer caching)
 COPY package*.json ./
 RUN npm ci
-
-# Copy source and build
 COPY . .
-RUN npm run build
+RUN npm run build:frontend && npm run build:server
 
-# ── Stage 2: Serve ───────────────────────────────────────────────────────────
-FROM nginx:alpine
-
-# Copy built assets
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Copy nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+FROM node:20-alpine
+WORKDIR /app
+RUN apk add --no-cache python3 make g++
+COPY --from=build /app/package*.json ./
+RUN npm ci --omit=dev && apk del python3 make g++
+COPY --from=build /app/dist-server ./dist-server
+COPY --from=build /app/server/schema.sql ./server/schema.sql
+COPY --from=build /app/dist ./public
+RUN mkdir -p /app/data
+EXPOSE 3000
+ENV NODE_ENV=production
+ENV PORT=3000
+CMD ["node", "dist-server/server/index.js"]

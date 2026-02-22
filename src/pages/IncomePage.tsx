@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useBudget } from '../context/BudgetContext';
+import { useFilter } from '../context/FilterContext';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { IncomeForm } from '../components/forms/IncomeForm';
+import { FilterBar } from '../components/layout/FilterBar';
 import { Badge } from '../components/ui/Badge';
 import { formatCurrency, formatOrdinal } from '../utils/formatters';
+import { findDuplicateIncome } from '../utils/duplicates';
 import type { Income } from '../types';
 
 interface IncomePageProps {
@@ -14,20 +17,31 @@ interface IncomePageProps {
 }
 
 export function IncomePage({ onMenuClick }: IncomePageProps) {
-  const { state, dispatch } = useBudget();
+  const { incomes, addIncome, updateIncome, deleteIncome } = useBudget();
+  const { activeMonth } = useFilter();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Income | undefined>();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const total = state.incomes.reduce((sum, i) => sum + i.amount, 0);
+  const total = incomes.reduce((sum, i) => sum + i.amount_pence, 0);
 
-  const handleSave = (income: Income) => {
-    if (editing) {
-      dispatch({ type: 'UPDATE_INCOME', payload: income });
-    } else {
-      dispatch({ type: 'ADD_INCOME', payload: income });
+  const handleSave = async (data: Omit<Income, 'id' | 'created_at' | 'updated_at'>) => {
+    if (!editing) {
+      const dup = findDuplicateIncome(incomes, data);
+      if (dup && !confirm('An income with identical details already exists. Add anyway?')) return;
     }
-    setModalOpen(false);
-    setEditing(undefined);
+    try {
+      if (editing) {
+        await updateIncome(editing.id, data);
+      } else {
+        await addIncome(data);
+      }
+      setModalOpen(false);
+      setEditing(undefined);
+      setErrorMsg(null);
+    } catch (err) {
+      setErrorMsg((err as Error).message);
+    }
   };
 
   const handleEdit = (income: Income) => {
@@ -35,9 +49,12 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
     setModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Delete this income entry?')) {
-      dispatch({ type: 'DELETE_INCOME', payload: id });
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this income entry?')) return;
+    try {
+      await deleteIncome(id);
+    } catch (err) {
+      alert((err as Error).message);
     }
   };
 
@@ -59,13 +76,21 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
         </Button>
       }
     >
+      {/* Filter bar */}
+      <div className="mb-5">
+        <Card>
+          <FilterBar />
+        </Card>
+      </div>
+
       {/* Summary card */}
       <div className="mb-5">
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-[var(--color-text-muted)]">Total Monthly Income</p>
+              <p className="text-sm text-[var(--color-text-muted)]">Total Income — {activeMonth}</p>
               <p className="text-3xl font-bold text-[var(--color-success)] mt-1">{formatCurrency(total)}</p>
+              <p className="text-xs text-[var(--color-text-muted)] mt-1">{incomes.length} source{incomes.length !== 1 ? 's' : ''}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-[var(--color-success-light)] flex items-center justify-center">
               <svg className="w-6 h-6 text-[var(--color-success)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -80,44 +105,58 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
       <Card padding={false}>
         <CardHeader
           title="Income Sources"
-          subtitle={`${state.incomes.length} source${state.incomes.length !== 1 ? 's' : ''}`}
+          subtitle={`${incomes.length} source${incomes.length !== 1 ? 's' : ''}`}
         />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-2)]">
                 <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Name</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Contributor</th>
                 <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Amount/mo</th>
                 <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Day</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Type</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Notes</th>
                 <th className="px-5 py-3 w-24"></th>
               </tr>
             </thead>
             <tbody>
-              {state.incomes.length === 0 && (
+              {incomes.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center text-[var(--color-text-muted)]">
-                    No income sources yet. Add one above.
+                  <td colSpan={7} className="px-5 py-8 text-center text-[var(--color-text-muted)]">
+                    No income sources for this month. Add one above.
                   </td>
                 </tr>
               )}
-              {state.incomes.map((income, idx) => (
+              {incomes.map(income => (
                 <tr
                   key={income.id}
-                  className={[
-                    'border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-2)]',
-                    idx % 2 === 0 ? '' : '',
-                  ].join(' ')}
+                  className="border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-2)]"
                 >
-                  <td className="px-5 py-3.5 font-medium text-[var(--color-text)]">{income.name}</td>
+                  <td className="px-5 py-3.5 font-medium text-[var(--color-text)]">
+                    <div className="flex items-center gap-2">
+                      {income.name}
+                      {income.is_recurring && (
+                        <Badge variant="info" className="text-[10px]">
+                          {income.recurrence_type}
+                        </Badge>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-5 py-3.5 text-[var(--color-text-muted)] text-sm">
+                    {income.contributor_name ?? '—'}
+                  </td>
                   <td className="px-5 py-3.5 text-right font-mono font-semibold text-[var(--color-success)]">
-                    {formatCurrency(income.amount)}
+                    {formatCurrency(income.amount_pence)}
                   </td>
                   <td className="px-5 py-3.5 text-center">
-                    <Badge variant="default">{formatOrdinal(income.dayOfMonth)}</Badge>
+                    <Badge variant="default">{formatOrdinal(income.posting_day)}</Badge>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <Badge variant="default">{income.gross_or_net}</Badge>
                   </td>
                   <td className="px-5 py-3.5 text-[var(--color-text-muted)] max-w-xs truncate">
-                    {income.notes || '—'}
+                    {income.notes ?? '—'}
                   </td>
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-1 justify-end">
@@ -143,13 +182,18 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
 
       <Modal
         isOpen={modalOpen}
-        onClose={() => { setModalOpen(false); setEditing(undefined); }}
+        onClose={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
         title={editing ? 'Edit Income' : 'Add Income'}
       >
+        {errorMsg && (
+          <p className="mb-3 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">
+            {errorMsg}
+          </p>
+        )}
         <IncomeForm
           initial={editing}
           onSave={handleSave}
-          onCancel={() => { setModalOpen(false); setEditing(undefined); }}
+          onCancel={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
         />
       </Modal>
     </PageShell>
