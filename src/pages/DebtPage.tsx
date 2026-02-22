@@ -1,41 +1,93 @@
-import { useState, useMemo } from 'react';
+import { useState, Fragment } from 'react';
 import { useDebt } from '../context/DebtContext';
+import { useApi } from '../hooks/useApi';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { DebtForm } from '../components/forms/DebtForm';
 import { Badge } from '../components/ui/Badge';
-import { formatCurrency, formatPercent, formatMonths, formatYearMonth } from '../utils/formatters';
-import { amortizeAllDebts } from '../utils/calculations';
-import type { Debt, AmortizationRow } from '../types';
-import { DebtPayoffChart } from '../components/charts/DebtPayoffLine';
+import { formatCurrency, formatPercent, formatYearMonth } from '../utils/formatters';
+import { findDuplicateDebt } from '../utils/duplicates';
+import type { Debt, AmortizationRow, DebtPayoffSummary } from '../types';
 
 interface DebtPageProps {
   onMenuClick: () => void;
 }
 
+/** Inline amortisation fetch per expanded debt */
+function AmortisationPanel({ debtId }: { debtId: string }) {
+  const { data: summary } = useApi<DebtPayoffSummary>(`/debts/${debtId}/amortisation`);
+
+  if (!summary) {
+    return <p className="text-sm text-[var(--color-text-muted)]">Loading…</p>;
+  }
+
+  return (
+    <>
+      <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-3">
+        Amortisation Schedule — {summary.monthsToPayoff} payments, {formatCurrency(summary.totalInterestPaidPence)} interest
+      </p>
+      <div className="overflow-x-auto max-h-64">
+        <table className="w-full text-xs">
+          <thead className="sticky top-0 bg-[var(--color-surface-2)]">
+            <tr>
+              <th className="text-left py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">#</th>
+              <th className="text-left py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Date</th>
+              <th className="text-right py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Opening</th>
+              <th className="text-right py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Interest</th>
+              <th className="text-right py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Payment</th>
+              <th className="text-right py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Principal</th>
+              <th className="text-right py-1.5 font-semibold text-[var(--color-text-muted)]">Closing</th>
+            </tr>
+          </thead>
+          <tbody>
+            {summary.schedule.map((row: AmortizationRow) => (
+              <tr key={row.month} className="border-t border-[var(--color-border)]">
+                <td className="py-1.5 pr-4 text-[var(--color-text-muted)]">{row.month}</td>
+                <td className="py-1.5 pr-4 text-[var(--color-text-muted)]">{formatYearMonth(row.date)}</td>
+                <td className="py-1.5 pr-4 text-right font-mono text-[var(--color-text)]">{formatCurrency(row.opening_balance_pence)}</td>
+                <td className="py-1.5 pr-4 text-right font-mono text-[var(--color-danger)]">{formatCurrency(row.interest_charge_pence)}</td>
+                <td className="py-1.5 pr-4 text-right font-mono text-[var(--color-warning)]">{formatCurrency(row.payment_pence)}</td>
+                <td className="py-1.5 pr-4 text-right font-mono text-[var(--color-success)]">{formatCurrency(row.principal_paid_pence)}</td>
+                <td className="py-1.5 text-right font-mono text-[var(--color-text)]">{formatCurrency(row.closing_balance_pence)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
 export function DebtPage({ onMenuClick }: DebtPageProps) {
-  const { state, dispatch } = useDebt();
+  const { debts, addDebt, updateDebt, deleteDebt } = useDebt();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Debt | undefined>();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const summaries = useMemo(() => amortizeAllDebts(state.debts), [state.debts]);
+  const totalBalance = debts.reduce((s, d) => s + d.balance_pence, 0);
+  const totalPayments = debts.reduce((s, d) => s + Math.round((d.minimum_payment_pence + d.overpayment_pence) * d.split_ratio), 0);
+  const totalInterestDebts = debts.filter(d => d.interest_rate > 0).length;
 
-  const totalBalance = state.debts.reduce((s, d) => s + d.balance, 0);
-  const totalPayments = state.debts.reduce((s, d) => s + d.currentPayment, 0);
-  const totalInterest = summaries.reduce((s, summary) => s + summary.totalInterestPaid, 0);
-  const maxMonths = summaries.reduce((m, s) => Math.max(m, s.monthsToPayoff), 0);
-
-  const handleSave = (debt: Debt) => {
-    if (editing) {
-      dispatch({ type: 'UPDATE_DEBT', payload: debt });
-    } else {
-      dispatch({ type: 'ADD_DEBT', payload: debt });
+  const handleSave = async (data: Omit<Debt, 'id' | 'created_at' | 'updated_at'>) => {
+    if (!editing) {
+      const dup = findDuplicateDebt(debts, data);
+      if (dup && !confirm('A debt with identical details already exists. Add anyway?')) return;
     }
-    setModalOpen(false);
-    setEditing(undefined);
+    try {
+      if (editing) {
+        await updateDebt(editing.id, data);
+      } else {
+        await addDebt(data);
+      }
+      setModalOpen(false);
+      setEditing(undefined);
+      setErrorMsg(null);
+    } catch (err) {
+      setErrorMsg((err as Error).message);
+    }
   };
 
   const handleEdit = (debt: Debt) => {
@@ -43,9 +95,12 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
     setModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Delete this debt?')) {
-      dispatch({ type: 'DELETE_DEBT', payload: id });
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this debt?')) return;
+    try {
+      await deleteDebt(id);
+    } catch (err) {
+      alert((err as Error).message);
     }
   };
 
@@ -72,38 +127,31 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
       }
     >
       {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5 items-stretch">
+        <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Debt</p>
           <p className="text-2xl font-bold text-[var(--color-danger)]">{formatCurrency(totalBalance)}</p>
         </Card>
-        <Card>
+        <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Monthly Payments</p>
           <p className="text-2xl font-bold text-[var(--color-warning)]">{formatCurrency(totalPayments)}</p>
         </Card>
-        <Card>
-          <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Interest</p>
-          <p className="text-2xl font-bold text-[var(--color-text)]">{formatCurrency(totalInterest)}</p>
+        <Card className="h-full">
+          <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Debts</p>
+          <p className="text-2xl font-bold text-[var(--color-text)]">{debts.length}</p>
         </Card>
-        <Card>
-          <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Debt-Free In</p>
-          <p className="text-2xl font-bold text-[var(--color-primary)]">{formatMonths(maxMonths)}</p>
+        <Card className="h-full">
+          <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Interest Debts</p>
+          <p className="text-2xl font-bold text-[var(--color-primary)]">{totalInterestDebts}</p>
         </Card>
       </div>
-
-      {/* Chart */}
-      {state.debts.length > 0 && (
-        <div className="mb-5">
-          <DebtPayoffChart summaries={summaries} />
-        </div>
-      )}
 
       {/* Debt table */}
       <Card padding={false}>
         <div className="px-5 pt-5">
           <CardHeader
             title="Debt Tracker"
-            subtitle={`${state.debts.length} debt${state.debts.length !== 1 ? 's' : ''} — click a row to view amortization`}
+            subtitle={`${debts.length} debt${debts.length !== 1 ? 's' : ''} — click a row to view amortisation`}
           />
         </div>
         <div className="overflow-x-auto">
@@ -113,28 +161,26 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                 <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Name</th>
                 <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Balance</th>
                 <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">APR</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Payment/mo</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Payoff</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Interest</th>
+                <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Min Payment</th>
+                <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Overpayment</th>
+                <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Your Share</th>
                 <th className="px-5 py-3 w-24"></th>
               </tr>
             </thead>
             <tbody>
-              {state.debts.length === 0 && (
+              {debts.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-5 py-8 text-center text-[var(--color-text-muted)]">
                     No debts tracked yet.
                   </td>
                 </tr>
               )}
-              {state.debts.map(debt => {
-                const summary = summaries.find(s => s.debtId === debt.id);
+              {debts.map(debt => {
                 const isExpanded = expandedId === debt.id;
 
                 return (
-                  <>
+                  <Fragment key={debt.id}>
                     <tr
-                      key={debt.id}
                       className="border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-2)] cursor-pointer"
                       onClick={() => toggleExpand(debt.id)}
                     >
@@ -147,7 +193,10 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                           </svg>
                           {debt.name}
-                          {debt.apr > 0 && (
+                          {debt.is_household && (
+                            <Badge variant="primary" className="text-[10px]">½</Badge>
+                          )}
+                          {debt.interest_rate > 0 && (
                             <Badge variant="danger" className="text-[10px]">Interest</Badge>
                           )}
                         </div>
@@ -156,27 +205,23 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                         )}
                       </td>
                       <td className="px-5 py-3 text-right font-mono font-semibold text-[var(--color-danger)]">
-                        {formatCurrency(debt.balance)}
+                        {formatCurrency(debt.balance_pence)}
                       </td>
                       <td className="px-5 py-3 text-right">
-                        {debt.apr > 0 ? (
-                          <Badge variant="danger">{formatPercent(debt.apr)}</Badge>
+                        {debt.interest_rate > 0 ? (
+                          <Badge variant="danger">{formatPercent(debt.interest_rate)}</Badge>
                         ) : (
                           <Badge variant="success">0%</Badge>
                         )}
                       </td>
                       <td className="px-5 py-3 text-right font-mono text-[var(--color-warning)]">
-                        {formatCurrency(debt.currentPayment)}
-                      </td>
-                      <td className="px-5 py-3 text-right text-[var(--color-text-muted)]">
-                        {summary ? (
-                          debt.currentPayment > 0
-                            ? <span title={summary.payoffDate}>{formatMonths(summary.monthsToPayoff)}</span>
-                            : <span className="text-[var(--color-danger)]">No payment</span>
-                        ) : '—'}
+                        {formatCurrency(debt.minimum_payment_pence)}
                       </td>
                       <td className="px-5 py-3 text-right font-mono text-[var(--color-text-muted)]">
-                        {summary ? formatCurrency(summary.totalInterestPaid) : '—'}
+                        {debt.overpayment_pence > 0 ? formatCurrency(debt.overpayment_pence) : '—'}
+                      </td>
+                      <td className="px-5 py-3 text-right font-mono font-semibold text-[var(--color-warning)]">
+                        {formatCurrency(Math.round((debt.minimum_payment_pence + debt.overpayment_pence) * debt.split_ratio))}
                       </td>
                       <td className="px-5 py-3" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-1 justify-end">
@@ -195,45 +240,15 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                       </td>
                     </tr>
 
-                    {/* Amortization schedule */}
-                    {isExpanded && summary && (
-                      <tr key={`${debt.id}-schedule`} className="border-t border-[var(--color-border)]">
+                    {/* Amortisation schedule */}
+                    {isExpanded && (
+                      <tr className="border-t border-[var(--color-border)]">
                         <td colSpan={7} className="px-5 py-4 bg-[var(--color-surface-2)]">
-                          <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-3">
-                            Amortization Schedule — {summary.monthsToPayoff} payments, {formatCurrency(summary.totalInterestPaid)} interest
-                          </p>
-                          <div className="overflow-x-auto max-h-64">
-                            <table className="w-full text-xs">
-                              <thead className="sticky top-0 bg-[var(--color-surface-2)]">
-                                <tr>
-                                  <th className="text-left py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">#</th>
-                                  <th className="text-left py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Date</th>
-                                  <th className="text-right py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Opening</th>
-                                  <th className="text-right py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Interest</th>
-                                  <th className="text-right py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Payment</th>
-                                  <th className="text-right py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Principal</th>
-                                  <th className="text-right py-1.5 font-semibold text-[var(--color-text-muted)]">Closing</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {summary.schedule.map((row: AmortizationRow) => (
-                                  <tr key={row.month} className="border-t border-[var(--color-border)]">
-                                    <td className="py-1.5 pr-4 text-[var(--color-text-muted)]">{row.month}</td>
-                                    <td className="py-1.5 pr-4 text-[var(--color-text-muted)]">{formatYearMonth(row.date)}</td>
-                                    <td className="py-1.5 pr-4 text-right font-mono text-[var(--color-text)]">{formatCurrency(row.openingBalance)}</td>
-                                    <td className="py-1.5 pr-4 text-right font-mono text-[var(--color-danger)]">{formatCurrency(row.interestCharge)}</td>
-                                    <td className="py-1.5 pr-4 text-right font-mono text-[var(--color-warning)]">{formatCurrency(row.payment)}</td>
-                                    <td className="py-1.5 pr-4 text-right font-mono text-[var(--color-success)]">{formatCurrency(row.principalPaid)}</td>
-                                    <td className="py-1.5 text-right font-mono text-[var(--color-text)]">{formatCurrency(row.closingBalance)}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                          <AmortisationPanel debtId={debt.id} />
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -243,13 +258,18 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
 
       <Modal
         isOpen={modalOpen}
-        onClose={() => { setModalOpen(false); setEditing(undefined); }}
+        onClose={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
         title={editing ? 'Edit Debt' : 'Add Debt'}
       >
+        {errorMsg && (
+          <p className="mb-3 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">
+            {errorMsg}
+          </p>
+        )}
         <DebtForm
           initial={editing}
           onSave={handleSave}
-          onCancel={() => { setModalOpen(false); setEditing(undefined); }}
+          onCancel={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
         />
       </Modal>
     </PageShell>

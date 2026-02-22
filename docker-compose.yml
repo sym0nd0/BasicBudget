@@ -2,5 +2,12 @@ services:
   basicbudget:
     image: ghcr.io/sym0nd0/basicbudget:latest
     ports:
-      - "8080:80"
+      - "8080:3000"
+    volumes:
+      - bb-data:/app/data
+    environment:
+      - NODE_ENV=production
     restart: unless-stopped
+
+volumes:
+  bb-data:
