@@ -1,6 +1,6 @@
 # BasicBudget
 
-A personal budgeting and debt management application built with React 19 and TypeScript. BasicBudget helps you track your monthly income and expenses, manage debts with full amortization schedules, and visualise your financial picture through interactive charts — all without a backend or account. Your data lives in your browser's localStorage.
+A personal budgeting and debt management application built with React 19, TypeScript, and a Node.js/SQLite backend. BasicBudget helps you track monthly income and expenses across multiple contributors, manage debts with full amortization schedules, track savings goals, and visualise your financial picture through interactive charts — all self-hosted and data-sovereign.
 
 ---
 
@@ -8,13 +8,13 @@ A personal budgeting and debt management application built with React 19 and Typ
 
 1. [Features](#features)
 2. [Tech Stack](#tech-stack)
-3. [Data Models](#data-models)
-4. [Folder Structure](#folder-structure)
-5. [Seed Data](#seed-data)
-6. [Getting Started](#getting-started)
-7. [Docker Deployment](#docker-deployment)
-8. [Available Scripts](#available-scripts)
-9. [Architecture Notes](#architecture-notes)
+3. [Architecture](#architecture)
+4. [Data Models](#data-models)
+5. [API Routes](#api-routes)
+6. [Folder Structure](#folder-structure)
+7. [Getting Started](#getting-started)
+8. [Docker Deployment](#docker-deployment)
+9. [Available Scripts](#available-scripts)
 10. [License](#license)
 
 ---
@@ -22,36 +22,54 @@ A personal budgeting and debt management application built with React 19 and Typ
 ## Features
 
 ### Dashboard
-- At-a-glance budget summary card showing total income, total expenses, total debt payments, and disposable income
-- Expense donut chart broken down by category (Housing, Transport, Food & Groceries, Utilities, Subscriptions, Personal, Health, Entertainment, Debt Payments, Savings, Other)
-- Income vs Expenses bar chart for visual comparison
-- Debt payoff timeline line chart showing cumulative balance across all debts month by month
+- At-a-glance budget summary showing total income, total expenses, total debt payments, and disposable income
+- Expense donut chart broken down by category
+- Income vs Expenses bar chart
+- Debt payoff timeline showing cumulative balance across all debts month by month
 
 ### Income Management
-- Add, edit, and delete income sources
+- Add, edit, and delete income sources with contributor names (multi-person support)
 - Record the day of month income is received
-- Optional notes per income entry
+- Track income as gross or net
+- Set recurrence type: monthly, weekly, or yearly
+- Optional start and end dates for time-bounded income entries
 
 ### Expense Management
 - Add, edit, and delete monthly expenses
-- Categorise each expense into one of 11 categories
+- Categorise each expense: Housing, Transport, Food & Groceries, Utilities, Subscriptions, Personal, Health, Entertainment, Debt Payments, Savings, Other
 - Tag expenses as `fixed` or `variable`
-- Assign expenses to a payment account: First Direct, Natwest, Cash, or Other
-- Mark expenses as household expenses and apply a 50/50 split ratio so only your share is counted in your budget summary
-- Optional notes per expense entry
+- Assign expenses to a named payment account
+- Mark expenses as household expenses with a configurable split ratio so only your share counts in budget summaries
+- Set recurrence type and optional start/end dates
 
 ### Debt Management
 - Add, edit, and delete debts
-- Record balance, APR, minimum payment, and your actual current payment
-- Full per-debt amortization table showing month-by-month opening balance, interest charge, principal paid, and closing balance
-- Payoff summary per debt: months to payoff, total interest paid, total paid, and projected payoff date
-- Debt payoff chart plotting all debt balances over time on a single timeline
+- Record balance, interest rate, minimum payment, and overpayment amount
+- Full per-debt amortization table: month-by-month opening balance, interest charge, principal paid, and closing balance
+- Payoff summary per debt: months to payoff, total interest paid, total paid, projected payoff date
+- Debt payoff chart plotting all balances over a shared monthly timeline
+- Household splitting support on debt payments
+
+### Savings Goals
+- Create and track savings goals with target amounts and monthly contributions
+- Optional target dates
+- Progress tracking against current saved amount
+
+### Household Overview
+- Combined view of total household income and expenses
+- Breakdown of shared vs sole expenses
+- Debt-to-income ratio
+
+### Settings & Accounts
+- Manage named payment accounts
+- Month locking — lock closed months to prevent accidental edits
+- CSV import and export for bulk data management
 
 ### Additional Features
+- **Duplicate detection** — warns before saving an entry identical to an existing one across all fields
 - **Theme toggle** — light, dark, and system-preference modes
-- **Household splitting** — expenses shared with a partner count at 50% in all summaries and charts
-- **Amortization engine** — handles variable APRs, interest-free periods (0% APR), and payments above the minimum
-- **localStorage persistence** — all data is saved automatically; no account or server required
+- **Filter bar** — filter entries by contributor, account, category, or recurrence type
+- **Persistent storage** — all data lives in a local SQLite database; no cloud account required
 
 ---
 
@@ -59,19 +77,52 @@ A personal budgeting and debt management application built with React 19 and Typ
 
 | Layer | Library / Tool | Version |
 |---|---|---|
-| UI Framework | React | 19.2 |
+| UI Framework | React | 19.x |
 | Language | TypeScript | 5.9 |
 | Build Tool | Vite | 7.x |
 | Styling | Tailwind CSS | v4 |
 | Charts | Recharts | 3.x |
 | Routing | React Router | 7.x |
-| Container | Docker + Nginx | — |
+| Backend | Express | 4.x |
+| Database | SQLite (better-sqlite3) | 12.x |
+| Runtime | Node.js | 20 |
+| Container | Docker (multi-stage) | — |
+
+---
+
+## Architecture
+
+BasicBudget is a full-stack application with a clear separation between frontend and backend:
+
+```
+Browser (React SPA)
+      │  HTTP / JSON
+      ▼
+Express API Server  (port 3001 dev / 3000 prod)
+      │
+      ▼
+SQLite Database  (data/basicbudget.db)
+```
+
+### Frontend
+
+A React 19 SPA built with Vite. In development, Vite serves the frontend on port 5173 and proxies `/api/*` requests to the Express server on port 3001. In production, the Express server serves the pre-built static bundle and handles all API requests from the same origin.
+
+State is managed with React's built-in `useReducer` + `useContext` pattern. API calls go through typed hooks in `src/hooks/useApi.ts`.
+
+### Backend
+
+An Express server written in TypeScript, transpiled with `tsx` in development and compiled to `dist-server/` for production. Routes are organized by resource under `server/routes/`. The database layer uses `better-sqlite3` for synchronous, zero-latency SQLite access.
+
+The database file is stored at `data/basicbudget.db` by default, configurable via the `DB_PATH` environment variable. WAL journal mode and foreign key enforcement are enabled on startup.
 
 ---
 
 ## Data Models
 
-All types are defined in `src/types/index.ts`.
+All types are defined in `shared/types.ts` and re-exported from `src/types/index.ts`.
+
+Monetary values are stored as **integer pence** throughout (e.g. £3,000.89 → `300089`) to avoid floating-point precision issues.
 
 ### Income
 
@@ -79,9 +130,15 @@ All types are defined in `src/types/index.ts`.
 interface Income {
   id: string;
   name: string;
-  amount: number;       // monthly amount in GBP
-  dayOfMonth: number;   // day income lands (1–31)
-  notes?: string;
+  amount_pence: number;
+  posting_day: number;
+  contributor_name?: string | null;
+  gross_or_net: 'gross' | 'net';
+  is_recurring: boolean;
+  recurrence_type: 'monthly' | 'weekly' | 'yearly';
+  start_date?: string | null;
+  end_date?: string | null;
+  notes?: string | null;
 }
 ```
 
@@ -91,14 +148,18 @@ interface Income {
 interface Expense {
   id: string;
   name: string;
-  amount: number;
-  dayOfMonth: number;
-  account: 'First Direct' | 'Natwest' | 'Cash' | 'Other';
+  amount_pence: number;
+  posting_day: number;
+  account_id?: string | null;
   type: 'fixed' | 'variable';
   category: ExpenseCategory;
-  isHousehold: boolean;
-  splitRatio: number;   // 0.5 for shared household costs, 1.0 for sole costs
-  notes?: string;
+  is_household: boolean;
+  split_ratio: number;        // 0.5 for shared costs, 1.0 for sole costs
+  is_recurring: boolean;
+  recurrence_type: 'monthly' | 'weekly' | 'yearly';
+  start_date?: string | null;
+  end_date?: string | null;
+  notes?: string | null;
 }
 ```
 
@@ -108,11 +169,33 @@ interface Expense {
 interface Debt {
   id: string;
   name: string;
-  balance: number;
-  apr: number;            // annual percentage rate
-  minimumPayment: number;
-  currentPayment: number; // actual payment being made
-  notes?: string;
+  balance_pence: number;
+  interest_rate: number;
+  minimum_payment_pence: number;
+  overpayment_pence: number;
+  compounding_frequency: string;
+  is_recurring: boolean;
+  recurrence_type: string;
+  posting_day: number;
+  start_date?: string | null;
+  end_date?: string | null;
+  is_household: boolean;
+  split_ratio: number;
+  notes?: string | null;
+}
+```
+
+### SavingsGoal
+
+```typescript
+interface SavingsGoal {
+  id: string;
+  name: string;
+  target_amount_pence: number;
+  current_amount_pence: number;
+  monthly_contribution_pence: number;
+  target_date?: string | null;
+  notes?: string | null;
 }
 ```
 
@@ -122,45 +205,37 @@ interface Debt {
 interface AmortizationRow {
   month: number;
   date: string;
-  openingBalance: number;
-  interestCharge: number;
-  payment: number;
-  principalPaid: number;
-  closingBalance: number;
+  opening_balance_pence: number;
+  interest_charge_pence: number;
+  payment_pence: number;
+  principal_paid_pence: number;
+  closing_balance_pence: number;
 }
 ```
 
-### DebtPayoffSummary
+---
 
-```typescript
-interface DebtPayoffSummary {
-  debtId: string;
-  debtName: string;
-  monthsToPayoff: number;
-  totalInterestPaid: number;
-  totalPaid: number;
-  payoffDate: string;
-  schedule: AmortizationRow[];
-}
-```
+## API Routes
 
-### BudgetSummary
+All routes are prefixed with `/api`.
 
-```typescript
-interface BudgetSummary {
-  totalIncome: number;
-  totalExpenses: number;
-  totalDebtPayments: number;
-  disposableIncome: number;
-  categoryBreakdown: CategoryBreakdown[];
-}
-```
-
-### Theme
-
-```typescript
-type Theme = 'light' | 'dark' | 'system';
-```
+| Method | Path | Description |
+|---|---|---|
+| GET/POST | `/api/incomes` | List all / create income |
+| GET/PUT/DELETE | `/api/incomes/:id` | Get / update / delete income |
+| GET/POST | `/api/expenses` | List all / create expense |
+| GET/PUT/DELETE | `/api/expenses/:id` | Get / update / delete expense |
+| GET/POST | `/api/debts` | List all / create debt |
+| GET/PUT/DELETE | `/api/debts/:id` | Get / update / delete debt |
+| GET/POST | `/api/savings-goals` | List all / create savings goal |
+| GET/PUT/DELETE | `/api/savings-goals/:id` | Get / update / delete savings goal |
+| GET/POST | `/api/accounts` | List all / create account |
+| GET/PUT/DELETE | `/api/accounts/:id` | Get / update / delete account |
+| GET | `/api/summary` | Budget summary with category breakdown |
+| GET | `/api/household` | Household overview |
+| GET/POST | `/api/months` | List locked months / lock a month |
+| POST | `/api/import` | CSV bulk import |
+| GET | `/api/export` | CSV export |
 
 ---
 
@@ -168,123 +243,87 @@ type Theme = 'light' | 'dark' | 'system';
 
 ```
 BasicBudget/
-├── public/
-│   └── favicon.svg
-├── src/
-│   ├── App.tsx                          # Root component, router setup
-│   ├── main.tsx                         # React entry point
-│   ├── index.css                        # Global styles / Tailwind imports
+├── data/                              # SQLite database (gitignored)
+│   └── basicbudget.db
+│
+├── server/                            # Express backend
+│   ├── index.ts                       # App entry point, route mounting
+│   ├── db.ts                          # Database connection + schema init
+│   ├── schema.sql                     # DDL — tables and indexes
+│   └── routes/
+│       ├── accounts.ts
+│       ├── debts.ts
+│       ├── expenses.ts
+│       ├── export.ts
+│       ├── household.ts
+│       ├── import.ts
+│       ├── incomes.ts
+│       ├── months.ts
+│       ├── savings-goals.ts
+│       └── summary.ts
+│
+├── shared/
+│   └── types.ts                       # Shared TypeScript interfaces (frontend + backend)
+│
+├── src/                               # React frontend
+│   ├── App.tsx                        # Root component, router setup
+│   ├── main.tsx                       # React entry point
+│   ├── index.css                      # Global styles / Tailwind imports
+│   │
+│   ├── api/                           # Typed API client functions
 │   │
 │   ├── components/
 │   │   ├── charts/
-│   │   │   ├── DebtPayoffLine.tsx       # Multi-debt balance over time (line)
-│   │   │   ├── ExpenseDonut.tsx         # Expense category breakdown (donut)
-│   │   │   └── IncomeVsExpensesBar.tsx  # Income vs expenses (bar)
+│   │   │   ├── DebtPayoffLine.tsx
+│   │   │   ├── ExpenseDonut.tsx
+│   │   │   └── IncomeVsExpensesBar.tsx
 │   │   ├── forms/
-│   │   │   ├── DebtForm.tsx             # Add / edit debt modal form
-│   │   │   ├── ExpenseForm.tsx          # Add / edit expense modal form
-│   │   │   └── IncomeForm.tsx           # Add / edit income modal form
-│   │   ├── layout/
-│   │   │   ├── Header.tsx               # Top navigation bar
-│   │   │   ├── PageShell.tsx            # Page wrapper with title slot
-│   │   │   └── Sidebar.tsx              # Left navigation sidebar
-│   │   └── ui/
-│   │       ├── Badge.tsx                # Pill badge for categories / types
-│   │       ├── Button.tsx               # Reusable button component
-│   │       ├── Card.tsx                 # Surface card wrapper
-│   │       ├── Input.tsx                # Labelled form input
-│   │       ├── Modal.tsx                # Accessible dialog wrapper
-│   │       └── ThemeToggle.tsx          # Light / dark / system switcher
-│   │
-│   ├── constants/
-│   │   └── defaults.ts                  # Seed incomes, expenses, and debts
+│   │   │   ├── CsvImportForm.tsx
+│   │   │   ├── DebtForm.tsx
+│   │   │   ├── ExpenseForm.tsx
+│   │   │   ├── IncomeForm.tsx
+│   │   │   └── SavingsGoalForm.tsx
+│   │   └── layout/
+│   │       ├── FilterBar.tsx
+│   │       ├── Header.tsx
+│   │       ├── PageShell.tsx
+│   │       └── Sidebar.tsx
 │   │
 │   ├── context/
-│   │   ├── BudgetContext.tsx            # Income + expense state & dispatch
-│   │   ├── DebtContext.tsx              # Debt state & dispatch
-│   │   └── ThemeContext.tsx             # Theme state & toggle
+│   │   ├── BudgetContext.tsx
+│   │   ├── DebtContext.tsx
+│   │   ├── FilterContext.tsx
+│   │   ├── SavingsContext.tsx
+│   │   └── ThemeContext.tsx
 │   │
 │   ├── hooks/
-│   │   └── useLocalStorage.ts           # Generic localStorage sync hook
+│   │   └── useApi.ts                  # Typed fetch wrappers
 │   │
 │   ├── pages/
-│   │   ├── Dashboard.tsx                # Overview charts and summary
-│   │   ├── DebtPage.tsx                 # Debt list, amortization tables
-│   │   ├── ExpensesPage.tsx             # Expense list and management
-│   │   └── IncomePage.tsx               # Income list and management
+│   │   ├── Dashboard.tsx
+│   │   ├── DebtPage.tsx
+│   │   ├── ExpensesPage.tsx
+│   │   ├── HouseholdPage.tsx
+│   │   ├── IncomePage.tsx
+│   │   ├── SavingsPage.tsx
+│   │   └── SettingsPage.tsx
 │   │
 │   ├── types/
-│   │   └── index.ts                     # All TypeScript interfaces and types
+│   │   └── index.ts                   # Re-exports from shared/types.ts
 │   │
 │   └── utils/
-│       ├── calculations.ts              # Budget summary + amortization engine
-│       ├── formatters.ts                # Currency, percent, date formatters
-│       └── id.ts                        # crypto.randomUUID() wrapper
+│       ├── duplicates.ts              # Full-field duplicate detection
+│       └── formatters.ts             # Currency, percent, date formatters
 │
+├── Dockerfile                         # Multi-stage build (Node build → Node serve)
+├── docker-compose.yml
 ├── index.html
-├── vite.config.ts
+├── package.json
 ├── tsconfig.json
 ├── tsconfig.app.json
 ├── tsconfig.node.json
-├── eslint.config.js
-├── Dockerfile
-├── docker-compose.yml
-└── nginx.conf
+└── tsconfig.server.json
 ```
-
-31 source files under `src/`.
-
----
-
-## Seed Data
-
-The app ships with realistic seed data so it is useful out of the box. Seed values are defined in `src/constants/defaults.ts` and loaded into localStorage on first run.
-
-### Income (1 entry)
-
-| Name | Amount | Day |
-|---|---|---|
-| Salary | £3,000.89 | 28th |
-
-### Expenses (22 entries)
-
-Selected highlights:
-
-| Name | Category | Amount | Split |
-|---|---|---|---|
-| House bills | Housing | £2,264.80 | 50% (£1,132.40) |
-| Groceries | Food & Groceries | £200.00 | sole |
-| Fuel | Transport | £120.00 | sole |
-| Savings transfer | Savings | £100.00 | sole |
-| Car insurance | Transport | £89.50 | sole |
-| Eating out | Food & Groceries | £80.00 | sole |
-| Entertainment | Entertainment | £60.00 | sole |
-| Clothing | Personal | £50.00 | sole |
-| Very catalogue payment | Debt Payments | £30.00 | sole |
-| Gym | Personal | £29.99 | sole |
-| Littlewoods payment | Debt Payments | £25.00 | sole |
-| Netflix | Subscriptions | £17.99 | 50% |
-| Spotify | Subscriptions | £11.99 | 50% |
-| Amazon Prime | Subscriptions | £8.99 | 50% |
-| iCloud Storage | Subscriptions | £2.99 | 50% |
-| … | … | … | … |
-
-### Debts (10 entries)
-
-| Name | Balance | APR | Payment |
-|---|---|---|---|
-| Tesco Credit Card | £1,423.56 | 37.7% | £100.00 |
-| Natwest Personal Loan | £4,200.00 | 15.9% | £150.00 |
-| Natwest Credit Card | £2,850.00 | 0% | £75.00 |
-| Halifax Credit Card | £1,950.00 | 0% | £50.00 |
-| Barclaycard | £1,680.00 | 0% | £75.00 |
-| Very Catalogue | £1,240.28 | 0% | £30.00 |
-| JD Williams | £960.00 | 0% | £100.00 |
-| Littlewoods | £980.00 | 0% | £25.00 |
-| Studio | £856.00 | 0% | £100.00 |
-| Overdraft | £1,000.00 | 0% | £69.76 |
-
-**Total debt: £17,139.84 — Monthly payments: £774.76**
 
 ---
 
@@ -307,7 +346,13 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser. The dev server supports hot module replacement — changes are reflected instantly without a full page reload.
+This starts two processes concurrently:
+- **Vite** dev server at `http://localhost:5173` (React frontend with HMR)
+- **Express** API server at `http://localhost:3001` (watched by `tsx`)
+
+The Vite config proxies all `/api/*` requests to the Express server automatically. Open `http://localhost:5173` in your browser.
+
+The SQLite database is created automatically at `data/basicbudget.db` on first run.
 
 ### Build for production
 
@@ -315,13 +360,23 @@ Open [http://localhost:5173](http://localhost:5173) in your browser. The dev ser
 npm run build
 ```
 
-Output is written to the `dist/` directory. Serve it from any static file host or web server.
+This runs both:
+- `build:frontend` — TypeScript check + Vite bundle → `dist/`
+- `build:server` — TypeScript compile → `dist-server/`
+
+### Run the production build locally
+
+```bash
+npm start
+```
+
+Starts the Express server on port 3000. The server serves the built frontend from `public/` and handles all API routes on the same origin.
 
 ---
 
 ## Docker Deployment
 
-The app is published as a pre-built image to GitHub Container Registry (GHCR) on every push to `master`. A multi-stage Dockerfile (Node.js build → Nginx Alpine serve) keeps the image small.
+The app is published as a pre-built image to GitHub Container Registry (GHCR) on every push to `master`. The multi-stage Dockerfile produces a minimal Node.js Alpine image — no Nginx required; Express serves everything.
 
 ### Pull and run with Docker Compose
 
@@ -332,7 +387,9 @@ docker compose up -d
 
 The app is served on **[http://localhost:8080](http://localhost:8080)**.
 
-The container restarts automatically unless explicitly stopped (`restart: unless-stopped`). To stop it:
+Data is persisted in a named Docker volume (`bb-data`) mounted at `/app/data`. The database survives container restarts and image updates.
+
+The container restarts automatically unless explicitly stopped:
 
 ```bash
 docker compose down
@@ -344,61 +401,27 @@ docker compose down
 docker compose pull && docker compose up -d
 ```
 
+### Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `3000` | Port the Express server listens on |
+| `NODE_ENV` | `production` | Set to `production` to enable static file serving |
+| `DB_PATH` | `data/basicbudget.db` | Path to the SQLite database file |
+
 ---
 
 ## Available Scripts
 
 | Script | Command | Description |
 |---|---|---|
-| Dev server | `npm run dev` | Start Vite dev server with HMR |
-| Build | `npm run build` | Type-check then bundle for production |
-| Preview | `npm run preview` | Serve the production build locally |
+| Dev server | `npm run dev` | Start Vite + Express concurrently with hot reload |
+| Build (all) | `npm run build` | Type-check and bundle frontend + compile server |
+| Build frontend | `npm run build:frontend` | Vite production build only |
+| Build server | `npm run build:server` | Compile server TypeScript only |
+| Start | `npm start` | Run the compiled production server |
+| Preview | `npm run preview` | Serve the Vite production build locally |
 | Lint | `npm run lint` | Run ESLint across the whole project |
-
----
-
-## Architecture Notes
-
-### No backend
-
-BasicBudget is a fully client-side application. There is no API, database, or authentication layer. All state is held in React Context and persisted to `localStorage`.
-
-### State management
-
-State is managed with React's built-in `useReducer` + `useContext` pattern. Two top-level contexts are provided:
-
-- **BudgetContext** — owns `incomes` and `expenses` arrays; dispatches `ADD_INCOME`, `UPDATE_INCOME`, `DELETE_INCOME`, `ADD_EXPENSE`, `UPDATE_EXPENSE`, `DELETE_EXPENSE`, and `SET_STATE`
-- **DebtContext** — owns the `debts` array; dispatches `ADD_DEBT`, `UPDATE_DEBT`, `DELETE_DEBT`, and `SET_STATE`
-
-Both contexts are consumed through typed custom hooks (`useBudget()`, `useDebt()`).
-
-### localStorage keys
-
-| Key | Content |
-|---|---|
-| `bb-budget` | Serialised `{ incomes: Income[], expenses: Expense[] }` |
-| `bb-debts` | Serialised `{ debts: Debt[] }` |
-| `bb-theme` | Active theme string: `'light'`, `'dark'`, or `'system'` |
-
-On first load, if a key is absent, the seed data from `src/constants/defaults.ts` is written. Subsequent loads read persisted state directly.
-
-### Theme system
-
-`ThemeContext` exposes the current theme and a `setTheme` function. The context applies a `dark` class to `<html>` when the effective theme is dark, enabling Tailwind's dark mode variant (`dark:…`). When set to `'system'`, the context listens to `prefers-color-scheme` media query changes in real time.
-
-### Amortization engine
-
-`calculateAmortization()` in `src/utils/calculations.ts` generates a month-by-month amortization schedule for a single debt:
-
-1. Applies monthly interest (`APR / 12`) to the opening balance
-2. Subtracts the current payment (floored at the outstanding balance in the final month)
-3. Repeats until the closing balance reaches zero or a 600-month safety cap is hit
-
-For 0% APR debts the schedule is a simple linear paydown. `buildDebtPayoffChartData()` merges all individual schedules onto a shared monthly timeline for the chart.
-
-### Household splitting
-
-Any expense flagged `isHousehold: true` is stored with `splitRatio: 0.5`. `calculateBudgetSummary()` multiplies each expense's `amount` by its `splitRatio` before summing, so the summary reflects only your share of shared costs. The full raw amount is displayed in the expense list for transparency.
 
 ---
 
