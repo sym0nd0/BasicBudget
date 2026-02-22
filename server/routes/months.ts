@@ -13,7 +13,7 @@ router.get('/', (_req: Request, res: Response) => {
 
 // POST /api/months/:ym/lock
 router.post('/:ym/lock', (req: Request, res: Response) => {
-  const { ym } = req.params;
+  const ym = req.params['ym'] as string;
   if (!/^\d{4}-\d{2}$/.test(ym)) {
     res.status(400).json({ message: 'year_month must be YYYY-MM' });
     return;

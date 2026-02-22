@@ -7,7 +7,7 @@ import type { SavingsGoal } from '../../shared/types.js';
 const router = Router();
 
 function mapGoal(row: Record<string, unknown>): SavingsGoal {
-  return row as SavingsGoal;
+  return row as unknown as SavingsGoal;
 }
 
 // GET /api/savings-goals

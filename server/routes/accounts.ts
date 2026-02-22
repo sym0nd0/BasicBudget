@@ -7,7 +7,7 @@ import type { Account } from '../../shared/types.js';
 const router = Router();
 
 function mapAccount(row: Record<string, unknown>): Account {
-  return row as Account;
+  return row as unknown as Account;
 }
 
 // GET /api/accounts
