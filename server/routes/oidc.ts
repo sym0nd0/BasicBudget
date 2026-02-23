@@ -37,6 +37,12 @@ export function resetOidcClient(): void {
   oidcClient = undefined;
 }
 
+// GET /api/auth/oidc/enabled — public endpoint to check if OIDC is configured
+router.get('/enabled', (_req: Request, res: Response) => {
+  const oidcConfig = getOidcConfig();
+  res.json({ enabled: !!oidcConfig });
+});
+
 // GET /api/auth/oidc/login
 router.get('/login', async (req: Request, res: Response) => {
   const client = await getClient();
