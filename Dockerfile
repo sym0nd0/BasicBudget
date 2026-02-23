@@ -14,6 +14,12 @@ COPY --from=build /app/dist-server ./dist-server
 COPY --from=build /app/server/schema.sql ./server/schema.sql
 COPY --from=build /app/dist ./public
 RUN mkdir -p /app/data
+
+# Run as non-root for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN chown -R appuser:appgroup /app/data
+USER appuser
+
 EXPOSE 3000
 ENV NODE_ENV=production
 ENV PORT=3000

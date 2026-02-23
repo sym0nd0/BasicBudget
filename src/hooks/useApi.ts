@@ -21,7 +21,6 @@ export function useApi<T>(url: string | null): UseApiResult<T> {
   useEffect(() => {
     if (!url) return;
 
-    // Cancel any in-flight request
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -29,8 +28,17 @@ export function useApi<T>(url: string | null): UseApiResult<T> {
     setLoading(true);
     setError(null);
 
-    fetch(`/api${url}`, { signal: controller.signal })
+    fetch(`/api${url}`, {
+      credentials: 'include',
+      signal: controller.signal,
+    })
       .then(res => {
+        if (res.status === 401) {
+          if (window.location.pathname !== '/login' && window.location.pathname !== '/login/2fa') {
+            window.location.href = '/login';
+          }
+          throw new Error('Authentication required');
+        }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json() as Promise<T>;
       })

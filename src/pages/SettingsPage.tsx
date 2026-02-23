@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useBudget } from '../context/BudgetContext';
+import { useAuth } from '../context/AuthContext';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { CsvImportForm } from '../components/forms/CsvImportForm';
-import type { Account } from '../types';
+import { api } from '../api/client';
+import type { Account, TotpSetupResponse, SessionInfo } from '../types';
 
 interface SettingsPageProps {
   onMenuClick: () => void;
@@ -14,6 +16,7 @@ interface SettingsPageProps {
 
 export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   const { accounts, addAccount, updateAccount, deleteAccount } = useBudget();
+  const { user, household, householdRole, refreshAuth } = useAuth();
 
   // Account management
   const [accountModalOpen, setAccountModalOpen] = useState(false);
@@ -28,11 +31,31 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   // Export
   const [exporting, setExporting] = useState(false);
 
+  // Security — change password
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordMsg, setPasswordMsg] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  // Security — TOTP setup
+  const [totpSetup, setTotpSetup] = useState<TotpSetupResponse | null>(null);
+  const [totpToken, setTotpToken] = useState('');
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+  const [totpMsg, setTotpMsg] = useState('');
+  const [totpLoading, setTotpLoading] = useState(false);
+
+  // Sessions
+  const [sessions, setSessions] = useState<SessionInfo[] | null>(null);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+
+  // Household invite
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteMsg, setInviteMsg] = useState('');
+
+  // ─── Account management handlers ────────────────────────────────────────────
+
   const handleAccountSave = async () => {
-    if (!accountName.trim()) {
-      setAccountError('Name is required');
-      return;
-    }
+    if (!accountName.trim()) { setAccountError('Name is required'); return; }
     try {
       if (editingAccount) {
         await updateAccount(editingAccount.id, { name: accountName.trim() });
@@ -56,17 +79,15 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
 
   const handleAccountDelete = async (id: string) => {
     if (!confirm('Delete this account? Expenses using it will be unlinked.')) return;
-    try {
-      await deleteAccount(id);
-    } catch (err) {
-      alert((err as Error).message);
-    }
+    try { await deleteAccount(id); } catch (err) { alert((err as Error).message); }
   };
+
+  // ─── Export handler ──────────────────────────────────────────────────────────
 
   const handleExport = async () => {
     setExporting(true);
     try {
-      const res = await fetch('/api/export/json');
+      const res = await api.exportJson();
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -80,6 +101,84 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
       alert((err as Error).message);
     } finally {
       setExporting(false);
+    }
+  };
+
+  // ─── Security handlers ───────────────────────────────────────────────────────
+
+  const handleChangePassword = async () => {
+    setPasswordMsg('');
+    setPasswordLoading(true);
+    try {
+      const r = await api.changePassword(currentPassword, newPassword);
+      setPasswordMsg(r.message);
+      setCurrentPassword('');
+      setNewPassword('');
+    } catch (err) {
+      setPasswordMsg((err as Error).message);
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handleTotpSetup = async () => {
+    setTotpLoading(true);
+    setTotpMsg('');
+    try {
+      const setup = await api.totpSetup();
+      setTotpSetup(setup);
+    } catch (err) {
+      setTotpMsg((err as Error).message);
+    } finally {
+      setTotpLoading(false);
+    }
+  };
+
+  const handleTotpVerifySetup = async () => {
+    setTotpLoading(true);
+    setTotpMsg('');
+    try {
+      const r = await api.totpVerifySetup(totpToken);
+      setRecoveryCodes(r.recoveryCodes);
+      setTotpSetup(null);
+      setTotpToken('');
+      await refreshAuth();
+    } catch (err) {
+      setTotpMsg((err as Error).message);
+    } finally {
+      setTotpLoading(false);
+    }
+  };
+
+  const handleLoadSessions = async () => {
+    setSessionsLoading(true);
+    try {
+      const s = await api.getSessions();
+      setSessions(s);
+    } catch (err) {
+      alert((err as Error).message);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  const handleRevokeSession = async (sid: string) => {
+    try {
+      await api.revokeSession(sid);
+      setSessions(prev => prev?.filter(s => s.sid !== sid) ?? null);
+    } catch (err) {
+      alert((err as Error).message);
+    }
+  };
+
+  const handleInvite = async () => {
+    setInviteMsg('');
+    try {
+      const r = await api.inviteMember(inviteEmail);
+      setInviteMsg(r.message);
+      setInviteEmail('');
+    } catch (err) {
+      setInviteMsg((err as Error).message);
     }
   };
 
@@ -134,7 +233,7 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
       </Card>
 
       {/* Import / Export */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
         <Card>
           <CardHeader title="Import CSV" subtitle="Import expenses or incomes from a CSV file" />
           {importSuccess && (
@@ -142,10 +241,7 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
               {importSuccess}
             </p>
           )}
-          <Button
-            className="mt-4"
-            onClick={() => { setImportSuccess(null); setImportModalOpen(true); }}
-          >
+          <Button className="mt-4" onClick={() => { setImportSuccess(null); setImportModalOpen(true); }}>
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
             </svg>
@@ -156,14 +252,9 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
         <Card>
           <CardHeader title="Export JSON" subtitle="Download all data as a JSON file" />
           <p className="text-xs text-[var(--color-text-muted)] mt-2">
-            Exports all accounts, incomes, expenses, debts, savings goals, and month locks with schema version.
+            Exports all accounts, incomes, expenses, debts, savings goals, and month locks.
           </p>
-          <Button
-            className="mt-4"
-            variant="secondary"
-            onClick={handleExport}
-            disabled={exporting}
-          >
+          <Button className="mt-4" variant="secondary" onClick={handleExport} disabled={exporting}>
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
@@ -171,6 +262,138 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
           </Button>
         </Card>
       </div>
+
+      {/* Security */}
+      <Card className="mb-5">
+        <CardHeader title="Security" subtitle="Manage your password and two-factor authentication" />
+
+        {/* Change password */}
+        <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+          <h3 className="text-sm font-semibold text-[var(--color-text)] mb-3">Change Password</h3>
+          <div className="flex flex-col gap-3 max-w-sm">
+            <Input
+              label="Current password"
+              type="password"
+              value={currentPassword}
+              onChange={e => setCurrentPassword(e.target.value)}
+              placeholder="••••••••"
+            />
+            <Input
+              label="New password"
+              type="password"
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              placeholder="Min 8 chars, upper, lower, digit"
+            />
+            {passwordMsg && (
+              <p className="text-xs text-[var(--color-text-muted)]">{passwordMsg}</p>
+            )}
+            <Button size="sm" variant="secondary" onClick={handleChangePassword} disabled={passwordLoading}>
+              {passwordLoading ? 'Saving…' : 'Change password'}
+            </Button>
+          </div>
+        </div>
+
+        {/* 2FA setup */}
+        <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+          <h3 className="text-sm font-semibold text-[var(--color-text)] mb-3">Two-Factor Authentication</h3>
+          {recoveryCodes ? (
+            <div>
+              <p className="text-sm text-[var(--color-text)] mb-2">
+                2FA is enabled. Save these recovery codes in a safe place — they will not be shown again.
+              </p>
+              <div className="grid grid-cols-2 gap-1 font-mono text-xs bg-[var(--color-surface-2)] rounded-lg p-3 mb-3">
+                {recoveryCodes.map(c => <span key={c}>{c}</span>)}
+              </div>
+              <Button size="sm" variant="secondary" onClick={() => setRecoveryCodes(null)}>Done</Button>
+            </div>
+          ) : totpSetup ? (
+            <div className="flex flex-col gap-3 max-w-sm">
+              <p className="text-sm text-[var(--color-text-muted)]">Scan this QR code with your authenticator app, then enter the code to confirm.</p>
+              <img src={totpSetup.qrDataUrl} alt="TOTP QR code" className="w-40 h-40 rounded-lg" />
+              <p className="text-xs font-mono text-[var(--color-text-muted)] break-all">{totpSetup.base32Secret}</p>
+              <Input
+                label="6-digit code"
+                value={totpToken}
+                onChange={e => setTotpToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                inputMode="numeric"
+              />
+              {totpMsg && <p className="text-xs text-[var(--color-danger)]">{totpMsg}</p>}
+              <Button size="sm" onClick={handleTotpVerifySetup} disabled={totpLoading || totpToken.length !== 6}>
+                {totpLoading ? 'Verifying…' : 'Enable 2FA'}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setTotpSetup(null)}>Cancel</Button>
+            </div>
+          ) : (
+            <div>
+              {totpMsg && <p className="text-xs text-[var(--color-danger)] mb-2">{totpMsg}</p>}
+              {!user?.email_verified && (
+                <p className="text-xs text-[var(--color-text-muted)] mb-2">You must verify your email before enabling 2FA.</p>
+              )}
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={handleTotpSetup}
+                disabled={totpLoading || !user?.email_verified}
+              >
+                {totpLoading ? 'Loading…' : 'Set up 2FA'}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Active sessions */}
+        <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+          <h3 className="text-sm font-semibold text-[var(--color-text)] mb-3">Active Sessions</h3>
+          {sessions ? (
+            <div className="flex flex-col gap-2">
+              {sessions.map(s => (
+                <div key={s.sid} className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--color-border)] last:border-0">
+                  <div>
+                    <span className="text-[var(--color-text)]">{s.user_agent ?? 'Unknown device'}</span>
+                    {s.current && <span className="ml-2 text-[var(--color-primary)]">(current)</span>}
+                    <div className="text-[var(--color-text-muted)]">{s.ip_address ?? 'Unknown IP'}</div>
+                  </div>
+                  {!s.current && (
+                    <Button size="sm" variant="ghost" onClick={() => handleRevokeSession(s.sid)}
+                      className="hover:text-[var(--color-danger)]">
+                      Revoke
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Button size="sm" variant="secondary" onClick={handleLoadSessions} disabled={sessionsLoading}>
+              {sessionsLoading ? 'Loading…' : 'View active sessions'}
+            </Button>
+          )}
+        </div>
+      </Card>
+
+      {/* Household management */}
+      <Card>
+        <CardHeader title="Household" subtitle={`Members of ${household?.name ?? 'your household'}`} />
+        {householdRole === 'owner' && (
+          <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+            <h3 className="text-sm font-semibold text-[var(--color-text)] mb-3">Invite Member</h3>
+            <div className="flex gap-2 max-w-sm">
+              <Input
+                label=""
+                value={inviteEmail}
+                onChange={e => setInviteEmail(e.target.value)}
+                placeholder="colleague@example.com"
+                type="email"
+              />
+              <Button size="sm" onClick={handleInvite} disabled={!inviteEmail}>
+                Invite
+              </Button>
+            </div>
+            {inviteMsg && <p className="text-xs text-[var(--color-text-muted)] mt-1">{inviteMsg}</p>}
+          </div>
+        )}
+      </Card>
 
       {/* Account modal */}
       <Modal

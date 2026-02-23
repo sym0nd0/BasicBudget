@@ -3,9 +3,11 @@ import type { Request, Response } from 'express';
 import db from '../db.js';
 import { randomUUID } from 'node:crypto';
 import { isMonthLocked } from './months.js';
+import { requireAuth } from '../middleware/auth.js';
 import type { Debt, AmortizationRow, DebtPayoffSummary } from '../../shared/types.js';
 
 const router = Router();
+router.use(requireAuth);
 
 function mapDebt(row: Record<string, unknown>): Debt {
   return {
@@ -16,8 +18,8 @@ function mapDebt(row: Record<string, unknown>): Debt {
 }
 
 // GET /api/debts
-router.get('/', (_req: Request, res: Response) => {
-  const rows = db.prepare('SELECT * FROM debts ORDER BY created_at').all() as Record<string, unknown>[];
+router.get('/', (req: Request, res: Response) => {
+  const rows = db.prepare('SELECT * FROM debts WHERE household_id = ? ORDER BY created_at').all(req.householdId!) as Record<string, unknown>[];
   res.json(rows.map(mapDebt));
 });
 
@@ -43,12 +45,14 @@ router.post('/', (req: Request, res: Response) => {
   try {
     db.prepare(`
       INSERT INTO debts
-        (id, name, balance_pence, interest_rate, minimum_payment_pence,
+        (id, household_id, user_id, name, balance_pence, interest_rate, minimum_payment_pence,
          overpayment_pence, compounding_frequency, is_recurring, recurrence_type,
          posting_day, start_date, end_date, is_household, split_ratio, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
+      req.householdId!,
+      req.userId!,
       body.name.trim(),
       body.balance_pence,
       body.interest_rate ?? 0,
@@ -74,17 +78,21 @@ router.post('/', (req: Request, res: Response) => {
 
 // PUT /api/debts/:id
 router.put('/:id', (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params['id'] as string;
   const body = req.body as Partial<Debt>;
-  const existing = db.prepare('SELECT * FROM debts WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+  const existing = db.prepare('SELECT * FROM debts WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!existing) {
     res.status(404).json({ message: 'Debt not found' });
+    return;
+  }
+  if (req.householdRole === 'member' && existing.user_id !== req.userId) {
+    res.status(403).json({ message: 'You can only edit your own entries' });
     return;
   }
   const startDate = (body.start_date ?? existing.start_date) as string | null;
   if (startDate) {
     const ym = startDate.slice(0, 7);
-    if (isMonthLocked(ym)) {
+    if (isMonthLocked(ym, req.householdId!)) {
       res.status(409).json({ message: `Month ${ym} is locked` });
       return;
     }
@@ -132,16 +140,20 @@ router.put('/:id', (req: Request, res: Response) => {
 
 // DELETE /api/debts/:id
 router.delete('/:id', (req: Request, res: Response) => {
-  const { id } = req.params;
-  const existing = db.prepare('SELECT * FROM debts WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+  const id = req.params['id'] as string;
+  const existing = db.prepare('SELECT * FROM debts WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!existing) {
     res.status(404).json({ message: 'Debt not found' });
+    return;
+  }
+  if (req.householdRole === 'member' && existing.user_id !== req.userId) {
+    res.status(403).json({ message: 'You can only delete your own entries' });
     return;
   }
   const startDate = existing.start_date as string | null;
   if (startDate) {
     const ym = startDate.slice(0, 7);
-    if (isMonthLocked(ym)) {
+    if (isMonthLocked(ym, req.householdId!)) {
       res.status(409).json({ message: `Month ${ym} is locked` });
       return;
     }
@@ -157,8 +169,8 @@ router.delete('/:id', (req: Request, res: Response) => {
 
 // GET /api/debts/:id/amortisation
 router.get('/:id/amortisation', (req: Request, res: Response) => {
-  const { id } = req.params;
-  const row = db.prepare('SELECT * FROM debts WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+  const id = req.params['id'] as string;
+  const row = db.prepare('SELECT * FROM debts WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!row) {
     res.status(404).json({ message: 'Debt not found' });
     return;
@@ -182,15 +194,13 @@ export function computeAmortization(debt: Debt): DebtPayoffSummary {
 
   const now = new Date();
   const startYear = now.getFullYear();
-  const startMonth = now.getMonth(); // 0-indexed
+  const startMonth = now.getMonth();
 
   while (currentBalance > 0 && month < MAX_MONTHS) {
     month++;
     const openingBalance = currentBalance;
-    // Interest in pence (rounded to nearest penny)
     const interestCharge = Math.round(openingBalance * monthlyRate);
     const balanceWithInterest = openingBalance + interestCharge;
-    // Final payment may be less
     const payment = Math.min(paymentPence, balanceWithInterest);
     const principalPaid = payment - interestCharge;
     const closingBalance = Math.max(0, balanceWithInterest - payment);

@@ -13,6 +13,17 @@ export type {
   BudgetSummary,
   HouseholdOverview,
   Theme,
+  // Auth types
+  User,
+  Household,
+  HouseholdMember,
+  HouseholdRole,
+  SystemRole,
+  SessionInfo,
+  LoginRequest,
+  RegisterRequest,
+  TotpSetupResponse,
+  AuthStatusResponse,
 } from '../../shared/types';
 
 export { EXPENSE_CATEGORIES } from '../../shared/types';
