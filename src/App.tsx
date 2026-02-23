@@ -21,6 +21,9 @@ import { TotpPage } from './pages/TotpPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
+import { AdminUsersPage } from './pages/AdminUsersPage';
+import { AdminSettingsPage } from './pages/AdminSettingsPage';
+import { AdminAuditLogPage } from './pages/AdminAuditLogPage';
 
 function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -41,6 +44,9 @@ function AppShell() {
                   <Route path="/savings" element={<SavingsPage onMenuClick={() => setSidebarOpen(true)} />} />
                   <Route path="/household" element={<HouseholdPage onMenuClick={() => setSidebarOpen(true)} />} />
                   <Route path="/settings" element={<SettingsPage onMenuClick={() => setSidebarOpen(true)} />} />
+                  <Route path="/admin/users" element={<AdminUsersPage onMenuClick={() => setSidebarOpen(true)} />} />
+                  <Route path="/admin/settings" element={<AdminSettingsPage onMenuClick={() => setSidebarOpen(true)} />} />
+                  <Route path="/admin/audit-log" element={<AdminAuditLogPage onMenuClick={() => setSidebarOpen(true)} />} />
                 </Routes>
               </div>
             </div>

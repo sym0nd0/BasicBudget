@@ -12,6 +12,11 @@ import type {
   AuthStatusResponse,
   TotpSetupResponse,
   SessionInfo,
+  AdminUser,
+  SmtpConfig,
+  OidcConfig,
+  AuditLogEntry,
+  PaginatedResponse,
 } from '../types';
 
 // ─── CSRF token management ─────────────────────────────────────────────────────
@@ -205,4 +210,50 @@ export const api = {
 
   // ── Export ──
   exportJson: () => fetch('/api/export/json', { credentials: 'include' }),
+
+  // ── Admin — Users ──
+  getAdminUsers: (page = 1, limit = 20) =>
+    request<PaginatedResponse<AdminUser>>(`/admin/users?page=${page}&limit=${limit}`),
+  getAdminUser: (id: string) =>
+    request<AdminUser>(`/admin/users/${id}`),
+  updateUserRole: (id: string, role: 'admin' | 'user') =>
+    request<{ message: string }>(`/admin/users/${id}/role`, {
+      method: 'PUT',
+      body: JSON.stringify({ role }),
+    }),
+  lockUser: (id: string, locked: boolean) =>
+    request<{ message: string }>(`/admin/users/${id}/lock`, {
+      method: 'PUT',
+      body: JSON.stringify({ locked }),
+    }),
+  deleteUser: (id: string) =>
+    request<void>(`/admin/users/${id}`, { method: 'DELETE' }),
+
+  // ── Admin — SMTP ──
+  getSmtpConfig: () =>
+    request<SmtpConfig>('/admin/settings/smtp'),
+  updateSmtpConfig: (cfg: SmtpConfig) =>
+    request<{ message: string }>('/admin/settings/smtp', {
+      method: 'PUT',
+      body: JSON.stringify(cfg),
+    }),
+  testSmtp: () =>
+    request<{ message: string }>('/admin/settings/smtp/test', { method: 'POST' }),
+
+  // ── Admin — OIDC ──
+  getOidcConfig: () =>
+    request<OidcConfig>('/admin/settings/oidc'),
+  updateOidcConfig: (cfg: OidcConfig) =>
+    request<{ message: string }>('/admin/settings/oidc', {
+      method: 'PUT',
+      body: JSON.stringify(cfg),
+    }),
+
+  // ── Admin — Audit log ──
+  getAuditLog: (page = 1, limit = 50, filters?: { user_id?: string; action?: string }) => {
+    const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (filters?.user_id) qs.set('user_id', filters.user_id);
+    if (filters?.action) qs.set('action', filters.action);
+    return request<PaginatedResponse<AuditLogEntry>>(`/admin/audit-log?${qs.toString()}`);
+  },
 };

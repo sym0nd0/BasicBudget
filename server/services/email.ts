@@ -1,19 +1,22 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config.js';
+import { getSmtpConfig } from './settings.js';
 
 function createTransport() {
-  if (!config.SMTP_HOST) return null;
+  const smtp = getSmtpConfig();
+  if (!smtp) return null;
   return nodemailer.createTransport({
-    host: config.SMTP_HOST,
-    port: config.SMTP_PORT ? parseInt(config.SMTP_PORT, 10) : 587,
-    secure: config.SMTP_SECURE === 'true',
-    auth: config.SMTP_USER && config.SMTP_PASS
-      ? { user: config.SMTP_USER, pass: config.SMTP_PASS }
+    host: smtp.host,
+    port: smtp.port,
+    secure: smtp.secure,
+    auth: smtp.user && smtp.pass
+      ? { user: smtp.user, pass: smtp.pass }
       : undefined,
   });
 }
 
 async function sendMail(to: string, subject: string, html: string): Promise<void> {
+  const smtp = getSmtpConfig();
   const transport = createTransport();
   if (!transport) {
     // Log email to console when SMTP is not configured
@@ -21,7 +24,7 @@ async function sendMail(to: string, subject: string, html: string): Promise<void
     return;
   }
   await transport.sendMail({
-    from: config.SMTP_FROM ?? 'BasicBudget <no-reply@basicbudget.app>',
+    from: smtp?.from ?? 'BasicBudget <no-reply@basicbudget.app>',
     to,
     subject,
     html,
@@ -93,5 +96,13 @@ export async function sendEmailChangeVerification(to: string, token: string): Pr
     'Confirm your new email address for BasicBudget',
     `<p>Click the link below to confirm your new email address. This link expires in 30 minutes.</p>
      <p><a href="${url}">${url}</a></p>`,
+  );
+}
+
+export async function sendTestEmail(to: string): Promise<void> {
+  await sendMail(
+    to,
+    'BasicBudget SMTP test',
+    `<p>This is a test email from BasicBudget. Your SMTP configuration is working correctly.</p>`,
   );
 }

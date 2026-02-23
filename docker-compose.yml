@@ -14,17 +14,9 @@ services:
       # Application URLs
       - APP_URL=${APP_URL:-http://localhost:8080}
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:8080}
-      # SMTP (optional)
-      - SMTP_HOST=${SMTP_HOST:-}
-      - SMTP_PORT=${SMTP_PORT:-587}
-      - SMTP_SECURE=${SMTP_SECURE:-false}
-      - SMTP_USER=${SMTP_USER:-}
-      - SMTP_PASS=${SMTP_PASS:-}
-      - SMTP_FROM=${SMTP_FROM:-}
-      # OIDC (optional)
-      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-}
-      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-}
-      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
+      # SMTP and OIDC are now configured via the Admin Panel (/admin/settings).
+      # To migrate an existing deployment, set these vars once and they will be
+      # seeded into the database automatically on first startup, then remove them.
     restart: unless-stopped
 
 volumes:

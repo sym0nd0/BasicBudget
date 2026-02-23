@@ -24,6 +24,7 @@ import monthsRouter from './routes/months.js';
 import summaryRouter from './routes/summary.js';
 import importRouter from './routes/import.js';
 import exportRouter from './routes/export.js';
+import adminRouter from './routes/admin.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -80,6 +81,7 @@ app.use('/api/months', monthsRouter);
 app.use('/api/summary', summaryRouter);
 app.use('/api/import', importRouter);
 app.use('/api/export', exportRouter);
+app.use('/api/admin', adminRouter);
 
 // 10. Static + SPA fallback (production)
 if (config.NODE_ENV === 'production') {

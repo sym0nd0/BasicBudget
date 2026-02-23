@@ -72,12 +72,30 @@ All GET list endpoints filter through `filterActiveInMonth(items, yearMonth)` be
 
 All monetary values are stored and passed as **integer pence** (`amount_pence`, `balance_pence`, etc.). `src/utils/formatters.ts` handles pence → display conversion. Never store or compute with floating-point pounds.
 
+### Settings service (`server/services/settings.ts`)
+
+SMTP and OIDC configuration is stored in the `system_settings` SQLite table (key/value pairs) and accessed through this service. It maintains an in-memory cache invalidated on writes.
+
+- `getSetting(key)` / `setSetting(key, value)` — thin wrappers over the table.
+- `getSmtpConfig()` / `getOidcConfig()` — return typed config structs, or `null` if not configured.
+- `getSmtpConfigMasked()` / `getOidcConfigMasked()` — same but with secrets replaced by `••••••••` for API responses.
+- `invalidateCache()` — call after bulk settings changes (e.g. OIDC update) so the next read re-fetches from DB.
+
+On startup, `server/db.ts` runs a one-time migration: if any `SMTP_HOST` / `OIDC_ISSUER_URL` etc. env vars are set and the `system_settings` table is empty for those keys, they are seeded automatically (backwards-compatible upgrade path). SMTP/OIDC env vars are **no longer in `config.ts`** — they are not validated on startup.
+
+### Admin panel
+
+- All routes under `/api/admin` require `requireAuth` + `requireAdmin` middleware.
+- The first user to register is automatically assigned `system_role = 'admin'`.
+- Admin nav items in the sidebar are conditional on `user?.system_role === 'admin'`.
+- OIDC client cache (`server/routes/oidc.ts`) uses `undefined` as "not yet built" sentinel and `null` as "built but not configured". Call `resetOidcClient()` after updating OIDC settings to force a rebuild.
+
 ### CI / Docker
 
 - GitHub Actions workflow: `.github/workflows/docker-publish.yml` — triggers on `master` push and `v*` tags.
 - `latest` Docker tag is published only on `master` pushes (`enable={{is_default_branch}}`). Tag pushes get a versioned tag only.
 - The GitHub Release must be separately edited from Draft → Published + Latest (`gh release edit vX.Y.Z --draft=false --latest`).
-- Schema migrations for existing databases are applied inline in `server/db.ts` with bare `try { ALTER TABLE … } catch {}` blocks.
+- Schema migrations for existing databases are applied inline in `server/db.ts` with bare `try { ALTER TABLE … } catch {}` blocks. New tables (e.g. `system_settings`) are added via `schema.sql` using `CREATE TABLE IF NOT EXISTS`.
 
 ---
 

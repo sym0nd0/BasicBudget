@@ -24,6 +24,12 @@ export type {
   RegisterRequest,
   TotpSetupResponse,
   AuthStatusResponse,
+  // Admin types
+  AdminUser,
+  SmtpConfig,
+  OidcConfig,
+  AuditLogEntry,
+  PaginatedResponse,
 } from '../../shared/types';
 
 export { EXPENSE_CATEGORIES } from '../../shared/types';

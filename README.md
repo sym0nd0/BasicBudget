@@ -40,6 +40,14 @@ A multi-user personal budgeting and debt management application built with React
 - Invite members by email; role management by owner
 - All financial data is isolated per household
 
+### Admin Panel
+- The **first registered user** is automatically promoted to system admin
+- Admin-only panel accessible from the sidebar under the "Admin" section
+- **User management**: list all users, promote/demote roles, lock/unlock accounts, delete users
+- **System settings**: configure SMTP (email) and OIDC (SSO) at runtime via the UI — no restart required
+- **Audit log**: paginated, filterable log of all authentication and admin actions
+- All admin actions are written to the audit log
+
 ### Dashboard
 - At-a-glance budget summary showing total income, total expenses, total debt payments, and disposable income
 - Expense donut chart broken down by category
@@ -176,16 +184,8 @@ Compiles the frontend to `dist/` and the server to `dist-server/`. Run with `npm
 | `CORS_ORIGIN` | No | Allowed CORS origin (defaults to `APP_URL`) |
 | `DB_PATH` | No | Path to SQLite file (default `data/basicbudget.db`) |
 | `PORT` | No | Server port (default `3001`; Docker exposes `8080`) |
-| `SMTP_HOST` | No | SMTP server hostname |
-| `SMTP_PORT` | No | SMTP port (default `587`) |
-| `SMTP_USER` | No | SMTP username |
-| `SMTP_PASS` | No | SMTP password |
-| `SMTP_FROM` | No | From address for outgoing email |
-| `OIDC_ISSUER_URL` | No | OIDC provider discovery URL |
-| `OIDC_CLIENT_ID` | No | OIDC client ID |
-| `OIDC_CLIENT_SECRET` | No | OIDC client secret |
 
-If SMTP variables are absent, emails are printed to stdout (useful for development). If OIDC variables are absent, the OIDC login button is hidden.
+> **SMTP and OIDC** are configured through the **Admin Panel** (`/admin/settings`) at runtime — no environment variables or restarts needed. If `SMTP_HOST` / `OIDC_ISSUER_URL` are present in the environment on first startup, they are automatically migrated into the database for backwards compatibility with existing deployments.
 
 ---
 
@@ -208,11 +208,9 @@ All secrets are passed via environment variables. Create a `.env` file alongside
 SESSION_SECRET=<random 32+ char string>
 TOTP_ENCRYPTION_KEY=<64 hex chars>
 APP_URL=https://budget.example.com
-SMTP_HOST=smtp.example.com
-SMTP_USER=user@example.com
-SMTP_PASS=secret
-SMTP_FROM=BasicBudget <noreply@example.com>
 ```
+
+SMTP and OIDC are configured through the Admin Panel after first login.
 
 Data is persisted in a named Docker volume (`bb-data`) mounted at `/app/data`.
 
@@ -418,6 +416,22 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 | POST | `/api/import` | JSON bulk import |
 | GET | `/api/export` | JSON export |
 
+### Admin (requires `system_role = 'admin'`)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/admin/users` | List all users (paginated) |
+| GET | `/api/admin/users/:id` | Get single user detail |
+| PUT | `/api/admin/users/:id/role` | Change system role (`admin`/`user`) |
+| PUT | `/api/admin/users/:id/lock` | Lock or unlock account |
+| DELETE | `/api/admin/users/:id` | Delete user and all associated data |
+| GET | `/api/admin/settings/smtp` | Get SMTP config (password masked) |
+| PUT | `/api/admin/settings/smtp` | Update SMTP settings |
+| POST | `/api/admin/settings/smtp/test` | Send test email to current admin |
+| GET | `/api/admin/settings/oidc` | Get OIDC config (secret masked) |
+| PUT | `/api/admin/settings/oidc` | Update OIDC settings |
+| GET | `/api/admin/audit-log` | Paginated audit log with filters |
+
 ---
 
 ## Folder Structure
@@ -445,6 +459,7 @@ BasicBudget/
 │   │   ├── rate-limit.ts              # 6 rate limiters
 │   │   └── validate.ts                # Zod body validation middleware
 │   ├── routes/
+│   │   ├── admin.ts                   # Admin API (users, settings, audit log)
 │   │   ├── auth.ts                    # Register, login, logout, password reset
 │   │   ├── totp.ts                    # TOTP setup/verify/disable/reset
 │   │   ├── oidc.ts                    # OIDC login/callback/link/unlink
@@ -462,7 +477,8 @@ BasicBudget/
 │   │   └── summary.ts
 │   ├── services/
 │   │   ├── audit.ts                   # Audit log writer
-│   │   └── email.ts                   # SMTP transport + email templates
+│   │   ├── email.ts                   # SMTP transport + email templates
+│   │   └── settings.ts                # DB-backed settings service (SMTP, OIDC)
 │   └── utils/
 │       ├── csv-parser.ts
 │       └── recurring.ts               # filterActiveInMonth engine
@@ -487,6 +503,9 @@ BasicBudget/
 │   │   └── ThemeContext.tsx
 │   ├── hooks/useApi.ts
 │   ├── pages/
+│   │   ├── AdminAuditLogPage.tsx      # Admin: audit log viewer
+│   │   ├── AdminSettingsPage.tsx      # Admin: SMTP + OIDC configuration
+│   │   ├── AdminUsersPage.tsx         # Admin: user management
 │   │   ├── LoginPage.tsx
 │   │   ├── RegisterPage.tsx
 │   │   ├── TotpPage.tsx               # 2FA verification
