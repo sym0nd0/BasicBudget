@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Income } from '../../types';
 import { Input, Select } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { poundsToPence, penceToPoundsStr } from '../../utils/formatters';
+import { api } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 
 interface IncomeFormProps {
   initial?: Income;
@@ -10,7 +12,15 @@ interface IncomeFormProps {
   onCancel: () => void;
 }
 
+interface HouseholdMember {
+  user_id: string;
+  display_name: string;
+  email: string;
+}
+
 export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
+  const { user } = useAuth();
+  const [members, setMembers] = useState<HouseholdMember[]>([]);
   const [name, setName] = useState(initial?.name ?? '');
   const [amount, setAmount] = useState(initial ? penceToPoundsStr(initial.amount_pence) : '');
   const [postingDay, setPostingDay] = useState(String(initial?.posting_day ?? '28'));
@@ -24,6 +34,17 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
   const [endDate, setEndDate] = useState(initial?.end_date ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    api.getHouseholdDetails().then((data) => {
+      const raw = (data as { members?: HouseholdMember[] }).members ?? [];
+      const currentUser = raw.find(m => m.user_id === user?.id);
+      const others = raw
+        .filter(m => m.user_id !== user?.id)
+        .sort((a, b) => (a.display_name || a.email).localeCompare(b.display_name || b.email));
+      setMembers(currentUser ? [currentUser, ...others] : others);
+    }).catch(() => {});
+  }, [user?.id]);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -87,11 +108,14 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <Input
+        <Select
           label="Contributor (optional)"
           value={contributorName}
           onChange={e => setContributorName(e.target.value)}
-          placeholder="e.g. Partner"
+          options={[
+            { value: '', label: '— None —' },
+            ...members.map(m => ({ value: m.display_name || m.email, label: m.display_name || m.email })),
+          ]}
         />
         <Select
           label="Gross or Net"
