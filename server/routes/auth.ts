@@ -77,11 +77,15 @@ router.post('/register', async (req: Request, res: Response) => {
   const hash = await hashPassword(password);
   const name = display_name?.trim() || email.split('@')[0];
 
+  // First registered user becomes admin
+  const countRow = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
+  const isFirstUser = countRow.count === 0;
+
   db.transaction(() => {
     db.prepare(`
-      INSERT INTO users (id, email, display_name, password_hash)
-      VALUES (?, ?, ?, ?)
-    `).run(userId, email.toLowerCase().trim(), name, hash);
+      INSERT INTO users (id, email, display_name, password_hash, system_role)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(userId, email.toLowerCase().trim(), name, hash, isFirstUser ? 'admin' : 'user');
 
     db.prepare('INSERT INTO households (id, name) VALUES (?, ?)').run(householdId, `${name}'s Household`);
     db.prepare(`

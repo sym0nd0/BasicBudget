@@ -233,3 +233,50 @@ export interface HouseholdOverview {
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
 export type Theme = 'light' | 'dark' | 'system';
+
+// ─── Admin types ──────────────────────────────────────────────────────────────
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  display_name: string;
+  system_role: SystemRole;
+  email_verified: boolean;
+  locked_until: string | null;
+  created_at: string;
+  has_totp: boolean;
+  has_oidc: boolean;
+  household_count: number;
+}
+
+export interface SmtpConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  pass: string;
+  from: string;
+}
+
+export interface OidcConfig {
+  issuer_url: string;
+  client_id: string;
+  client_secret: string;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  user_id: string | null;
+  user_email?: string;
+  action: string;
+  detail: string | null;
+  ip_address: string | null;
+  created_at: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+}

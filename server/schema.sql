@@ -187,6 +187,14 @@ CREATE TABLE IF NOT EXISTS month_locks (
     PRIMARY KEY (year_month, household_id)
 );
 
+-- ─── System settings ──────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS system_settings (
+    key         TEXT PRIMARY KEY,
+    value       TEXT NOT NULL,
+    updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- ─── Indexes ──────────────────────────────────────────────────────────────────
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -210,3 +218,4 @@ CREATE INDEX IF NOT EXISTS idx_debts_household ON debts(household_id);
 CREATE INDEX IF NOT EXISTS idx_savings_goals_household ON savings_goals(household_id);
 CREATE INDEX IF NOT EXISTS idx_month_locks_household ON month_locks(household_id);
 CREATE INDEX IF NOT EXISTS idx_incomes_contributor ON incomes(contributor_name);
+CREATE INDEX IF NOT EXISTS idx_system_settings_key ON system_settings(key);

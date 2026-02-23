@@ -19,18 +19,6 @@ const envSchema = z.object({
   APP_URL: z.string().url().default('http://localhost:5173'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
 
-  // SMTP (optional)
-  SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.string().optional(),
-  SMTP_SECURE: z.string().optional(),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASS: z.string().optional(),
-  SMTP_FROM: z.string().optional(),
-
-  // OIDC (optional)
-  OIDC_ISSUER_URL: z.string().url().optional(),
-  OIDC_CLIENT_ID: z.string().optional(),
-  OIDC_CLIENT_SECRET: z.string().optional(),
 });
 
 // In test environment, provide safe defaults for required fields

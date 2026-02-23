@@ -26,4 +26,36 @@ const schema = fs.readFileSync(
 );
 db.exec(schema);
 
+// Migrate SMTP/OIDC settings from environment variables to DB (one-time, for existing deployments)
+(function migrateEnvToSettings() {
+  const migrations = [
+    { key: 'smtp.host',          env: process.env.SMTP_HOST },
+    { key: 'smtp.port',          env: process.env.SMTP_PORT },
+    { key: 'smtp.secure',        env: process.env.SMTP_SECURE },
+    { key: 'smtp.user',          env: process.env.SMTP_USER },
+    { key: 'smtp.pass',          env: process.env.SMTP_PASS },
+    { key: 'smtp.from',          env: process.env.SMTP_FROM },
+    { key: 'oidc.issuer_url',    env: process.env.OIDC_ISSUER_URL },
+    { key: 'oidc.client_id',     env: process.env.OIDC_CLIENT_ID },
+    { key: 'oidc.client_secret', env: process.env.OIDC_CLIENT_SECRET },
+  ];
+
+  const hasAny = migrations.some(({ env }) => !!env);
+  if (!hasAny) return;
+
+  const existing = db.prepare(`SELECT COUNT(*) as count FROM system_settings WHERE key LIKE 'smtp.%' OR key LIKE 'oidc.%'`).get() as { count: number };
+  if (existing.count > 0) return; // Already migrated
+
+  const upsert = db.prepare(`
+    INSERT INTO system_settings (key, value, updated_at)
+    VALUES (?, ?, datetime('now'))
+    ON CONFLICT(key) DO NOTHING
+  `);
+
+  for (const { key, env } of migrations) {
+    if (env) upsert.run(key, env);
+  }
+  console.log('[DB] Migrated SMTP/OIDC settings from environment variables to database.');
+})();
+
 export default db;

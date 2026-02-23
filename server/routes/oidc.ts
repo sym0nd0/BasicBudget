@@ -5,18 +5,21 @@ import db from '../db.js';
 import { config } from '../config.js';
 import { requireAuth } from '../middleware/auth.js';
 import { auditLog } from '../services/audit.js';
+import { getOidcConfig } from '../services/settings.js';
 
 const router = Router();
 
-// Lazy OIDC client — only created if env vars are set
-let oidcClient: Awaited<ReturnType<typeof buildOidcClient>> | null = null;
+// Lazy OIDC client — only created when settings are configured
+// undefined = not yet built; null = built but not configured / failed
+let oidcClient: Awaited<ReturnType<typeof buildOidcClient>> | null | undefined = undefined;
 
 async function buildOidcClient() {
-  if (!config.OIDC_ISSUER_URL || !config.OIDC_CLIENT_ID) return null;
+  const oidcConfig = getOidcConfig();
+  if (!oidcConfig) return null;
   try {
     const { discovery } = await import('openid-client');
-    const issuerUrl = new URL(config.OIDC_ISSUER_URL);
-    const clientConfig = await discovery(issuerUrl, config.OIDC_CLIENT_ID, config.OIDC_CLIENT_SECRET);
+    const issuerUrl = new URL(oidcConfig.issuer_url);
+    const clientConfig = await discovery(issuerUrl, oidcConfig.client_id, oidcConfig.client_secret || undefined);
     return clientConfig;
   } catch {
     return null;
@@ -28,6 +31,10 @@ async function getClient() {
     oidcClient = await buildOidcClient();
   }
   return oidcClient;
+}
+
+export function resetOidcClient(): void {
+  oidcClient = undefined;
 }
 
 // GET /api/auth/oidc/login
@@ -86,7 +93,7 @@ router.get('/callback', async (req: Request, res: Response) => {
 
     const sub = claims.sub;
     const email = claims.email as string | undefined;
-    const issuer = claims.iss ?? config.OIDC_ISSUER_URL ?? '';
+    const issuer = claims.iss ?? getOidcConfig()?.issuer_url ?? '';
 
     // Clear OIDC session state
     delete req.session.oidcState;
