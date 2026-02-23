@@ -7,7 +7,8 @@ RUN npm run build:frontend && npm run build:server
 
 FROM node:20-alpine
 WORKDIR /app
-RUN apk add --no-cache python3 make g++
+# su-exec is kept at runtime (needed by entrypoint); build tools are removed after npm ci
+RUN apk add --no-cache python3 make g++ su-exec
 COPY --from=build /app/package*.json ./
 RUN npm ci --omit=dev && apk del python3 make g++
 COPY --from=build /app/dist-server ./dist-server
@@ -15,12 +16,13 @@ COPY --from=build /app/server/schema.sql ./server/schema.sql
 COPY --from=build /app/dist ./public
 RUN mkdir -p /app/data
 
-# Run as non-root for security
+# Non-root user — entrypoint fixes volume ownership then drops privileges via su-exec
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-RUN chown -R appuser:appgroup /app/data
-USER appuser
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 3000
 ENV NODE_ENV=production
 ENV PORT=3000
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["node", "dist-server/server/index.js"]
