@@ -90,6 +90,19 @@ On startup, `server/db.ts` runs a one-time migration: if any `SMTP_HOST` / `OIDC
 - Admin nav items in the sidebar are conditional on `user?.system_role === 'admin'`.
 - OIDC client cache (`server/routes/oidc.ts`) uses `undefined` as "not yet built" sentinel and `null` as "built but not configured". Call `resetOidcClient()` after updating OIDC settings to force a rebuild.
 
+### Semantic Versioning
+
+Follow [Semantic Versioning 2.0.0](https://semver.org/) strictly:
+
+- **MAJOR** (v1.0.0 → v2.0.0): incompatible API changes, breaking changes to data format, or major architectural shifts
+- **MINOR** (v2.0.0 → v2.1.0): backward-compatible new features or non-breaking enhancements (e.g. new admin panel, new endpoints)
+- **PATCH** (v2.1.0 → v2.1.1): backward-compatible bug fixes, security patches, or documentation updates
+
+Examples:
+- `v2.0.0`: Multi-user auth, TOTP 2FA, OIDC SSO — major new features (breaking change from v1.x single-user)
+- `v2.1.0`: Admin panel, user management, runtime SMTP/OIDC config — new features, backward-compatible
+- `v2.1.1`: Fix SMTP test email failure — bug fix
+
 ### CI / Docker
 
 - GitHub Actions workflow: `.github/workflows/docker-publish.yml` — triggers on `master` push and `v*` tags.
