@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
@@ -11,6 +11,14 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [oidcEnabled, setOidcEnabled] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/auth/oidc/enabled')
+      .then(res => res.json() as Promise<{ enabled: boolean }>)
+      .then(data => setOidcEnabled(data.enabled))
+      .catch(() => setOidcEnabled(false));
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -72,6 +80,23 @@ export function LoginPage() {
           <Button type="submit" disabled={loading} className="w-full justify-center">
             {loading ? 'Signing in…' : 'Sign in'}
           </Button>
+          {oidcEnabled && (
+            <>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[var(--color-border)]" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="px-2 bg-[var(--color-surface)] text-[var(--color-text-muted)]">or</span>
+                </div>
+              </div>
+              <a href="/api/auth/oidc/login" className="w-full">
+                <Button variant="secondary" className="w-full justify-center">
+                  Sign in with SSO
+                </Button>
+              </a>
+            </>
+          )}
         </form>
 
         <p className="text-center mt-4 text-sm text-[var(--color-text-muted)]">

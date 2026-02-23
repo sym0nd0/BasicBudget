@@ -90,6 +90,19 @@ On startup, `server/db.ts` runs a one-time migration: if any `SMTP_HOST` / `OIDC
 - Admin nav items in the sidebar are conditional on `user?.system_role === 'admin'`.
 - OIDC client cache (`server/routes/oidc.ts`) uses `undefined` as "not yet built" sentinel and `null` as "built but not configured". Call `resetOidcClient()` after updating OIDC settings to force a rebuild.
 
+### Semantic Versioning
+
+Follow [Semantic Versioning 2.0.0](https://semver.org/) strictly:
+
+- **MAJOR** (v1.0.0 → v2.0.0): incompatible API changes, breaking changes to data format, or major architectural shifts
+- **MINOR** (v2.0.0 → v2.1.0): backward-compatible new features or non-breaking enhancements (e.g. new admin panel, new endpoints)
+- **PATCH** (v2.1.0 → v2.1.1): backward-compatible bug fixes, security patches, or documentation updates
+
+Examples:
+- `v2.0.0`: Multi-user auth, TOTP 2FA, OIDC SSO — major new features (breaking change from v1.x single-user)
+- `v2.1.0`: Admin panel, user management, runtime SMTP/OIDC config — new features, backward-compatible
+- `v2.1.1`: Fix SMTP test email failure — bug fix
+
 ### CI / Docker
 
 - GitHub Actions workflow: `.github/workflows/docker-publish.yml` — triggers on `master` push and `v*` tags.
@@ -100,6 +113,12 @@ On startup, `server/db.ts` runs a one-time migration: if any `SMTP_HOST` / `OIDC
 ---
 
 ## Workflow Rules (mandatory — no exceptions)
+
+### ⚠️ CRITICAL: All work MUST be on a named branch — ALWAYS
+
+**NO DIRECT COMMITS TO MASTER. EVER.**
+
+Every single change — no matter how small (typo fix, one-liner, docs) — must be developed on a descriptive named branch, pushed to origin, and merged via PR. This is non-negotiable and applies without exception.
 
 ### 1. README must be reviewed before every commit
 
@@ -114,11 +133,11 @@ If any of the above are affected, update `README.md` first. Only proceed with th
 
 **A commit must never be created or pushed if README.md requires an update but has not been updated.**
 
-### 2. All work must be on a named branch
+### 2. All work must be on a named branch (NO EXCEPTIONS)
 
-Direct commits to `master` (or any other protected branch) are prohibited.
+Direct commits to `master` (or any other protected branch) are strictly prohibited without exception.
 
-Every change — feature, fix, refactor, docs update, configuration change — must be developed on a new branch. Branch names must clearly describe the purpose:
+Every change — feature, fix, refactor, docs update, configuration change, typo fix — must be developed on a new branch. Branch names must clearly describe the purpose:
 
 | Type | Pattern | Example |
 |---|---|---|
@@ -137,12 +156,15 @@ Every branch pushed to origin must have a corresponding Pull Request opened imme
 
 ### 4. Pre-push checklist
 
-Before running `git push`, confirm all of the following:
+**STOP: Before running `git push`, confirm ALL of the following. Do not push if any item fails.**
 
+- [ ] **YOU ARE NOT ON `master`** — verify `git branch` shows a named branch, NOT `* master`
 - [ ] `README.md` is up to date (or explicitly confirmed as unchanged)
 - [ ] The current branch has a descriptive name following the naming convention above
 - [ ] A PR will be created immediately after pushing
 - [ ] TypeScript checks pass: `tsc -b --noEmit` and `tsc --project tsconfig.server.json --noEmit`
 - [ ] Tests pass: `npm test`
 
-If any item is not met, do not push. Fix the issue first.
+**If ANY item is not met, do not push. Fix the issue first.**
+
+**ESPECIALLY: If you are on master, STOP. Create a new branch immediately. Do not push to master.**
