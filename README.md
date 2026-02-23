@@ -1,6 +1,6 @@
 # BasicBudget
 
-A personal budgeting and debt management application built with React 19, TypeScript, and a Node.js/SQLite backend. BasicBudget helps you track monthly income and expenses across multiple contributors, manage debts with full amortization schedules, track savings goals, and visualise your financial picture through interactive charts — all self-hosted and data-sovereign.
+A multi-user personal budgeting and debt management application built with React 19, TypeScript, and a Node.js/SQLite backend. BasicBudget helps households track monthly income and expenses, manage debts with full amortisation schedules, track savings goals, and visualise their financial picture through interactive charts — with per-household data isolation, optional TOTP 2FA, and OIDC single sign-on.
 
 ---
 
@@ -8,18 +8,37 @@ A personal budgeting and debt management application built with React 19, TypeSc
 
 1. [Features](#features)
 2. [Tech Stack](#tech-stack)
-3. [Architecture](#architecture)
-4. [Data Models](#data-models)
-5. [API Routes](#api-routes)
-6. [Folder Structure](#folder-structure)
-7. [Getting Started](#getting-started)
-8. [Docker Deployment](#docker-deployment)
-9. [Available Scripts](#available-scripts)
-10. [License](#license)
+3. [Getting Started](#getting-started)
+4. [Environment Variables](#environment-variables)
+5. [Docker Deployment](#docker-deployment)
+6. [Available Scripts](#available-scripts)
+7. [Architecture](#architecture)
+8. [Data Models](#data-models)
+9. [API Routes](#api-routes)
+10. [Folder Structure](#folder-structure)
+11. [License](#license)
 
 ---
 
 ## Features
+
+### Authentication & Security
+- Email + password registration and login (Argon2id, 64 MB memory cost)
+- Email verification flow on registration
+- Account lockout after 5 failed login attempts (30-minute lock)
+- TOTP 2FA via authenticator app (QR code setup, 10 single-use recovery codes)
+- Generic OpenID Connect (OIDC) single sign-on — any OIDC-compatible provider
+- Session management with device fingerprinting and new-device email alerts
+- Active session list with per-session revocation
+- Password reset and email change flows via time-limited tokens
+- CSRF protection (double-submit cookie), Helmet security headers, rate limiting
+
+### Households & RBAC
+- Every user belongs to a household (created automatically on registration)
+- **Owner** role: read and write all household entries
+- **Member** role: read all entries, write only own entries
+- Invite members by email; role management by owner
+- All financial data is isolated per household
 
 ### Dashboard
 - At-a-glance budget summary showing total income, total expenses, total debt payments, and disposable income
@@ -28,48 +47,38 @@ A personal budgeting and debt management application built with React 19, TypeSc
 - Debt payoff timeline showing cumulative balance across all debts month by month
 
 ### Income Management
-- Add, edit, and delete income sources with contributor names (multi-person support)
-- Record the day of month income is received
-- Track income as gross or net
+- Add, edit, and delete income sources with contributor names
+- Record the day of month income is received; track as gross or net
 - Set recurrence type: monthly, weekly, or yearly
 - Optional start and end dates for time-bounded income entries
 
 ### Expense Management
 - Add, edit, and delete monthly expenses
-- Categorise each expense: Housing, Transport, Food & Groceries, Utilities, Subscriptions, Personal, Health, Entertainment, Debt Payments, Savings, Other
-- Tag expenses as `fixed` or `variable`
+- 11 expense categories; fixed or variable tag
 - Assign expenses to a named payment account
 - Mark expenses as household expenses with a configurable split ratio so only your share counts in budget summaries
 - Set recurrence type and optional start/end dates
 
 ### Debt Management
 - Add, edit, and delete debts
-- Record balance, interest rate, minimum payment, and overpayment amount
-- Full per-debt amortization table: month-by-month opening balance, interest charge, principal paid, and closing balance
-- Payoff summary per debt: months to payoff, total interest paid, total paid, projected payoff date
-- Debt payoff chart plotting all balances over a shared monthly timeline
-- Household splitting support on debt payments
+- Record balance, APR, minimum payment, and overpayment amount
+- Full per-debt amortisation table: month-by-month opening balance, interest charge, principal paid, and closing balance
+- Payoff summary: months remaining, total interest paid, projected payoff date
+- Debt payoff chart plotting all balances on a shared monthly timeline
 
 ### Savings Goals
 - Create and track savings goals with target amounts and monthly contributions
-- Optional target dates
-- Progress tracking against current saved amount
-
-### Household Overview
-- Combined view of total household income and expenses
-- Breakdown of shared vs sole expenses
-- Debt-to-income ratio
+- Optional target dates; progress bars
 
 ### Settings & Accounts
-- Manage named payment accounts
-- Month locking — lock closed months to prevent accidental edits
+- Manage named payment accounts; month locking to prevent edits on closed months
+- Change password, change email, 2FA setup/disable
 - CSV import and export for bulk data management
 
-### Additional Features
-- **Duplicate detection** — warns before saving an entry identical to an existing one across all fields
+### Additional
+- **Duplicate detection** — warns before saving an entry identical to an existing one
 - **Theme toggle** — light, dark, and system-preference modes
 - **Filter bar** — filter entries by contributor, account, category, or recurrence type
-- **Persistent storage** — all data lives in a local SQLite database; no cloud account required
 
 ---
 
@@ -83,16 +92,160 @@ A personal budgeting and debt management application built with React 19, TypeSc
 | Styling | Tailwind CSS | v4 |
 | Charts | Recharts | 3.x |
 | Routing | React Router | 7.x |
-| Backend | Express | 4.x |
-| Database | SQLite (better-sqlite3) | 12.x |
-| Runtime | Node.js | 20 |
+| Backend | Express | 5.x |
+| Database | SQLite (better-sqlite3) | — |
+| Auth | Argon2id, express-session | — |
+| 2FA | otpauth (TOTP), AES-256-GCM | — |
+| OIDC | openid-client v6 (PKCE) | — |
+| Email | Nodemailer | — |
+| Validation | Zod | — |
+| Security | Helmet, cors, csrf-csrf, express-rate-limit | — |
+| Tests | Vitest + Supertest | — |
 | Container | Docker (multi-stage) | — |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20 or later
+- npm 10 or later
+
+### Install dependencies
+
+```bash
+npm install
+```
+
+### Configure environment
+
+Copy `.env.example` to `.env` and fill in the required values:
+
+```bash
+cp .env.example .env
+```
+
+Minimum required for local development:
+
+```env
+SESSION_SECRET=change_me_at_least_32_characters_long
+TOTP_ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
+APP_URL=http://localhost:5173
+```
+
+See [Environment Variables](#environment-variables) for the full reference.
+
+### Run in development mode
+
+```bash
+npm run dev
+```
+
+This starts two processes concurrently:
+- **Vite** dev server at `http://localhost:5173` (React frontend with HMR)
+- **Express** API server at `http://localhost:3001` (watched by `tsx`)
+
+The Vite config proxies all `/api/*` requests to the Express server automatically. The SQLite database is created automatically at `data/basicbudget.db` on first run.
+
+### Run tests
+
+```bash
+npm test
+```
+
+Uses an in-memory SQLite database. No `.env` required.
+
+### Build for production
+
+```bash
+npm run build
+```
+
+Compiles the frontend to `dist/` and the server to `dist-server/`. Run with `npm start`.
+
+---
+
+## Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `SESSION_SECRET` | Yes | Min 32-char random string for session signing |
+| `TOTP_ENCRYPTION_KEY` | Yes | 64 hex chars (32 bytes) for AES-256-GCM TOTP secret encryption |
+| `APP_URL` | Yes | Public URL of the app, e.g. `https://budget.example.com` |
+| `CORS_ORIGIN` | No | Allowed CORS origin (defaults to `APP_URL`) |
+| `DB_PATH` | No | Path to SQLite file (default `data/basicbudget.db`) |
+| `PORT` | No | Server port (default `3001`; Docker exposes `8080`) |
+| `SMTP_HOST` | No | SMTP server hostname |
+| `SMTP_PORT` | No | SMTP port (default `587`) |
+| `SMTP_USER` | No | SMTP username |
+| `SMTP_PASS` | No | SMTP password |
+| `SMTP_FROM` | No | From address for outgoing email |
+| `OIDC_ISSUER_URL` | No | OIDC provider discovery URL |
+| `OIDC_CLIENT_ID` | No | OIDC client ID |
+| `OIDC_CLIENT_SECRET` | No | OIDC client secret |
+
+If SMTP variables are absent, emails are printed to stdout (useful for development). If OIDC variables are absent, the OIDC login button is hidden.
+
+---
+
+## Docker Deployment
+
+The app is published as a pre-built image to GitHub Container Registry (GHCR) on every push to `master`. The multi-stage Dockerfile produces a minimal Node.js Alpine image; Express serves everything. A non-root user (`appuser`) is used inside the container.
+
+### Pull and run with Docker Compose
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+The app is served on **http://localhost:8080**.
+
+All secrets are passed via environment variables. Create a `.env` file alongside `docker-compose.yml` (Docker Compose picks it up automatically):
+
+```env
+SESSION_SECRET=<random 32+ char string>
+TOTP_ENCRYPTION_KEY=<64 hex chars>
+APP_URL=https://budget.example.com
+SMTP_HOST=smtp.example.com
+SMTP_USER=user@example.com
+SMTP_PASS=secret
+SMTP_FROM=BasicBudget <noreply@example.com>
+```
+
+Data is persisted in a named Docker volume (`bb-data`) mounted at `/app/data`.
+
+### Update to the latest image
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+### Stop
+
+```bash
+docker compose down
+```
+
+---
+
+## Available Scripts
+
+| Script | Command | Description |
+|---|---|---|
+| Dev server | `npm run dev` | Start Vite + Express concurrently with hot reload |
+| Build (all) | `npm run build` | Type-check and bundle frontend + compile server |
+| Start | `npm start` | Run the compiled production server |
+| Test | `npm test` | Run all tests (Vitest + Supertest, in-memory DB) |
+| Test watch | `npm run test:watch` | Run tests in watch mode |
+| Lint | `npm run lint` | Run ESLint across src/, server/, shared/ |
 
 ---
 
 ## Architecture
 
-BasicBudget is a full-stack application with a clear separation between frontend and backend:
+### Request flow
 
 ```
 Browser (React SPA)
@@ -104,25 +257,45 @@ Express API Server  (port 3001 dev / 3000 prod)
 SQLite Database  (data/basicbudget.db)
 ```
 
-### Frontend
+In development, Vite serves the frontend on port 5173 and proxies `/api/*` to Express on port 3001. In production, Express serves the pre-built static bundle and handles all API requests from the same origin.
 
-A React 19 SPA built with Vite. In development, Vite serves the frontend on port 5173 and proxies `/api/*` requests to the Express server on port 3001. In production, the Express server serves the pre-built static bundle and handles all API requests from the same origin.
+### TypeScript split
 
-State is managed with React's built-in `useReducer` + `useContext` pattern. API calls go through typed hooks in `src/hooks/useApi.ts`.
+Three separate compilation units share `shared/types.ts`:
 
-### Backend
+| Config | Scope |
+|---|---|
+| `tsconfig.app.json` | `src/` — bundler mode (Vite owns emit) |
+| `tsconfig.node.json` | `vite.config.ts` |
+| `tsconfig.server.json` | `server/`, `shared/` — emits to `dist-server/`, NodeNext |
 
-An Express server written in TypeScript, transpiled with `tsx` in development and compiled to `dist-server/` for production. Routes are organized by resource under `server/routes/`. The database layer uses `better-sqlite3` for synchronous, zero-latency SQLite access.
+Server imports use `.js` extensions on `.ts` source files (NodeNext requirement).
 
-The database file is stored at `data/basicbudget.db` by default, configurable via the `DB_PATH` environment variable. WAL journal mode and foreign key enforcement are enabled on startup.
+### Session & CSRF
+
+Sessions are stored in SQLite via a custom `SqliteSessionStore`. Cookies: `bb.sid` (session), `bb.csrf` (CSRF double-submit). CSRF tokens are fetched from `GET /api/auth/csrf-token` and sent as the `X-CSRF-Token` header on all mutating requests.
+
+### TOTP encryption
+
+TOTP secrets are encrypted with AES-256-GCM before being stored in the database. The encryption key is `TOTP_ENCRYPTION_KEY` (32 bytes, hex-encoded). Each secret gets a unique IV and auth tag stored alongside it.
+
+### Money
+
+All monetary values are stored and passed as **integer pence** (e.g. £3,000.89 → `300089`) to avoid floating-point precision issues. `src/utils/formatters.ts` handles conversion to display format.
+
+### Recurring engine
+
+`filterActiveInMonth(items, yearMonth)` determines whether each income/expense is active in a given month based on `recurrence_type`, `start_date`, `end_date`, and `posting_day`. Weekly items have their `amount_pence` multiplied by the number of occurrences in the month.
+
+### Data isolation
+
+Every data table has a `household_id` foreign key. All queries are scoped to `req.householdId`, set by the `requireAuth` middleware. Cross-household access is structurally impossible at the query level.
 
 ---
 
 ## Data Models
 
 All types are defined in `shared/types.ts` and re-exported from `src/types/index.ts`.
-
-Monetary values are stored as **integer pence** throughout (e.g. £3,000.89 → `300089`) to avoid floating-point precision issues.
 
 ### Income
 
@@ -199,43 +372,51 @@ interface SavingsGoal {
 }
 ```
 
-### AmortizationRow
-
-```typescript
-interface AmortizationRow {
-  month: number;
-  date: string;
-  opening_balance_pence: number;
-  interest_charge_pence: number;
-  payment_pence: number;
-  principal_paid_pence: number;
-  closing_balance_pence: number;
-}
-```
-
 ---
 
 ## API Routes
 
-All routes are prefixed with `/api`.
+All routes are prefixed with `/api`. All data routes require a valid session (`requireAuth`).
+
+### Auth
 
 | Method | Path | Description |
 |---|---|---|
-| GET/POST | `/api/incomes` | List all / create income |
+| GET | `/api/auth/csrf-token` | Get CSRF token (public) |
+| GET | `/api/auth/status` | Get current session / user info |
+| POST | `/api/auth/register` | Create account + household |
+| POST | `/api/auth/login` | Log in |
+| POST | `/api/auth/logout` | Destroy session |
+| POST | `/api/auth/forgot-password` | Request password reset email |
+| POST | `/api/auth/reset-password` | Consume token, set new password |
+| POST | `/api/auth/verify-email` | Consume email verification token |
+| POST | `/api/auth/totp/setup` | Begin TOTP setup (returns QR) |
+| POST | `/api/auth/totp/verify-setup` | Confirm TOTP setup, get recovery codes |
+| POST | `/api/auth/totp/verify` | Submit OTP during login |
+| POST | `/api/auth/totp/verify-recovery` | Submit recovery code during login |
+| POST | `/api/auth/totp/disable` | Disable 2FA |
+| GET | `/api/auth/sessions` | List active sessions |
+| DELETE | `/api/auth/sessions/:sid` | Revoke a session |
+
+### Data
+
+| Method | Path | Description |
+|---|---|---|
+| GET/POST | `/api/incomes` | List / create income |
 | GET/PUT/DELETE | `/api/incomes/:id` | Get / update / delete income |
-| GET/POST | `/api/expenses` | List all / create expense |
+| GET/POST | `/api/expenses` | List / create expense |
 | GET/PUT/DELETE | `/api/expenses/:id` | Get / update / delete expense |
-| GET/POST | `/api/debts` | List all / create debt |
+| GET/POST | `/api/debts` | List / create debt |
 | GET/PUT/DELETE | `/api/debts/:id` | Get / update / delete debt |
-| GET/POST | `/api/savings-goals` | List all / create savings goal |
+| GET/POST | `/api/savings-goals` | List / create savings goal |
 | GET/PUT/DELETE | `/api/savings-goals/:id` | Get / update / delete savings goal |
-| GET/POST | `/api/accounts` | List all / create account |
+| GET/POST | `/api/accounts` | List / create account |
 | GET/PUT/DELETE | `/api/accounts/:id` | Get / update / delete account |
 | GET | `/api/summary` | Budget summary with category breakdown |
-| GET | `/api/household` | Household overview |
+| GET | `/api/household` | Household details + members |
 | GET/POST | `/api/months` | List locked months / lock a month |
-| POST | `/api/import` | CSV bulk import |
-| GET | `/api/export` | CSV export |
+| POST | `/api/import` | JSON bulk import |
+| GET | `/api/export` | JSON export |
 
 ---
 
@@ -244,62 +425,74 @@ All routes are prefixed with `/api`.
 ```
 BasicBudget/
 ├── data/                              # SQLite database (gitignored)
-│   └── basicbudget.db
 │
 ├── server/                            # Express backend
-│   ├── index.ts                       # App entry point, route mounting
+│   ├── index.ts                       # App entry point, middleware chain
 │   ├── db.ts                          # Database connection + schema init
 │   ├── schema.sql                     # DDL — tables and indexes
-│   └── routes/
-│       ├── accounts.ts
-│       ├── debts.ts
-│       ├── expenses.ts
-│       ├── export.ts
-│       ├── household.ts
-│       ├── import.ts
-│       ├── incomes.ts
-│       ├── months.ts
-│       ├── savings-goals.ts
-│       └── summary.ts
+│   ├── config.ts                      # Zod-validated env config
+│   ├── auth/                          # Auth helpers
+│   │   ├── device.ts                  # Device fingerprinting
+│   │   ├── password.ts                # Argon2id hash/verify
+│   │   ├── recovery-codes.ts          # Recovery code generate/hash
+│   │   ├── session-store.ts           # SQLite session store
+│   │   ├── session.ts                 # express-session config
+│   │   ├── tokens.ts                  # Time-limited token create/consume
+│   │   └── totp.ts                    # TOTP generate/encrypt/verify
+│   ├── middleware/
+│   │   ├── auth.ts                    # requireAuth / requireOwner / requireAdmin
+│   │   ├── csrf.ts                    # csrf-csrf double-submit cookie
+│   │   ├── rate-limit.ts              # 6 rate limiters
+│   │   └── validate.ts                # Zod body validation middleware
+│   ├── routes/
+│   │   ├── auth.ts                    # Register, login, logout, password reset
+│   │   ├── totp.ts                    # TOTP setup/verify/disable/reset
+│   │   ├── oidc.ts                    # OIDC login/callback/link/unlink
+│   │   ├── profile.ts                 # Profile management, change password/email
+│   │   ├── sessions.ts                # List/revoke sessions
+│   │   ├── accounts.ts
+│   │   ├── debts.ts
+│   │   ├── expenses.ts
+│   │   ├── export.ts
+│   │   ├── household.ts
+│   │   ├── import.ts
+│   │   ├── incomes.ts
+│   │   ├── months.ts
+│   │   ├── savings-goals.ts
+│   │   └── summary.ts
+│   ├── services/
+│   │   ├── audit.ts                   # Audit log writer
+│   │   └── email.ts                   # SMTP transport + email templates
+│   └── utils/
+│       ├── csv-parser.ts
+│       └── recurring.ts               # filterActiveInMonth engine
 │
 ├── shared/
-│   └── types.ts                       # Shared TypeScript interfaces (frontend + backend)
+│   └── types.ts                       # Shared TypeScript interfaces
 │
 ├── src/                               # React frontend
-│   ├── App.tsx                        # Root component, router setup
-│   ├── main.tsx                       # React entry point
-│   ├── index.css                      # Global styles / Tailwind imports
-│   │
-│   ├── api/                           # Typed API client functions
-│   │
+│   ├── App.tsx                        # Root component, router + AuthProvider
+│   ├── api/client.ts                  # Typed API client (CSRF, credentials)
 │   ├── components/
+│   │   ├── auth/ProtectedRoute.tsx    # Route guard (redirects to /login)
 │   │   ├── charts/
-│   │   │   ├── DebtPayoffLine.tsx
-│   │   │   ├── ExpenseDonut.tsx
-│   │   │   └── IncomeVsExpensesBar.tsx
 │   │   ├── forms/
-│   │   │   ├── CsvImportForm.tsx
-│   │   │   ├── DebtForm.tsx
-│   │   │   ├── ExpenseForm.tsx
-│   │   │   ├── IncomeForm.tsx
-│   │   │   └── SavingsGoalForm.tsx
 │   │   └── layout/
-│   │       ├── FilterBar.tsx
-│   │       ├── Header.tsx
-│   │       ├── PageShell.tsx
-│   │       └── Sidebar.tsx
-│   │
 │   ├── context/
+│   │   ├── AuthContext.tsx            # User/household/role state
 │   │   ├── BudgetContext.tsx
 │   │   ├── DebtContext.tsx
 │   │   ├── FilterContext.tsx
 │   │   ├── SavingsContext.tsx
 │   │   └── ThemeContext.tsx
-│   │
-│   ├── hooks/
-│   │   └── useApi.ts                  # Typed fetch wrappers
-│   │
+│   ├── hooks/useApi.ts
 │   ├── pages/
+│   │   ├── LoginPage.tsx
+│   │   ├── RegisterPage.tsx
+│   │   ├── TotpPage.tsx               # 2FA verification
+│   │   ├── ForgotPasswordPage.tsx
+│   │   ├── ResetPasswordPage.tsx
+│   │   ├── VerifyEmailPage.tsx
 │   │   ├── Dashboard.tsx
 │   │   ├── DebtPage.tsx
 │   │   ├── ExpensesPage.tsx
@@ -307,124 +500,28 @@ BasicBudget/
 │   │   ├── IncomePage.tsx
 │   │   ├── SavingsPage.tsx
 │   │   └── SettingsPage.tsx
-│   │
-│   ├── types/
-│   │   └── index.ts                   # Re-exports from shared/types.ts
-│   │
+│   ├── types/index.ts
 │   └── utils/
-│       ├── duplicates.ts              # Full-field duplicate detection
-│       └── formatters.ts             # Currency, percent, date formatters
+│       ├── duplicates.ts
+│       └── formatters.ts
 │
-├── Dockerfile                         # Multi-stage build (Node build → Node serve)
+├── tests/
+│   ├── setup.ts
+│   ├── helpers.ts
+│   ├── unit/                          # password, totp, recovery-codes, tokens, middleware
+│   ├── integration/                   # auth-flow, totp-flow, household, csrf
+│   └── security/                      # injection, idor, rate-limit, session
+│
+├── .env.example
+├── Dockerfile
 ├── docker-compose.yml
-├── index.html
-├── package.json
-├── tsconfig.json
-├── tsconfig.app.json
-├── tsconfig.node.json
-└── tsconfig.server.json
+├── vitest.config.ts
+├── tsconfig.server.json
+└── package.json
 ```
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) 20 or later
-- npm 10 or later (bundled with Node.js)
-
-### Install dependencies
-
-```bash
-npm install
-```
-
-### Run in development mode
-
-```bash
-npm run dev
-```
-
-This starts two processes concurrently:
-- **Vite** dev server at `http://localhost:5173` (React frontend with HMR)
-- **Express** API server at `http://localhost:3001` (watched by `tsx`)
-
-The Vite config proxies all `/api/*` requests to the Express server automatically. Open `http://localhost:5173` in your browser.
-
-The SQLite database is created automatically at `data/basicbudget.db` on first run.
-
-### Build for production
-
-```bash
-npm run build
-```
-
-This runs both:
-- `build:frontend` — TypeScript check + Vite bundle → `dist/`
-- `build:server` — TypeScript compile → `dist-server/`
-
-### Run the production build locally
-
-```bash
-npm start
-```
-
-Starts the Express server on port 3000. The server serves the built frontend from `public/` and handles all API routes on the same origin.
-
----
-
-## Docker Deployment
-
-The app is published as a pre-built image to GitHub Container Registry (GHCR) on every push to `master`. The multi-stage Dockerfile produces a minimal Node.js Alpine image — no Nginx required; Express serves everything.
-
-### Pull and run with Docker Compose
-
-```bash
-docker compose pull
-docker compose up -d
-```
-
-The app is served on **[http://localhost:8080](http://localhost:8080)**.
-
-Data is persisted in a named Docker volume (`bb-data`) mounted at `/app/data`. The database survives container restarts and image updates.
-
-The container restarts automatically unless explicitly stopped:
-
-```bash
-docker compose down
-```
-
-### Update to the latest image
-
-```bash
-docker compose pull && docker compose up -d
-```
-
-### Environment variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `PORT` | `3000` | Port the Express server listens on |
-| `NODE_ENV` | `production` | Set to `production` to enable static file serving |
-| `DB_PATH` | `data/basicbudget.db` | Path to the SQLite database file |
-
----
-
-## Available Scripts
-
-| Script | Command | Description |
-|---|---|---|
-| Dev server | `npm run dev` | Start Vite + Express concurrently with hot reload |
-| Build (all) | `npm run build` | Type-check and bundle frontend + compile server |
-| Build frontend | `npm run build:frontend` | Vite production build only |
-| Build server | `npm run build:server` | Compile server TypeScript only |
-| Start | `npm start` | Run the compiled production server |
-| Preview | `npm run preview` | Serve the Vite production build locally |
-| Lint | `npm run lint` | Run ESLint across the whole project |
 
 ---
 
 ## License
 
-This project is provided as-is for personal use. No license is currently applied. If you fork or distribute this project, please add an appropriate open-source license.
+This project is provided as-is for personal use. No licence is currently applied. If you fork or distribute this project, please add an appropriate open-source licence.
