@@ -72,6 +72,19 @@ export function LoginPage() {
           <Button type="submit" disabled={loading} className="w-full justify-center">
             {loading ? 'Signing in…' : 'Sign in'}
           </Button>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[var(--color-border)]" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-2 bg-[var(--color-surface)] text-[var(--color-text-muted)]">or</span>
+            </div>
+          </div>
+          <a href="/api/auth/oidc/login" className="w-full">
+            <Button variant="secondary" className="w-full justify-center">
+              Sign in with SSO
+            </Button>
+          </a>
         </form>
 
         <p className="text-center mt-4 text-sm text-[var(--color-text-muted)]">
