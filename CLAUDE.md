@@ -78,3 +78,53 @@ All monetary values are stored and passed as **integer pence** (`amount_pence`, 
 - `latest` Docker tag is published only on `master` pushes (`enable={{is_default_branch}}`). Tag pushes get a versioned tag only.
 - The GitHub Release must be separately edited from Draft → Published + Latest (`gh release edit vX.Y.Z --draft=false --latest`).
 - Schema migrations for existing databases are applied inline in `server/db.ts` with bare `try { ALTER TABLE … } catch {}` blocks.
+
+---
+
+## Workflow Rules (mandatory — no exceptions)
+
+### 1. README must be reviewed before every commit
+
+Before creating any commit, review `README.md` and determine whether the change affects:
+- Features, pages, or user-facing behaviour
+- API routes or data models
+- Configuration, environment variables, or infrastructure
+- Architecture, folder structure, or tech stack
+- Scripts, commands, or Docker behaviour
+
+If any of the above are affected, update `README.md` first. Only proceed with the commit after the README is up to date or explicitly confirmed as not requiring changes.
+
+**A commit must never be created or pushed if README.md requires an update but has not been updated.**
+
+### 2. All work must be on a named branch
+
+Direct commits to `master` (or any other protected branch) are prohibited.
+
+Every change — feature, fix, refactor, docs update, configuration change — must be developed on a new branch. Branch names must clearly describe the purpose:
+
+| Type | Pattern | Example |
+|---|---|---|
+| Feature | `feature/<short-description>` | `feature/totp-setup-flow` |
+| Bug fix | `fix/<short-description>` | `fix/login-session-timeout` |
+| Docs | `docs/<short-description>` | `docs/readme-auth-section` |
+| Chore / config | `chore/<short-description>` | `chore/update-dependencies` |
+| Refactor | `refactor/<short-description>` | `refactor/auth-middleware` |
+
+### 3. A PR must be created for every branch
+
+Every branch pushed to origin must have a corresponding Pull Request opened immediately after the push. The PR must include:
+- A clear title describing the purpose of the change
+- A summary of what changed and why
+- A note on README.md: either what was updated, or an explicit statement that no README update was required and why
+
+### 4. Pre-push checklist
+
+Before running `git push`, confirm all of the following:
+
+- [ ] `README.md` is up to date (or explicitly confirmed as unchanged)
+- [ ] The current branch has a descriptive name following the naming convention above
+- [ ] A PR will be created immediately after pushing
+- [ ] TypeScript checks pass: `tsc -b --noEmit` and `tsc --project tsconfig.server.json --noEmit`
+- [ ] Tests pass: `npm test`
+
+If any item is not met, do not push. Fix the issue first.
