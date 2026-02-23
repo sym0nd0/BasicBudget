@@ -26,8 +26,4 @@ const schema = fs.readFileSync(
 );
 db.exec(schema);
 
-// Migrations for existing databases
-try { db.exec('ALTER TABLE debts ADD COLUMN is_household INTEGER DEFAULT 0'); } catch {}
-try { db.exec('ALTER TABLE debts ADD COLUMN split_ratio REAL DEFAULT 1.0'); } catch {}
-
 export default db;

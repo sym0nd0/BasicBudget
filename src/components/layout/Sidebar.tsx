@@ -1,5 +1,6 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
   {
@@ -74,6 +75,14 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
   return (
     <>
       {/* Mobile overlay */}
@@ -128,9 +137,28 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </ul>
         </nav>
 
-        {/* Footer */}
-        <div className="p-3 border-t border-white/10">
-          <ThemeToggle />
+        {/* Footer — user info + logout */}
+        <div className="p-3 border-t border-white/10 flex flex-col gap-2">
+          {user && (
+            <div className="px-3 py-2">
+              <p className="text-sm font-medium text-white truncate">{user.display_name || user.email}</p>
+              <p className="text-xs text-white/50 truncate">{user.email}</p>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <ThemeToggle />
+            </div>
+            <button
+              onClick={handleLogout}
+              title="Sign out"
+              className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
+          </div>
         </div>
       </aside>
     </>

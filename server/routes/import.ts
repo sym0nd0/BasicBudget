@@ -5,8 +5,10 @@ import { randomUUID } from 'node:crypto';
 import db from '../db.js';
 import { parseCsv, parseUkDate, poundsStrToPence } from '../utils/csv-parser.js';
 import { EXPENSE_CATEGORIES } from '../../shared/types.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
+router.use(requireAuth);
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 type ExpenseCategoryType = (typeof EXPENSE_CATEGORIES)[number];
@@ -15,19 +17,6 @@ function isValidCategory(c: string): c is ExpenseCategoryType {
   return (EXPENSE_CATEGORIES as readonly string[]).includes(c);
 }
 
-/**
- * POST /api/import/csv
- * Expects multipart/form-data with a `file` field (CSV) and a `type` field ('expenses' | 'incomes').
- *
- * Expected CSV columns for expenses:
- *   name, amount, day, category, type, account, household, notes, start_date, end_date
- *
- * Expected CSV columns for incomes:
- *   name, amount, day, contributor, gross_or_net, notes, start_date, end_date
- *
- * Dates should be DD/MM/YYYY (UK format) or YYYY-MM-DD (ISO).
- * Amounts should be in pounds (e.g. 12.50).
- */
 router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
   if (!req.file) {
     res.status(400).json({ message: 'No file uploaded' });
@@ -48,7 +37,7 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
   let skipped = 0;
 
   if (importType === 'expenses') {
-    const existingExpenses = db.prepare('SELECT name, amount_pence, type FROM expenses').all() as
+    const existingExpenses = db.prepare('SELECT name, amount_pence, type FROM expenses WHERE household_id = ?').all(req.householdId!) as
       { name: string; amount_pence: number; type: string }[];
 
     for (let i = 0; i < rows.length; i++) {
@@ -77,12 +66,12 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
         const id = randomUUID();
         db.prepare(`
           INSERT INTO expenses
-            (id, name, amount_pence, posting_day, type, category,
+            (id, household_id, user_id, name, amount_pence, posting_day, type, category,
              is_household, split_ratio, is_recurring, recurrence_type,
              start_date, end_date, notes)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'monthly', ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'monthly', ?, ?, ?)
         `).run(
-          id, name, amount, isNaN(day) ? 1 : day,
+          id, req.householdId!, req.userId!, name, amount, isNaN(day) ? 1 : day,
           type, category, isHousehold ? 1 : 0, splitRatio,
           startDate, endDate, row.notes ?? null,
         );
@@ -93,8 +82,7 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
       }
     }
   } else {
-    // incomes
-    const existingIncomes = db.prepare('SELECT name, amount_pence FROM incomes').all() as
+    const existingIncomes = db.prepare('SELECT name, amount_pence FROM incomes WHERE household_id = ?').all(req.householdId!) as
       { name: string; amount_pence: number }[];
 
     for (let i = 0; i < rows.length; i++) {
@@ -116,11 +104,11 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
         const id = randomUUID();
         db.prepare(`
           INSERT INTO incomes
-            (id, name, amount_pence, posting_day, contributor_name,
+            (id, household_id, user_id, name, amount_pence, posting_day, contributor_name,
              gross_or_net, is_recurring, recurrence_type, start_date, end_date, notes)
-          VALUES (?, ?, ?, ?, ?, ?, 1, 'monthly', ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'monthly', ?, ?, ?)
         `).run(
-          id, name, amount, isNaN(day) ? 28 : day,
+          id, req.householdId!, req.userId!, name, amount, isNaN(day) ? 28 : day,
           row.contributor?.trim() ?? null,
           row.gross_or_net?.trim() === 'gross' ? 'gross' : 'net',
           startDate, endDate, row.notes ?? null,

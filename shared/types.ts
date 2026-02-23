@@ -1,7 +1,73 @@
+// ─── Auth types ────────────────────────────────────────────────────────────────
+
+export type SystemRole = 'admin' | 'user';
+export type HouseholdRole = 'owner' | 'member';
+
+export interface User {
+  id: string;
+  email: string;
+  display_name: string;
+  email_verified: boolean;
+  system_role: SystemRole;
+  created_at?: string;
+}
+
+export interface Household {
+  id: string;
+  name: string;
+  created_at?: string;
+}
+
+export interface HouseholdMember {
+  household_id: string;
+  user_id: string;
+  role: HouseholdRole;
+  joined_at?: string;
+  // joined from users table
+  email?: string;
+  display_name?: string;
+}
+
+export interface SessionInfo {
+  sid: string;
+  user_agent?: string | null;
+  ip_address?: string | null;
+  created_at?: string;
+  expired: number;
+  current?: boolean;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  display_name?: string;
+}
+
+export interface TotpSetupResponse {
+  otpauthUrl: string;
+  qrDataUrl: string;
+  base32Secret: string;
+}
+
+export interface AuthStatusResponse {
+  authenticated: boolean;
+  totpPending: boolean;
+  user?: User;
+  household?: Household;
+  householdRole?: HouseholdRole;
+}
+
 // ─── Account ───────────────────────────────────────────────────────────────────
 
 export interface Account {
   id: string;
+  household_id?: string;
+  user_id?: string;
   name: string;
   sort_order: number;
   created_at?: string;
@@ -11,6 +77,8 @@ export interface Account {
 
 export interface Income {
   id: string;
+  household_id?: string;
+  user_id?: string;
   name: string;
   amount_pence: number;
   posting_day: number;
@@ -45,6 +113,8 @@ export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number];
 
 export interface Expense {
   id: string;
+  household_id?: string;
+  user_id?: string;
   name: string;
   amount_pence: number;
   posting_day: number;
@@ -66,6 +136,8 @@ export interface Expense {
 
 export interface Debt {
   id: string;
+  household_id?: string;
+  user_id?: string;
   name: string;
   balance_pence: number;
   interest_rate: number;
@@ -88,6 +160,8 @@ export interface Debt {
 
 export interface SavingsGoal {
   id: string;
+  household_id?: string;
+  user_id?: string;
   name: string;
   target_amount_pence: number;
   current_amount_pence: number;
@@ -102,6 +176,7 @@ export interface SavingsGoal {
 
 export interface MonthLock {
   year_month: string;
+  household_id?: string;
   locked_at: string;
 }
 

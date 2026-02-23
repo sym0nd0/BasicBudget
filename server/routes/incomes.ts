@@ -4,9 +4,11 @@ import db from '../db.js';
 import { randomUUID } from 'node:crypto';
 import { filterActiveInMonth, currentYearMonth, type RecurringItem } from '../utils/recurring.js';
 import { isMonthLocked } from './months.js';
+import { requireAuth } from '../middleware/auth.js';
 import type { Income } from '../../shared/types.js';
 
 const router = Router();
+router.use(requireAuth);
 
 function mapIncome(row: Record<string, unknown>): Income {
   return {
@@ -18,7 +20,7 @@ function mapIncome(row: Record<string, unknown>): Income {
 // GET /api/incomes?month=YYYY-MM
 router.get('/', (req: Request, res: Response) => {
   const month = (req.query.month as string) ?? currentYearMonth();
-  const all = db.prepare('SELECT * FROM incomes ORDER BY created_at').all() as RecurringItem[];
+  const all = db.prepare('SELECT * FROM incomes WHERE household_id = ? ORDER BY created_at').all(req.householdId!) as RecurringItem[];
   const active = filterActiveInMonth(all, month);
   res.json(active.map(r => mapIncome(r as Record<string, unknown>)));
 });
@@ -48,11 +50,13 @@ router.post('/', (req: Request, res: Response) => {
   try {
     db.prepare(`
       INSERT INTO incomes
-        (id, name, amount_pence, posting_day, contributor_name, gross_or_net,
+        (id, household_id, user_id, name, amount_pence, posting_day, contributor_name, gross_or_net,
          is_recurring, recurrence_type, start_date, end_date, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
+      req.householdId!,
+      req.userId!,
       body.name.trim(),
       body.amount_pence,
       body.posting_day ?? 28,
@@ -74,18 +78,22 @@ router.post('/', (req: Request, res: Response) => {
 
 // PUT /api/incomes/:id
 router.put('/:id', (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = req.params['id'] as string;
   const body = req.body as Partial<Income>;
-  const existing = db.prepare('SELECT * FROM incomes WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+  const existing = db.prepare('SELECT * FROM incomes WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!existing) {
     res.status(404).json({ message: 'Income not found' });
     return;
   }
-  // Lock check: check start_date month
+  // Ownership check for members
+  if (req.householdRole === 'member' && existing.user_id !== req.userId) {
+    res.status(403).json({ message: 'You can only edit your own entries' });
+    return;
+  }
   const startDate = (body.start_date ?? existing.start_date) as string | null;
   if (startDate) {
     const ym = startDate.slice(0, 7);
-    if (isMonthLocked(ym)) {
+    if (isMonthLocked(ym, req.householdId!)) {
       res.status(409).json({ message: `Month ${ym} is locked` });
       return;
     }
@@ -129,16 +137,20 @@ router.put('/:id', (req: Request, res: Response) => {
 
 // DELETE /api/incomes/:id
 router.delete('/:id', (req: Request, res: Response) => {
-  const { id } = req.params;
-  const existing = db.prepare('SELECT * FROM incomes WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+  const id = req.params['id'] as string;
+  const existing = db.prepare('SELECT * FROM incomes WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!existing) {
     res.status(404).json({ message: 'Income not found' });
+    return;
+  }
+  if (req.householdRole === 'member' && existing.user_id !== req.userId) {
+    res.status(403).json({ message: 'You can only delete your own entries' });
     return;
   }
   const startDate = existing.start_date as string | null;
   if (startDate) {
     const ym = startDate.slice(0, 7);
-    if (isMonthLocked(ym)) {
+    if (isMonthLocked(ym, req.householdId!)) {
       res.status(409).json({ message: `Month ${ym} is locked` });
       return;
     }
