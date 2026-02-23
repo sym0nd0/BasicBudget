@@ -13,7 +13,7 @@ interface HouseholdPageProps {
 
 export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
   const { activeMonth } = useFilter();
-  const { data: overview } = useApi<HouseholdOverview>(`/household?month=${activeMonth}`);
+  const { data: overview } = useApi<HouseholdOverview>(`/household/summary?month=${activeMonth}`);
 
   return (
     <PageShell title="Household Overview" onMenuClick={onMenuClick}>
