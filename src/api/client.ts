@@ -136,6 +136,15 @@ export const api = {
   getSessions: () => request<SessionInfo[]>('/auth/sessions'),
   revokeSession: (sid: string) => request<void>(`/auth/sessions/${sid}`, { method: 'DELETE' }),
 
+  // ── Invite ──
+  getInviteInfo: (token: string) =>
+    request<{ householdName: string; inviteeEmail: string; userExists: boolean }>(`/invite/info?token=${token}`),
+  acceptInvite: (token: string) =>
+    request<{ message: string; household: Record<string, unknown> }>('/household/accept-invite', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }),
+
   // ── Household ──
   getHouseholdDetails: () => request<Record<string, unknown>>('/household'),
   updateHousehold: (name: string) =>

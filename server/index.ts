@@ -15,6 +15,7 @@ import oidcRouter from './routes/oidc.js';
 import profileRouter from './routes/profile.js';
 import sessionsRouter from './routes/sessions.js';
 import householdRouter from './routes/household.js';
+import inviteRouter from './routes/invite.js';
 import incomesRouter from './routes/incomes.js';
 import expensesRouter from './routes/expenses.js';
 import debtsRouter from './routes/debts.js';
@@ -69,6 +70,9 @@ app.use('/api/auth/totp', totpRouter);
 app.use('/api/auth/oidc', oidcRouter);
 app.use('/api/auth/profile', profileRouter);
 app.use('/api/auth/sessions', sessionsRouter);
+
+// 8b. Public invite endpoint (no auth required)
+app.use('/api/invite', inviteRouter);
 
 // 9. Data routes (all have requireAuth internally)
 app.use('/api/household', householdRouter);

@@ -25,7 +25,14 @@ export function TotpPage() {
         await api.totpVerify(token);
       }
       await refreshAuth();
-      navigate('/');
+
+      // Check for pending invite token after successful 2FA
+      const pendingToken = localStorage.getItem('pending_invite_token');
+      if (pendingToken) {
+        navigate(`/accept-invite?token=${pendingToken}`);
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {

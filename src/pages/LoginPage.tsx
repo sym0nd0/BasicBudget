@@ -29,7 +29,13 @@ export function LoginPage() {
       if (result.totp_required) {
         navigate('/login/2fa');
       } else {
-        navigate('/');
+        // Check for pending invite token after successful login
+        const pendingToken = localStorage.getItem('pending_invite_token');
+        if (pendingToken) {
+          navigate(`/accept-invite?token=${pendingToken}`);
+        } else {
+          navigate('/');
+        }
       }
     } catch (err) {
       setError((err as Error).message);
