@@ -142,11 +142,11 @@ export function AdminUsersPage({ onMenuClick }: AdminUsersPageProps) {
                       </td>
                       <td className="px-5 py-3 text-[var(--color-text-muted)]">
                         {u.has_totp ? (
-                          <span className="text-xs text-[var(--color-success)]">TOTP</span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-success-light)] text-[var(--color-success)]">Enabled</span>
                         ) : u.has_oidc ? (
                           <span className="text-xs text-[var(--color-text-muted)]">OIDC</span>
                         ) : (
-                          <span className="text-xs">—</span>
+                          <span className="text-xs text-[var(--color-text-muted)]">Disabled</span>
                         )}
                       </td>
                       <td className="px-5 py-3 text-xs text-[var(--color-text-muted)]">

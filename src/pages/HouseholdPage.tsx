@@ -25,7 +25,7 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5 items-stretch">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-5 items-stretch">
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Income</p>
           <p className="text-2xl font-bold text-[var(--color-success)]">
@@ -60,6 +60,12 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
               : 'text-[var(--color-danger)]'
           }`}>
             {formatCurrency(overview?.disposable_income_pence ?? 0)}
+          </p>
+        </Card>
+        <Card className="h-full">
+          <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Debt Balance</p>
+          <p className="text-2xl font-bold text-[var(--color-danger)]">
+            {formatCurrency(overview?.total_debt_balance_pence ?? 0)}
           </p>
         </Card>
       </div>

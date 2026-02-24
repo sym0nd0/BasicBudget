@@ -175,6 +175,17 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                   </td>
                 </tr>
               )}
+              {debts.length > 0 && (
+                <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-surface-2)]">
+                  <td className="px-5 py-3 font-semibold text-[var(--color-text)]">Total ({debts.length})</td>
+                  <td className="px-5 py-3 text-right font-mono font-bold text-[var(--color-danger)]">{formatCurrency(totalBalance)}</td>
+                  <td></td>
+                  <td className="px-5 py-3 text-right font-mono text-[var(--color-warning)]">{formatCurrency(debts.reduce((s, d) => s + d.minimum_payment_pence, 0))}</td>
+                  <td className="px-5 py-3 text-right font-mono text-[var(--color-text-muted)]">{formatCurrency(debts.reduce((s, d) => s + d.overpayment_pence, 0))}</td>
+                  <td className="px-5 py-3 text-right font-mono font-bold text-[var(--color-warning)]">{formatCurrency(totalPayments)}</td>
+                  <td></td>
+                </tr>
+              )}
               {debts.map(debt => {
                 const isExpanded = expandedId === debt.id;
 

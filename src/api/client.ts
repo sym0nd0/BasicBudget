@@ -119,6 +119,8 @@ export const api = {
     request<{ user: User }>('/auth/totp/verify-recovery', { method: 'POST', body: JSON.stringify({ code }) }),
   totpDisable: (password: string, token?: string, code?: string) =>
     request<{ message: string }>('/auth/totp/disable', { method: 'POST', body: JSON.stringify({ password, token, code }) }),
+  totpRequestReset: () =>
+    request<{ message: string }>('/auth/totp/request-reset', { method: 'POST' }),
 
   // ── Profile ──
   getProfile: () => request<User>('/auth/profile'),
