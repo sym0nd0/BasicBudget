@@ -58,4 +58,11 @@ db.exec(schema);
   console.log('[DB] Migrated SMTP/OIDC settings from environment variables to database.');
 })();
 
+// Add invitee_email column to reset_tokens for storing invite recipient email (for new-user registration flow)
+try {
+  db.prepare('ALTER TABLE reset_tokens ADD COLUMN invitee_email TEXT').run();
+} catch {
+  // Column already exists, ignore
+}
+
 export default db;

@@ -24,6 +24,7 @@ import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 import { AdminSettingsPage } from './pages/AdminSettingsPage';
 import { AdminAuditLogPage } from './pages/AdminAuditLogPage';
+import { AcceptInvitePage } from './pages/AcceptInvitePage';
 
 function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -70,6 +71,7 @@ export default function App() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
+            <Route path="/accept-invite" element={<AcceptInvitePage />} />
             {/* Protected routes */}
             <Route path="/*" element={
               <ProtectedRoute>

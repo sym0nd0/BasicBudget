@@ -37,7 +37,7 @@ A multi-user personal budgeting and debt management application built with React
 - Every user belongs to a household (created automatically on registration)
 - **Owner** role: read and write all household entries
 - **Member** role: read all entries, write only own entries
-- Invite members by email; role management by owner
+- Invite members by email (7-day expiring token); invitees can register and join even if they don't have an account yet; role management by owner
 - All financial data is isolated per household
 
 ### Admin Panel
@@ -395,6 +395,13 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 | POST | `/api/auth/totp/disable` | Disable 2FA |
 | GET | `/api/auth/sessions` | List active sessions |
 | DELETE | `/api/auth/sessions/:sid` | Revoke a session |
+
+### Invite (public)
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/invite/info?token=X` | Peek at invite details (no auth required) |
+| POST | `/api/household/accept-invite` | Accept invite and join household |
 
 ### Data
 

@@ -50,8 +50,8 @@ router.post('/invite', requireOwner, inviteLimiter, async (req: Request, res: Re
   const householdRow = db.prepare('SELECT name FROM households WHERE id = ?').get(req.householdId!) as { name: string } | undefined;
 
   const token = createToken(req.userId!, 'invite');
-  // Store extra invite metadata in the token's new_email field (re-used as invite email)
-  db.prepare("UPDATE reset_tokens SET new_email = ? WHERE token_hash = (SELECT token_hash FROM reset_tokens WHERE type = 'invite' AND user_id = ? ORDER BY created_at DESC LIMIT 1)").run(req.householdId!, req.userId!);
+  // Store householdId in new_email field and invitee email in invitee_email field
+  db.prepare("UPDATE reset_tokens SET new_email = ?, invitee_email = ? WHERE token_hash = (SELECT token_hash FROM reset_tokens WHERE type = 'invite' AND user_id = ? ORDER BY created_at DESC LIMIT 1)").run(req.householdId!, result.data.email, req.userId!);
 
   try {
     await sendHouseholdInvite(
