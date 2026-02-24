@@ -157,11 +157,12 @@ router.get('/summary', (req: Request, res: Response) => {
   const totalExpensesPence = activeExpenses.reduce((s, e) => s + (e.effective_pence ?? 0), 0);
   const sharedExpensesPence = activeExpenses.filter(e => Boolean(e.is_household)).reduce((s, e) => s + (e.effective_pence ?? 0), 0);
   const soleExpensesPence = activeExpenses.filter(e => !e.is_household).reduce((s, e) => s + (e.effective_pence ?? 0), 0);
-  const debtPaymentsPence = allDebts.reduce(
+  const householdDebts = allDebts.filter(d => Boolean(d.is_household));
+  const debtPaymentsPence = householdDebts.reduce(
     (s, d) => s + ((d.minimum_payment_pence as number) + (d.overpayment_pence as number)),
     0,
   );
-  const totalDebtBalancePence = allDebts.reduce((s, d) => s + (d.balance_pence as number), 0);
+  const totalDebtBalancePence = householdDebts.reduce((s, d) => s + (d.balance_pence as number), 0);
 
   const overview: HouseholdOverview = {
     total_income_pence: totalIncomePence,
