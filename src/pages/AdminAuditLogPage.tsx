@@ -148,7 +148,17 @@ export function AdminAuditLogPage({ onMenuClick }: AdminAuditLogPageProps) {
                           </code>
                         </td>
                         <td className="px-5 py-3 text-xs text-[var(--color-text-muted)] max-w-[200px] truncate">
-                          {truncate(entry.detail, 60)}
+                          {(() => {
+                            if (!entry.detail) return '—';
+                            try {
+                              const obj = JSON.parse(entry.detail) as Record<string, unknown>;
+                              const keys = Object.keys(obj).filter(k => k !== 'ua');
+                              if (keys.length === 0) return '—';
+                              return keys.map(k => `${k}: ${String(obj[k])}`).join(', ');
+                            } catch {
+                              return truncate(entry.detail, 60);
+                            }
+                          })()}
                         </td>
                         <td className="px-5 py-3 text-xs text-[var(--color-text-muted)]">
                           {entry.ip_address ?? '—'}
@@ -157,12 +167,35 @@ export function AdminAuditLogPage({ onMenuClick }: AdminAuditLogPageProps) {
                       {expandedId === entry.id && entry.detail && (
                         <tr key={`${entry.id}-detail`} className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
                           <td colSpan={5} className="px-5 py-3">
-                            <pre className="text-xs text-[var(--color-text)] whitespace-pre-wrap break-all font-mono">
-                              {(() => {
-                                try { return JSON.stringify(JSON.parse(entry.detail!), null, 2); }
-                                catch { return entry.detail; }
-                              })()}
-                            </pre>
+                            {(() => {
+                              try {
+                                const obj = JSON.parse(entry.detail!) as Record<string, unknown>;
+                                return (
+                                  <div>
+                                    <div className="mb-2 space-y-1">
+                                      {Object.entries(obj).map(([k, v]) => (
+                                        <div key={k} className="text-xs">
+                                          <span className="font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">{k}:</span>{' '}
+                                          <span className="text-[var(--color-text)] break-all">{String(v)}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <details className="text-xs">
+                                      <summary className="cursor-pointer text-[var(--color-text-muted)] hover:text-[var(--color-text)]">Raw JSON</summary>
+                                      <pre className="mt-1 text-[var(--color-text)] whitespace-pre-wrap break-all font-mono">
+                                        {JSON.stringify(obj, null, 2)}
+                                      </pre>
+                                    </details>
+                                  </div>
+                                );
+                              } catch {
+                                return (
+                                  <pre className="text-xs text-[var(--color-text)] whitespace-pre-wrap break-all font-mono">
+                                    {entry.detail}
+                                  </pre>
+                                );
+                              }
+                            })()}
                           </td>
                         </tr>
                       )}

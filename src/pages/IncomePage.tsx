@@ -18,7 +18,7 @@ interface IncomePageProps {
 
 export function IncomePage({ onMenuClick }: IncomePageProps) {
   const { incomes, addIncome, updateIncome, deleteIncome } = useBudget();
-  const { activeMonth } = useFilter();
+  useFilter();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Income | undefined>();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -88,7 +88,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
         <Card>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-[var(--color-text-muted)]">Total Income — {activeMonth}</p>
+              <p className="text-sm text-[var(--color-text-muted)]">Total Income</p>
               <p className="text-3xl font-bold text-[var(--color-success)] mt-1">{formatCurrency(total)}</p>
               <p className="text-xs text-[var(--color-text-muted)] mt-1">{incomes.length} source{incomes.length !== 1 ? 's' : ''}</p>
             </div>
@@ -128,12 +128,20 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
                   </td>
                 </tr>
               )}
+              {incomes.length > 0 && (
+                <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-surface-2)]">
+                  <td className="px-5 py-3 font-semibold text-[var(--color-text)]">Total ({incomes.length})</td>
+                  <td></td>
+                  <td className="px-5 py-3 text-right font-mono font-bold text-[var(--color-success)]">{formatCurrency(total)}</td>
+                  <td colSpan={4}></td>
+                </tr>
+              )}
               {incomes.map(income => (
                 <tr
                   key={income.id}
                   className="border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-2)]"
                 >
-                  <td className="px-5 py-3.5 font-medium text-[var(--color-text)]">
+                  <td className="px-5 py-3 font-medium text-[var(--color-text)]">
                     <div className="flex items-center gap-2">
                       {income.name}
                       {income.is_recurring && (
@@ -143,22 +151,22 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
                       )}
                     </div>
                   </td>
-                  <td className="px-5 py-3.5 text-[var(--color-text-muted)] text-sm">
+                  <td className="px-5 py-3 text-[var(--color-text-muted)] text-sm">
                     {income.contributor_name ?? '—'}
                   </td>
-                  <td className="px-5 py-3.5 text-right font-mono font-semibold text-[var(--color-success)]">
+                  <td className="px-5 py-3 text-right font-mono font-semibold text-[var(--color-success)]">
                     {formatCurrency(income.amount_pence)}
                   </td>
-                  <td className="px-5 py-3.5 text-center">
+                  <td className="px-5 py-3 text-center">
                     <Badge variant="default">{formatOrdinal(income.posting_day)}</Badge>
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-5 py-3">
                     <Badge variant="default">{income.gross_or_net}</Badge>
                   </td>
-                  <td className="px-5 py-3.5 text-[var(--color-text-muted)] max-w-xs truncate">
+                  <td className="px-5 py-3 text-[var(--color-text-muted)] max-w-xs truncate">
                     {income.notes ?? '—'}
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-5 py-3">
                     <div className="flex items-center gap-1 justify-end">
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(income)}>
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

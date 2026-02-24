@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
+import { UAParser } from 'ua-parser-js';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import type { SessionInfo } from '../../shared/types.js';
@@ -24,14 +25,23 @@ router.get('/', (req: Request, res: Response) => {
     ORDER BY created_at DESC
   `).all(req.userId!, Date.now()) as SessionRow[];
 
-  const sessions: SessionInfo[] = rows.map(r => ({
-    sid: r.sid,
-    user_agent: r.user_agent,
-    ip_address: r.ip_address,
-    created_at: r.created_at,
-    expired: r.expired,
-    current: r.sid === req.sessionID,
-  }));
+  const sessions: SessionInfo[] = rows.map(r => {
+    const ua = r.user_agent ? new UAParser(r.user_agent).getResult() : null;
+    const browser = ua ? [ua.browser.name, ua.browser.version?.split('.')[0]].filter(Boolean).join(' ') : undefined;
+    const os = ua ? [ua.os.name, ua.os.version].filter(Boolean).join(' ') : undefined;
+    const device = ua?.device.type ?? undefined;
+    return {
+      sid: r.sid,
+      user_agent: r.user_agent,
+      ip_address: r.ip_address,
+      created_at: r.created_at,
+      expired: r.expired,
+      current: r.sid === req.sessionID,
+      browser: browser || undefined,
+      os: os || undefined,
+      device,
+    };
+  });
 
   res.json(sessions);
 });

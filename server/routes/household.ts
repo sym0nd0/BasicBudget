@@ -161,6 +161,7 @@ router.get('/summary', (req: Request, res: Response) => {
     (s, d) => s + ((d.minimum_payment_pence as number) + (d.overpayment_pence as number)),
     0,
   );
+  const totalDebtBalancePence = allDebts.reduce((s, d) => s + (d.balance_pence as number), 0);
 
   const overview: HouseholdOverview = {
     total_income_pence: totalIncomePence,
@@ -170,6 +171,7 @@ router.get('/summary', (req: Request, res: Response) => {
     debt_payments_pence: debtPaymentsPence,
     disposable_income_pence: totalIncomePence - totalExpensesPence - debtPaymentsPence,
     debt_to_income_ratio: totalIncomePence > 0 ? Math.round((debtPaymentsPence / totalIncomePence) * 1000) / 10 : 0,
+    total_debt_balance_pence: totalDebtBalancePence,
   };
 
   res.json(overview);

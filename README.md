@@ -26,10 +26,10 @@ A multi-user personal budgeting and debt management application built with React
 - Email + password registration and login (Argon2id, 64 MB memory cost)
 - Email verification flow on registration
 - Account lockout after 5 failed login attempts (30-minute lock)
-- TOTP 2FA via authenticator app (QR code setup, 10 single-use recovery codes)
+- TOTP 2FA via authenticator app (QR code setup, 10 single-use recovery codes); status badge in settings; reset 2FA with password + OTP/recovery code; "lost access" delayed-reset flow via email
 - Generic OpenID Connect (OIDC) single sign-on — any OIDC-compatible provider
 - Session management with device fingerprinting and new-device email alerts
-- Active session list with per-session revocation
+- Active session list with per-session revocation; sessions display parsed browser and OS instead of raw user-agent string
 - Password reset and email change flows via time-limited tokens
 - CSRF protection (double-submit cookie), Helmet security headers, rate limiting
 

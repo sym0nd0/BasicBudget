@@ -82,6 +82,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
         <SummaryCard
           label="Monthly Expenses"
           value={formatCurrency(summary?.total_expenses_pence ?? 0)}
+          sub={summary && summary.total_debt_payments_pence > 0 ? `Total outgoing: ${formatCurrency(summary.total_expenses_pence + summary.total_debt_payments_pence)}` : undefined}
           colorClass="text-[var(--color-danger)]"
           iconBgClass="bg-[var(--color-danger-light)]"
           to="/expenses"

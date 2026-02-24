@@ -10,6 +10,7 @@ export interface User {
   email_verified: boolean;
   system_role: SystemRole;
   created_at?: string;
+  has_totp?: boolean;
 }
 
 export interface Household {
@@ -35,6 +36,9 @@ export interface SessionInfo {
   created_at?: string;
   expired: number;
   current?: boolean;
+  browser?: string;
+  os?: string;
+  device?: string;
 }
 
 export interface LoginRequest {
@@ -228,6 +232,7 @@ export interface HouseholdOverview {
   debt_payments_pence: number;
   disposable_income_pence: number;
   debt_to_income_ratio: number;
+  total_debt_balance_pence: number;
 }
 
 // ─── Theme ────────────────────────────────────────────────────────────────────

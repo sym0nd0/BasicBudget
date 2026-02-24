@@ -150,13 +150,14 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                 <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Category</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Type</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Account</th>
+                <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Notes</th>
                 <th className="px-5 py-3 w-24"></th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-5 py-8 text-center text-[var(--color-text-muted)]">
+                  <td colSpan={9} className="px-5 py-8 text-center text-[var(--color-text-muted)]">
                     No expenses match your filters.
                   </td>
                 </tr>
@@ -197,6 +198,9 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                   <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs">
                     {accountName(expense.account_id)}
                   </td>
+                  <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs max-w-[140px] truncate">
+                    {expense.notes ?? '—'}
+                  </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-1 justify-end">
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(expense)}>
@@ -226,7 +230,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                   <td className="px-5 py-3 text-right font-mono font-bold text-[var(--color-danger)]">
                     {formatCurrency(totalEffective)}
                   </td>
-                  <td colSpan={5}></td>
+                  <td colSpan={6}></td>
                 </tr>
               )}
             </tbody>

@@ -44,6 +44,14 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   const [totpMsg, setTotpMsg] = useState('');
   const [totpLoading, setTotpLoading] = useState(false);
 
+  // Security — TOTP reset
+  const [showTotpReset, setShowTotpReset] = useState(false);
+  const [totpResetPassword, setTotpResetPassword] = useState('');
+  const [totpResetOtp, setTotpResetOtp] = useState('');
+  const [totpResetLoading, setTotpResetLoading] = useState(false);
+  const [totpResetMsg, setTotpResetMsg] = useState('');
+  const [lostAccessMsg, setLostAccessMsg] = useState('');
+
   // Sessions
   const [sessions, setSessions] = useState<SessionInfo[] | null>(null);
   const [sessionsLoading, setSessionsLoading] = useState(false);
@@ -147,6 +155,34 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
       setTotpMsg((err as Error).message);
     } finally {
       setTotpLoading(false);
+    }
+  };
+
+  const handleTotpDisable = async () => {
+    setTotpResetLoading(true);
+    setTotpResetMsg('');
+    try {
+      const val = totpResetOtp.trim();
+      const isOtp = /^\d{6}$/.test(val);
+      await api.totpDisable(totpResetPassword, isOtp ? val : undefined, isOtp ? undefined : val || undefined);
+      setShowTotpReset(false);
+      setTotpResetPassword('');
+      setTotpResetOtp('');
+      await refreshAuth();
+    } catch (err) {
+      setTotpResetMsg((err as Error).message);
+    } finally {
+      setTotpResetLoading(false);
+    }
+  };
+
+  const handleLostAccess = async () => {
+    setLostAccessMsg('');
+    try {
+      await api.totpRequestReset();
+      setLostAccessMsg('A reset link has been sent to your email. It will be available after 24 hours.');
+    } catch (err) {
+      setLostAccessMsg((err as Error).message);
     }
   };
 
@@ -325,6 +361,49 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setTotpSetup(null)}>Cancel</Button>
             </div>
+          ) : user?.has_totp ? (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--color-success-light)] text-[var(--color-success)]">
+                  2FA Enabled
+                </span>
+              </div>
+              {!showTotpReset ? (
+                <Button size="sm" variant="secondary" onClick={() => { setShowTotpReset(true); setTotpResetMsg(''); setLostAccessMsg(''); }}>
+                  Reset 2FA
+                </Button>
+              ) : (
+                <div className="flex flex-col gap-3 max-w-sm">
+                  <Input
+                    label="Current password"
+                    type="password"
+                    value={totpResetPassword}
+                    onChange={e => setTotpResetPassword(e.target.value)}
+                    placeholder="••••••••"
+                  />
+                  <Input
+                    label="OTP or recovery code"
+                    value={totpResetOtp}
+                    onChange={e => setTotpResetOtp(e.target.value)}
+                    placeholder="6-digit code or recovery code"
+                  />
+                  {totpResetMsg && <p className="text-xs text-[var(--color-danger)]">{totpResetMsg}</p>}
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="danger" onClick={handleTotpDisable} disabled={totpResetLoading || !totpResetPassword}>
+                      {totpResetLoading ? 'Disabling…' : 'Disable 2FA'}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setShowTotpReset(false); setTotpResetMsg(''); }}>Cancel</Button>
+                  </div>
+                  <button
+                    className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-primary)] text-left"
+                    onClick={handleLostAccess}
+                  >
+                    Lost access to authenticator?
+                  </button>
+                  {lostAccessMsg && <p className="text-xs text-[var(--color-text-muted)]">{lostAccessMsg}</p>}
+                </div>
+              )}
+            </div>
           ) : (
             <div>
               {totpMsg && <p className="text-xs text-[var(--color-danger)] mb-2">{totpMsg}</p>}
@@ -351,7 +430,9 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
               {sessions.map(s => (
                 <div key={s.sid} className="flex items-center justify-between text-xs py-1.5 border-b border-[var(--color-border)] last:border-0">
                   <div>
-                    <span className="text-[var(--color-text)]">{s.user_agent ?? 'Unknown device'}</span>
+                    <span className="text-[var(--color-text)]" title={s.user_agent ?? undefined}>
+                      {s.browser && s.os ? `${s.browser} on ${s.os}` : s.user_agent ?? 'Unknown device'}
+                    </span>
                     {s.current && <span className="ml-2 text-[var(--color-primary)]">(current)</span>}
                     <div className="text-[var(--color-text-muted)]">{s.ip_address ?? 'Unknown IP'}</div>
                   </div>
@@ -377,13 +458,14 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
         <CardHeader title="Household" subtitle={`Members of ${household?.name ?? 'your household'}`} />
         {householdRole === 'owner' && (
           <div className="mt-4 border-t border-[var(--color-border)] pt-4">
-            <h3 className="text-sm font-semibold text-[var(--color-text)] mb-3">Invite Member</h3>
+            <h3 className="text-sm font-semibold text-[var(--color-text)] mb-1">Invite Member</h3>
+            <p className="text-xs text-[var(--color-text-muted)] mb-3">Add a household member</p>
             <div className="flex gap-2 max-w-sm">
               <Input
                 label=""
                 value={inviteEmail}
                 onChange={e => setInviteEmail(e.target.value)}
-                placeholder="colleague@example.com"
+                placeholder="e.g., family@household.com"
                 type="email"
               />
               <Button size="sm" onClick={handleInvite} disabled={!inviteEmail}>

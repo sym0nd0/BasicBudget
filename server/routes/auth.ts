@@ -41,6 +41,7 @@ const verifyEmailSchema = z.object({
 });
 
 function mapUser(row: Record<string, unknown>): User {
+  const totpRow = db.prepare('SELECT verified FROM totp_secrets WHERE user_id = ? AND verified = 1').get(row.id as string) as { verified: number } | undefined;
   return {
     id: row.id as string,
     email: row.email as string,
@@ -48,6 +49,7 @@ function mapUser(row: Record<string, unknown>): User {
     email_verified: Boolean(row.email_verified),
     system_role: row.system_role as 'admin' | 'user',
     created_at: row.created_at as string,
+    has_totp: Boolean(totpRow),
   };
 }
 
