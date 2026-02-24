@@ -33,15 +33,10 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
           </p>
         </Card>
         <Card className="h-full">
-          <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Expenses</p>
+          <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Shared Expenses</p>
           <p className="text-2xl font-bold text-[var(--color-danger)]">
-            {formatCurrency(overview?.total_expenses_pence ?? 0)}
+            {formatCurrency(overview?.shared_expenses_pence ?? 0)}
           </p>
-          {(overview?.shared_expenses_pence ?? 0) > 0 && (
-            <p className="text-xs text-[var(--color-text-muted)] mt-1">
-              {formatCurrency(overview!.shared_expenses_pence)} shared
-            </p>
-          )}
         </Card>
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Debt Payments</p>
@@ -53,6 +48,12 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
           </p>
         </Card>
         <Card className="h-full">
+          <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Monthly Outgoing</p>
+          <p className="text-2xl font-bold text-[var(--color-primary)]">
+            {formatCurrency((overview?.shared_expenses_pence ?? 0) + (overview?.debt_payments_pence ?? 0))}
+          </p>
+        </Card>
+        <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Disposable</p>
           <p className={`text-2xl font-bold ${
             (overview?.disposable_income_pence ?? 0) >= 0
@@ -60,12 +61,6 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
               : 'text-[var(--color-danger)]'
           }`}>
             {formatCurrency(overview?.disposable_income_pence ?? 0)}
-          </p>
-        </Card>
-        <Card className="h-full">
-          <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Debt Balance</p>
-          <p className="text-2xl font-bold text-[var(--color-danger)]">
-            {formatCurrency(overview?.total_debt_balance_pence ?? 0)}
           </p>
         </Card>
       </div>

@@ -66,7 +66,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 items-stretch">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6 items-stretch">
         <SummaryCard
           label="Monthly Income"
           value={formatCurrency(summary?.total_income_pence ?? 0)}
@@ -82,7 +82,6 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
         <SummaryCard
           label="Monthly Expenses"
           value={formatCurrency(summary?.total_expenses_pence ?? 0)}
-          sub={summary && summary.total_debt_payments_pence > 0 ? `Total outgoing: ${formatCurrency(summary.total_expenses_pence + summary.total_debt_payments_pence)}` : undefined}
           colorClass="text-[var(--color-danger)]"
           iconBgClass="bg-[var(--color-danger-light)]"
           to="/expenses"
@@ -102,6 +101,18 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
           icon={
             <svg className="w-5 h-5 text-[var(--color-warning)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          }
+        />
+        <SummaryCard
+          label="Total Monthly Outgoing"
+          value={formatCurrency((summary?.total_expenses_pence ?? 0) + (summary?.total_debt_payments_pence ?? 0))}
+          colorClass="text-[var(--color-primary)]"
+          iconBgClass="bg-[var(--color-primary-light)]"
+          to="/"
+          icon={
+            <svg className="w-5 h-5 text-[var(--color-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           }
         />

@@ -128,14 +128,6 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
                   </td>
                 </tr>
               )}
-              {incomes.length > 0 && (
-                <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-surface-2)]">
-                  <td className="px-5 py-3 font-semibold text-[var(--color-text)]">Total ({incomes.length})</td>
-                  <td></td>
-                  <td className="px-5 py-3 text-right font-mono font-bold text-[var(--color-success)]">{formatCurrency(total)}</td>
-                  <td colSpan={4}></td>
-                </tr>
-              )}
               {incomes.map(income => (
                 <tr
                   key={income.id}
@@ -183,6 +175,15 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
                   </td>
                 </tr>
               ))}
+              {/* Totals row */}
+              {incomes.length > 0 && (
+                <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-surface-2)]">
+                  <td className="px-5 py-3 font-semibold text-[var(--color-text)]">Total ({incomes.length})</td>
+                  <td></td>
+                  <td className="px-5 py-3 text-right font-mono font-bold text-[var(--color-success)]">{formatCurrency(total)}</td>
+                  <td colSpan={4}></td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
