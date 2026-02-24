@@ -5,7 +5,7 @@ import { Card, CardHeader } from '../components/ui/Card';
 import { FilterBar } from '../components/layout/FilterBar';
 import { IncomeVsExpensesBar } from '../components/charts/IncomeVsExpensesBar';
 import { formatCurrency, formatPercent } from '../utils/formatters';
-import type { HouseholdOverview } from '../types';
+import type { HouseholdOverview, HouseholdMember } from '../types';
 
 interface HouseholdPageProps {
   onMenuClick: () => void;
@@ -14,6 +14,11 @@ interface HouseholdPageProps {
 export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
   const { activeMonth } = useFilter();
   const { data: overview } = useApi<HouseholdOverview>(`/household/summary?month=${activeMonth}`);
+  const { data: householdDetails } = useApi<{ members?: HouseholdMember[] }>('/household');
+
+  const memberCount = householdDetails?.members?.length ?? 1;
+  const totalOutgoingPence = (overview?.shared_expenses_pence ?? 0) + (overview?.debt_payments_pence ?? 0);
+  const perMemberOutgoingPence = Math.round(totalOutgoingPence / memberCount);
 
   return (
     <PageShell title="Household Overview" onMenuClick={onMenuClick}>
@@ -25,7 +30,7 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-5 items-stretch">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-5 items-stretch">
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Income</p>
           <p className="text-2xl font-bold text-[var(--color-success)]">
@@ -50,7 +55,16 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Monthly Outgoing</p>
           <p className="text-2xl font-bold text-[var(--color-primary)]">
-            {formatCurrency((overview?.shared_expenses_pence ?? 0) + (overview?.debt_payments_pence ?? 0))}
+            {formatCurrency(totalOutgoingPence)}
+          </p>
+        </Card>
+        <Card className="h-full">
+          <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Per Member</p>
+          <p className="text-2xl font-bold text-[var(--color-primary)]">
+            {formatCurrency(perMemberOutgoingPence)}
+          </p>
+          <p className="text-xs text-[var(--color-text-muted)] mt-1">
+            ÷ {memberCount} member{memberCount !== 1 ? 's' : ''}
           </p>
         </Card>
         <Card className="h-full">
