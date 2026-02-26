@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://github.com/sym0nd0/BasicBudget">
+  <img width="350" alt="basicbudget_logo" src="/public/basicbudget_logo.png">
+  </a>
+</p>
+
 # BasicBudget
 
 A multi-user personal budgeting and debt management application built with React 19, TypeScript, and a Node.js/SQLite backend. BasicBudget helps households track monthly income and expenses, manage debts with full amortisation schedules, track savings goals, and visualise their financial picture through interactive charts — with per-household data isolation, optional TOTP 2FA, and OIDC single sign-on.
@@ -551,3 +557,11 @@ BasicBudget/
 ## License
 
 This project is provided as-is for personal use. No licence is currently applied. If you fork or distribute this project, please add an appropriate open-source licence.
+
+---
+
+<p align="center">
+  <a href="https://youtu.be/HefOvHZfkx8?si=w0sRMRmbz5tOna2O" target="_blank">
+  <img width="200" alt="basic-thegoodplace" src="public/basic-thegoodplace.gif">
+  </a>
+</p>
