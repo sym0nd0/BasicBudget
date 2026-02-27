@@ -7,7 +7,7 @@ export type {
   Debt,
   SavingsGoal,
   MonthLock,
-  AmortizationRow,
+  RepaymentRow,
   DebtPayoffSummary,
   CategoryBreakdown,
   BudgetSummary,

@@ -11,6 +11,7 @@ export interface User {
   system_role: SystemRole;
   created_at?: string;
   has_totp?: boolean;
+  colour_palette?: string;
 }
 
 export interface Household {
@@ -184,9 +185,9 @@ export interface MonthLock {
   locked_at: string;
 }
 
-// ─── Amortization ──────────────────────────────────────────────────────────────
+// ─── Repayments ──────────────────────────────────────────────────────────────
 
-export interface AmortizationRow {
+export interface RepaymentRow {
   month: number;
   date: string;
   opening_balance_pence: number;
@@ -203,7 +204,7 @@ export interface DebtPayoffSummary {
   totalInterestPaidPence: number;
   totalPaidPence: number;
   payoffDate: string;
-  schedule: AmortizationRow[];
+  schedule: RepaymentRow[];
 }
 
 // ─── Budget Summary ────────────────────────────────────────────────────────────

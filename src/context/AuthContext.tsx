@@ -47,6 +47,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshAuth().finally(() => setLoading(false));
   }, [refreshAuth]);
 
+  // Apply colour blindness palette class to <html>
+  useEffect(() => {
+    const root = document.documentElement;
+    const palettes = ['palette-deuteranopia', 'palette-protanopia', 'palette-tritanopia'];
+    palettes.forEach(p => root.classList.remove(p));
+    const palette = user?.colour_palette;
+    if (palette && palette !== 'default') {
+      root.classList.add(`palette-${palette}`);
+    }
+  }, [user?.colour_palette]);
+
   const login = useCallback(async (email: string, password: string) => {
     const result = await api.login(email, password);
     if (!result.totp_required) {
@@ -63,6 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setHousehold(null);
     setHouseholdRole(undefined);
     setTotpPending(false);
+    const palettes = ['palette-deuteranopia', 'palette-protanopia', 'palette-tritanopia'];
+    palettes.forEach(p => document.documentElement.classList.remove(p));
   }, []);
 
   const register = useCallback(async (email: string, password: string, display_name?: string) => {

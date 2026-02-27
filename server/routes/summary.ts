@@ -26,8 +26,13 @@ router.get('/', (req: Request, res: Response) => {
     0,
   );
 
-  const totalDebtPaymentsPence = allDebts.reduce(
-    (s, d) => s + Math.round(((d.minimum_payment_pence as number) + (d.overpayment_pence as number)) * ((d.split_ratio as number) ?? 1)),
+  const debtItems = allDebts.map(d => ({
+    ...d,
+    amount_pence: (d.minimum_payment_pence as number) + (d.overpayment_pence as number),
+  })) as unknown as RecurringItem[];
+  const activeDebts = filterActiveInMonth(debtItems, month);
+  const totalDebtPaymentsPence = activeDebts.reduce(
+    (s, d) => s + Math.round((d.effective_pence ?? 0) * ((d.split_ratio as number) ?? 1)),
     0,
   );
 
