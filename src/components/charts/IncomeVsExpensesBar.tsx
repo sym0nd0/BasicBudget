@@ -49,7 +49,7 @@ export function IncomeVsExpensesBar({ income, expenses, debtPayments }: IncomeVs
           tickFormatter={v => `£${(v / 100000).toFixed(1)}k`}
           tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }}
         />
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip content={<CustomTooltip />} cursor={false} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Bar dataKey="Income" fill="var(--color-chart-3)" radius={[4, 4, 0, 0]} />
         <Bar dataKey="Expenses" fill="var(--color-chart-5)" radius={[4, 4, 0, 0]} />

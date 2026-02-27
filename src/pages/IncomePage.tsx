@@ -103,10 +103,12 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
 
       {/* Table */}
       <Card padding={false}>
-        <CardHeader
-          title="Income Sources"
-          subtitle={`${incomes.length} source${incomes.length !== 1 ? 's' : ''}`}
-        />
+        <div className="px-5 pt-5">
+          <CardHeader
+            title="Income Sources"
+            subtitle={`${incomes.length} source${incomes.length !== 1 ? 's' : ''}`}
+          />
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

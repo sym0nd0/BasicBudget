@@ -56,6 +56,10 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   const [sessions, setSessions] = useState<SessionInfo[] | null>(null);
   const [sessionsLoading, setSessionsLoading] = useState(false);
 
+  // Appearance — colour palette
+  const [paletteMsg, setPaletteMsg] = useState('');
+  const [paletteLoading, setPaletteLoading] = useState(false);
+
   // Household invite
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteMsg, setInviteMsg] = useState('');
@@ -207,6 +211,20 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
     }
   };
 
+  const handlePaletteChange = async (palette: string) => {
+    setPaletteLoading(true);
+    setPaletteMsg('');
+    try {
+      await api.updatePalette(palette);
+      await refreshAuth();
+      setPaletteMsg('Palette saved.');
+    } catch (err) {
+      setPaletteMsg((err as Error).message);
+    } finally {
+      setPaletteLoading(false);
+    }
+  };
+
   const handleInvite = async () => {
     setInviteMsg('');
     try {
@@ -298,6 +316,42 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
           </Button>
         </Card>
       </div>
+
+      {/* Appearance */}
+      <Card className="mb-5">
+        <CardHeader title="Appearance" subtitle="Accessibility and visual preferences" />
+        <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+          <h3 className="text-sm font-semibold text-[var(--color-text)] mb-1">Colour Blindness Palette</h3>
+          <p className="text-xs text-[var(--color-text-muted)] mb-3">
+            Select a colour palette optimised for your vision. Affects status colours and charts.
+          </p>
+          <div className="flex flex-col gap-2 max-w-sm">
+            {([
+              { value: 'default', label: 'Default', desc: 'Standard colour scheme' },
+              { value: 'deuteranopia', label: 'Deuteranopia', desc: 'Red-Green (green deficiency) — blue & orange' },
+              { value: 'protanopia', label: 'Protanopia', desc: 'Red-Green (red deficiency) — teal & pink' },
+              { value: 'tritanopia', label: 'Tritanopia', desc: 'Blue-Yellow deficiency — green & red' },
+            ] as const).map(opt => (
+              <label key={opt.value} className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="colour_palette"
+                  value={opt.value}
+                  checked={(user?.colour_palette ?? 'default') === opt.value}
+                  onChange={() => handlePaletteChange(opt.value)}
+                  disabled={paletteLoading}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="text-sm font-medium text-[var(--color-text)]">{opt.label}</span>
+                  <span className="block text-xs text-[var(--color-text-muted)]">{opt.desc}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+          {paletteMsg && <p className="text-xs text-[var(--color-text-muted)] mt-2">{paletteMsg}</p>}
+        </div>
+      </Card>
 
       {/* Security */}
       <Card className="mb-5">

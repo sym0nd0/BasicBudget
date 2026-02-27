@@ -6,7 +6,7 @@
 
 # BasicBudget
 
-A multi-user personal budgeting and debt management application built with React 19, TypeScript, and a Node.js/SQLite backend. BasicBudget helps households track monthly income and expenses, manage debts with full amortisation schedules, track savings goals, and visualise their financial picture through interactive charts — with per-household data isolation, optional TOTP 2FA, and OIDC single sign-on.
+A multi-user personal budgeting and debt management application built with React 19, TypeScript, and a Node.js/SQLite backend. BasicBudget helps households track monthly income and expenses, manage debts with full repayment schedules, track savings goals, and visualise their financial picture through interactive charts — with per-household data isolation, optional TOTP 2FA, and OIDC single sign-on.
 
 ---
 
@@ -76,7 +76,7 @@ A multi-user personal budgeting and debt management application built with React
 ### Debt Management
 - Add, edit, and delete debts
 - Record balance, APR, minimum payment, and overpayment amount
-- Full per-debt amortisation table: month-by-month opening balance, interest charge, principal paid, and closing balance
+- Full per-debt repayment schedule: month-by-month opening balance, interest charge, principal paid, and closing balance
 - Payoff summary: months remaining, total interest paid, projected payoff date
 - Debt payoff chart plotting all balances on a shared monthly timeline
 
@@ -84,10 +84,11 @@ A multi-user personal budgeting and debt management application built with React
 - Create and track savings goals with target amounts and monthly contributions
 - Optional target dates; progress bars
 
-### Settings & Accounts
+### Settings & Appearance
 - Manage named payment accounts; month locking to prevent edits on closed months
 - Change password, change email, 2FA setup/disable
 - CSV import and export for bulk data management
+- **Colour blindness palettes** — per-user accessibility setting (server-persisted); choose from Default, Deuteranopia (blue/orange), Protanopia (teal/pink), or Tritanopia (green/red); affects status colours and charts
 
 ### Additional
 - **Duplicate detection** — warns before saving an entry identical to an existing one

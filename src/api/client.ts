@@ -126,6 +126,8 @@ export const api = {
   getProfile: () => request<User>('/auth/profile'),
   updateProfile: (display_name: string) =>
     request<User>('/auth/profile', { method: 'PUT', body: JSON.stringify({ display_name }) }),
+  updatePalette: (palette: string) =>
+    request<User>('/auth/profile/palette', { method: 'PUT', body: JSON.stringify({ colour_palette: palette }) }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<{ message: string }>('/auth/change-password', {
       method: 'POST',
@@ -185,8 +187,8 @@ export const api = {
     request<Debt>(`/debts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteDebt: (id: string) =>
     request<void>(`/debts/${id}`, { method: 'DELETE' }),
-  getAmortisation: (id: string) =>
-    request<DebtPayoffSummary>(`/debts/${id}/amortisation`),
+  getRepayments: (id: string) =>
+    request<DebtPayoffSummary>(`/debts/${id}/repayments`),
 
   // ── Savings Goals ──
   getSavingsGoals: () => request<SavingsGoal[]>('/savings-goals'),

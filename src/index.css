@@ -86,6 +86,122 @@
   --color-sidebar-hover: rgba(255, 255, 255, 0.04);
 }
 
+/* ─── Colour Blindness Palettes ───────────────────────────────────────────── */
+
+/* Deuteranopia (green deficiency) — blue/orange instead of red/green */
+.palette-deuteranopia {
+  --color-success: #0077bb;
+  --color-success-light: #ddeeff;
+  --color-danger: #ee7733;
+  --color-danger-light: #ffeedd;
+  --color-warning: #ccaa00;
+  --color-warning-light: #fff8cc;
+  --color-info: #aa3377;
+  --color-info-light: #f5ddee;
+  --color-chart-1: #0077bb;
+  --color-chart-2: #ee7733;
+  --color-chart-3: #aa3377;
+  --color-chart-4: #ccaa00;
+  --color-chart-5: #009988;
+  --color-chart-6: #cc3311;
+  --color-chart-7: #33bbee;
+  --color-chart-8: #bbbb00;
+}
+.dark.palette-deuteranopia {
+  --color-success: #4db8ff;
+  --color-success-light: rgba(0, 119, 187, 0.2);
+  --color-danger: #ff9955;
+  --color-danger-light: rgba(238, 119, 51, 0.2);
+  --color-warning: #ffdd44;
+  --color-warning-light: rgba(204, 170, 0, 0.2);
+  --color-info: #cc66aa;
+  --color-info-light: rgba(170, 51, 119, 0.2);
+  --color-chart-1: #4db8ff;
+  --color-chart-2: #ff9955;
+  --color-chart-3: #cc66aa;
+  --color-chart-4: #ffdd44;
+  --color-chart-5: #44ccbb;
+  --color-chart-6: #ff6644;
+  --color-chart-7: #66ddff;
+  --color-chart-8: #eedd44;
+}
+
+/* Protanopia (red deficiency) — teal/pink instead of green/red */
+.palette-protanopia {
+  --color-success: #009988;
+  --color-success-light: #cceeeb;
+  --color-danger: #ee3377;
+  --color-danger-light: #ffdde9;
+  --color-warning: #ccbb00;
+  --color-warning-light: #fff8cc;
+  --color-info: #0077bb;
+  --color-info-light: #ddeeff;
+  --color-chart-1: #009988;
+  --color-chart-2: #0077bb;
+  --color-chart-3: #ee3377;
+  --color-chart-4: #ccbb00;
+  --color-chart-5: #ee7733;
+  --color-chart-6: #7733cc;
+  --color-chart-7: #33bbee;
+  --color-chart-8: #888800;
+}
+.dark.palette-protanopia {
+  --color-success: #00ccbb;
+  --color-success-light: rgba(0, 153, 136, 0.2);
+  --color-danger: #ff6699;
+  --color-danger-light: rgba(238, 51, 119, 0.2);
+  --color-warning: #ffee44;
+  --color-warning-light: rgba(204, 187, 0, 0.2);
+  --color-info: #44aaff;
+  --color-info-light: rgba(0, 119, 187, 0.2);
+  --color-chart-1: #00ccbb;
+  --color-chart-2: #44aaff;
+  --color-chart-3: #ff6699;
+  --color-chart-4: #ffee44;
+  --color-chart-5: #ff9944;
+  --color-chart-6: #aa66ff;
+  --color-chart-7: #66ddff;
+  --color-chart-8: #cccc00;
+}
+
+/* Tritanopia (blue-yellow deficiency) — green/red instead of blue/yellow */
+.palette-tritanopia {
+  --color-success: #009050;
+  --color-success-light: #cceedc;
+  --color-danger: #d62828;
+  --color-danger-light: #ffd6d6;
+  --color-warning: #f26419;
+  --color-warning-light: #fde8d5;
+  --color-info: #008080;
+  --color-info-light: #cceeee;
+  --color-chart-1: #009050;
+  --color-chart-2: #d62828;
+  --color-chart-3: #f26419;
+  --color-chart-4: #008080;
+  --color-chart-5: #7b2d8b;
+  --color-chart-6: #00aaaa;
+  --color-chart-7: #66bb00;
+  --color-chart-8: #cc1155;
+}
+.dark.palette-tritanopia {
+  --color-success: #00cc66;
+  --color-success-light: rgba(0, 144, 80, 0.2);
+  --color-danger: #ff5555;
+  --color-danger-light: rgba(214, 40, 40, 0.2);
+  --color-warning: #ff8844;
+  --color-warning-light: rgba(242, 100, 25, 0.2);
+  --color-info: #00aaaa;
+  --color-info-light: rgba(0, 128, 128, 0.2);
+  --color-chart-1: #00cc66;
+  --color-chart-2: #ff5555;
+  --color-chart-3: #ff8844;
+  --color-chart-4: #00aaaa;
+  --color-chart-5: #bb66dd;
+  --color-chart-6: #44dddd;
+  --color-chart-7: #aaee00;
+  --color-chart-8: #ff6699;
+}
+
 /* ─── Base Styles ─────────────────────────────────────────────────────────── */
 
 *, *::before, *::after {

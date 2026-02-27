@@ -9,15 +9,15 @@ import { DebtForm } from '../components/forms/DebtForm';
 import { Badge } from '../components/ui/Badge';
 import { formatCurrency, formatPercent, formatYearMonth } from '../utils/formatters';
 import { findDuplicateDebt } from '../utils/duplicates';
-import type { Debt, AmortizationRow, DebtPayoffSummary } from '../types';
+import type { Debt, RepaymentRow, DebtPayoffSummary } from '../types';
 
 interface DebtPageProps {
   onMenuClick: () => void;
 }
 
-/** Inline amortisation fetch per expanded debt */
-function AmortisationPanel({ debtId }: { debtId: string }) {
-  const { data: summary } = useApi<DebtPayoffSummary>(`/debts/${debtId}/amortisation`);
+/** Inline repayment schedule fetch per expanded debt */
+function RepaymentPanel({ debtId }: { debtId: string }) {
+  const { data: summary } = useApi<DebtPayoffSummary>(`/debts/${debtId}/repayments`);
 
   if (!summary) {
     return <p className="text-sm text-[var(--color-text-muted)]">Loading…</p>;
@@ -26,7 +26,7 @@ function AmortisationPanel({ debtId }: { debtId: string }) {
   return (
     <>
       <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-3">
-        Amortisation Schedule — {summary.monthsToPayoff} payments, {formatCurrency(summary.totalInterestPaidPence)} interest
+        Repayment Schedule — {summary.monthsToPayoff} payments, {formatCurrency(summary.totalInterestPaidPence)} interest
       </p>
       <div className="overflow-x-auto max-h-64">
         <table className="w-full text-xs">
@@ -42,7 +42,7 @@ function AmortisationPanel({ debtId }: { debtId: string }) {
             </tr>
           </thead>
           <tbody>
-            {summary.schedule.map((row: AmortizationRow) => (
+            {summary.schedule.map((row: RepaymentRow) => (
               <tr key={row.month} className="border-t border-[var(--color-border)]">
                 <td className="py-1.5 pr-4 text-[var(--color-text-muted)]">{row.month}</td>
                 <td className="py-1.5 pr-4 text-[var(--color-text-muted)]">{formatYearMonth(row.date)}</td>
@@ -151,7 +151,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
         <div className="px-5 pt-5">
           <CardHeader
             title="Debt Tracker"
-            subtitle={`${debts.length} debt${debts.length !== 1 ? 's' : ''} — click a row to view amortisation`}
+            subtitle={`${debts.length} debt${debts.length !== 1 ? 's' : ''} — click a row to view repayments`}
           />
         </div>
         <div className="overflow-x-auto">
@@ -240,11 +240,11 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                       </td>
                     </tr>
 
-                    {/* Amortisation schedule */}
+                    {/* Repayment schedule */}
                     {isExpanded && (
                       <tr className="border-t border-[var(--color-border)]">
                         <td colSpan={7} className="px-5 py-4 bg-[var(--color-surface-2)]">
-                          <AmortisationPanel debtId={debt.id} />
+                          <RepaymentPanel debtId={debt.id} />
                         </td>
                       </tr>
                     )}

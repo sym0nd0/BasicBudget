@@ -4,7 +4,7 @@ import db from '../db.js';
 import { randomUUID } from 'node:crypto';
 import { isMonthLocked } from './months.js';
 import { requireAuth } from '../middleware/auth.js';
-import type { Debt, AmortizationRow, DebtPayoffSummary } from '../../shared/types.js';
+import type { Debt, RepaymentRow, DebtPayoffSummary } from '../../shared/types.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -167,8 +167,8 @@ router.delete('/:id', (req: Request, res: Response) => {
   res.status(204).send();
 });
 
-// GET /api/debts/:id/amortisation
-router.get('/:id/amortisation', (req: Request, res: Response) => {
+// GET /api/debts/:id/repayments
+router.get('/:id/repayments', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
   const row = db.prepare('SELECT * FROM debts WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!row) {
@@ -176,16 +176,16 @@ router.get('/:id/amortisation', (req: Request, res: Response) => {
     return;
   }
   const debt = mapDebt(row);
-  const summary = computeAmortization(debt);
+  const summary = computeRepayments(debt);
   res.json(summary);
 });
 
 const MAX_MONTHS = 600;
 
-export function computeAmortization(debt: Debt): DebtPayoffSummary {
+export function computeRepayments(debt: Debt): DebtPayoffSummary {
   const monthlyRate = debt.interest_rate / 100 / 12;
   const paymentPence = debt.minimum_payment_pence + debt.overpayment_pence;
-  const schedule: AmortizationRow[] = [];
+  const schedule: RepaymentRow[] = [];
 
   let currentBalance = debt.balance_pence;
   let totalInterestPaid = 0;

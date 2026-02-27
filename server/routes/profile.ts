@@ -22,6 +22,7 @@ function mapUser(row: Record<string, unknown>): User {
     email_verified: Boolean(row.email_verified),
     system_role: row.system_role as 'admin' | 'user',
     created_at: row.created_at as string,
+    colour_palette: (row.colour_palette as string | undefined) ?? 'default',
   };
 }
 
@@ -39,6 +40,17 @@ router.put('/', (req: Request, res: Response) => {
   if (!result.success) { res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' }); return; }
 
   db.prepare("UPDATE users SET display_name = ?, updated_at = datetime('now') WHERE id = ?").run(result.data.display_name.trim(), req.userId!);
+  const row = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId!) as Record<string, unknown>;
+  res.json(mapUser(row));
+});
+
+// PUT /api/auth/profile/palette
+router.put('/palette', (req: Request, res: Response) => {
+  const schema = z.object({ colour_palette: z.enum(['default', 'deuteranopia', 'protanopia', 'tritanopia']) });
+  const result = schema.safeParse(req.body);
+  if (!result.success) { res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' }); return; }
+
+  db.prepare("UPDATE users SET colour_palette = ?, updated_at = datetime('now') WHERE id = ?").run(result.data.colour_palette, req.userId!);
   const row = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId!) as Record<string, unknown>;
   res.json(mapUser(row));
 });
