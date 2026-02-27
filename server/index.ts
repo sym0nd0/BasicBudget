@@ -26,6 +26,7 @@ import summaryRouter from './routes/summary.js';
 import importRouter from './routes/import.js';
 import exportRouter from './routes/export.js';
 import adminRouter from './routes/admin.js';
+import categoriesRouter from './routes/categories.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -86,6 +87,7 @@ app.use('/api/summary', summaryRouter);
 app.use('/api/import', importRouter);
 app.use('/api/export', exportRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/categories', categoriesRouter);
 
 // 10. Static + SPA fallback (production)
 if (config.NODE_ENV === 'production') {

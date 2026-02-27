@@ -8,6 +8,8 @@ import { Modal } from '../components/ui/Modal';
 import { ExpenseForm } from '../components/forms/ExpenseForm';
 import { Badge } from '../components/ui/Badge';
 import { FilterBar } from '../components/layout/FilterBar';
+import { SortableHeader } from '../components/ui/SortableHeader';
+import { useSortableTable } from '../hooks/useSortableTable';
 import { formatCurrency, formatOrdinal } from '../utils/formatters';
 import { findDuplicateExpense } from '../utils/duplicates';
 import type { Expense } from '../types';
@@ -24,13 +26,15 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
   const [filterType, setFilterType] = useState<string>('all');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
+  const preFiltered = useMemo(() => {
     return expenses.filter(e => {
       if (filterCategory !== 'all' && e.category !== filterCategory) return false;
       if (filterType !== 'all' && e.type !== filterType) return false;
       return true;
     });
   }, [expenses, filterCategory, filterType]);
+
+  const { sorted: filtered, sortKey, sortDir, toggleSort } = useSortableTable<Expense>(preFiltered, 'name');
 
   const totalEffective = filtered.reduce((sum, e) => sum + Math.round(e.amount_pence * e.split_ratio), 0);
   const totalAll = expenses.reduce((sum, e) => sum + Math.round(e.amount_pence * e.split_ratio), 0);
@@ -142,13 +146,13 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-2)]">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Name</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Full Amount</th>
+              <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-2)] group">
+                <SortableHeader label="Name" sortKey="name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} className="text-left" />
+                <SortableHeader label="Full Amount" sortKey="amount_pence" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} className="text-right" />
                 <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Your Share</th>
-                <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Day</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Category</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Type</th>
+                <SortableHeader label="Day" sortKey="posting_day" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} className="text-center" />
+                <SortableHeader label="Category" sortKey="category" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} className="text-left" />
+                <SortableHeader label="Type" sortKey="type" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} className="text-left" />
                 <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Account</th>
                 <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Notes</th>
                 <th className="px-5 py-3 w-24"></th>

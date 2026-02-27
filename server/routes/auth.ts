@@ -20,6 +20,7 @@ const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
   display_name: z.string().optional(),
+  invite_token: z.string().optional(),
 });
 
 const loginSchema = z.object({
@@ -61,7 +62,7 @@ router.post('/register', async (req: Request, res: Response) => {
     res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
     return;
   }
-  const { email, password, display_name } = result.data;
+  const { email, password, display_name, invite_token } = result.data;
 
   const strength = validatePasswordStrength(password);
   if (!strength.valid) {
@@ -84,17 +85,35 @@ router.post('/register', async (req: Request, res: Response) => {
   const countRow = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
   const isFirstUser = countRow.count === 0;
 
+  // If valid invite_token is provided, join that household instead of creating new one
+  let targetHouseholdId: string | null = null;
+  if (invite_token) {
+    const consumed = validateAndConsumeToken(invite_token, 'invite');
+    if (consumed?.newEmail) {
+      targetHouseholdId = consumed.newEmail; // newEmail field stores householdId for invites
+    }
+  }
+
   db.transaction(() => {
     db.prepare(`
       INSERT INTO users (id, email, display_name, password_hash, system_role)
       VALUES (?, ?, ?, ?, ?)
     `).run(userId, email.toLowerCase().trim(), name, hash, isFirstUser ? 'admin' : 'user');
 
-    db.prepare('INSERT INTO households (id, name) VALUES (?, ?)').run(householdId, `${name}'s Household`);
-    db.prepare(`
-      INSERT INTO household_members (household_id, user_id, role)
-      VALUES (?, ?, 'owner')
-    `).run(householdId, userId);
+    if (targetHouseholdId) {
+      // Join the invited household as member
+      db.prepare(`
+        INSERT INTO household_members (household_id, user_id, role)
+        VALUES (?, ?, 'member')
+      `).run(targetHouseholdId, userId);
+    } else {
+      // Create new household
+      db.prepare('INSERT INTO households (id, name) VALUES (?, ?)').run(householdId, `${name}'s Household`);
+      db.prepare(`
+        INSERT INTO household_members (household_id, user_id, role)
+        VALUES (?, ?, 'owner')
+      `).run(householdId, userId);
+    }
   })();
 
   // Send verification email (don't fail registration if email fails)

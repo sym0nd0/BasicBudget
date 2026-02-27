@@ -96,10 +96,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
-  register: (email: string, password: string, display_name?: string) =>
+  register: (email: string, password: string, display_name?: string, invite_token?: string) =>
     request<{ message: string }>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, display_name }),
+      body: JSON.stringify({ email, password, display_name, invite_token }),
     }),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
   forgotPassword: (email: string) =>
@@ -201,12 +201,15 @@ export const api = {
 
   // ── Accounts ──
   getAccounts: () => request<Account[]>('/accounts'),
-  createAccount: (data: Pick<Account, 'name' | 'sort_order'>) =>
+  createAccount: (data: Pick<Account, 'name' | 'sort_order'> & { is_joint?: boolean }) =>
     request<Account>('/accounts', { method: 'POST', body: JSON.stringify(data) }),
-  updateAccount: (id: string, data: Partial<Pick<Account, 'name' | 'sort_order'>>) =>
+  updateAccount: (id: string, data: Partial<Pick<Account, 'name' | 'sort_order'>> & { is_joint?: boolean }) =>
     request<Account>(`/accounts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteAccount: (id: string) =>
     request<void>(`/accounts/${id}`, { method: 'DELETE' }),
+
+  // ── Categories ──
+  getCategories: () => request<string[]>('/categories'),
 
   // ── Month Locks ──
   getMonths: () => request<MonthLock[]>('/months'),
@@ -261,6 +264,17 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(cfg),
     }),
+
+  // ── Admin — Categories ──
+  getAdminCategories: () =>
+    request<string[]>('/admin/settings/categories'),
+  updateAdminCategories: (categories: string[]) =>
+    request<{ message: string; categories: string[] }>('/admin/settings/categories', {
+      method: 'PUT',
+      body: JSON.stringify({ categories }),
+    }),
+  resetAdminCategories: () =>
+    request<{ message: string; categories: string[] }>('/admin/settings/categories', { method: 'DELETE' }),
 
   // ── Admin — Audit log ──
   getAuditLog: (page = 1, limit = 50, filters?: { user_id?: string; action?: string }) => {

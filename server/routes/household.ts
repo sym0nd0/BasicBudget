@@ -8,7 +8,7 @@ import { inviteLimiter } from '../middleware/rate-limit.js';
 import { createToken, validateAndConsumeToken } from '../auth/tokens.js';
 import { sendHouseholdInvite } from '../services/email.js';
 import { filterActiveInMonth, currentYearMonth, type RecurringItem } from '../utils/recurring.js';
-import type { HouseholdOverview } from '../../shared/types.js';
+import type { HouseholdOverview, CategoryBreakdown } from '../../shared/types.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -166,6 +166,19 @@ router.get('/summary', (req: Request, res: Response) => {
   const debtPaymentsPence = householdDebts.reduce((s, d) => s + (d.effective_pence ?? 0), 0);
   const totalDebtBalancePence = allDebts.filter(d => Boolean(d.is_household)).reduce((s, d) => s + (d.balance_pence as number), 0);
 
+  const categoryMap = new Map<string, number>();
+  for (const e of activeExpenses) {
+    const cat = (e.category as string) ?? 'Other';
+    categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + (e.effective_pence ?? 0));
+  }
+  const categoryBreakdown: CategoryBreakdown[] = Array.from(categoryMap.entries())
+    .map(([category, total_pence]) => ({
+      category,
+      total_pence,
+      percentage: totalExpensesPence > 0 ? (total_pence / totalExpensesPence) * 100 : 0,
+    }))
+    .sort((a, b) => b.total_pence - a.total_pence);
+
   const overview: HouseholdOverview = {
     total_income_pence: totalIncomePence,
     total_expenses_pence: totalExpensesPence,
@@ -175,6 +188,7 @@ router.get('/summary', (req: Request, res: Response) => {
     disposable_income_pence: totalIncomePence - totalExpensesPence - debtPaymentsPence,
     debt_to_income_ratio: totalIncomePence > 0 ? Math.round((debtPaymentsPence / totalIncomePence) * 1000) / 10 : 0,
     total_debt_balance_pence: totalDebtBalancePence,
+    category_breakdown: categoryBreakdown,
   };
 
   res.json(overview);

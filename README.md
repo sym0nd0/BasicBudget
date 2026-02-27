@@ -8,6 +8,8 @@
 
 A multi-user personal budgeting and debt management application built with React 19, TypeScript, and a Node.js/SQLite backend. BasicBudget helps households track monthly income and expenses, manage debts with full repayment schedules, track savings goals, and visualise their financial picture through interactive charts — with per-household data isolation, optional TOTP 2FA, and OIDC single sign-on.
 
+> **Disclaimer:** BasicBudget was entirely created using [Claude Code](https://claude.com/claude-code) by Anthropic. As with any AI-generated code, caution should be exercised — use entirely at your own risk. PRs and contributions are welcome; even more so, if someone who knows what they're actually doing forks it and improves it.
+
 ---
 
 ## Table of Contents
@@ -43,14 +45,14 @@ A multi-user personal budgeting and debt management application built with React
 - Every user belongs to a household (created automatically on registration)
 - **Owner** role: read and write all household entries; can customize household name
 - **Member** role: read all entries, write only own entries
-- Invite members by email (7-day expiring token); invitees can register and join even if they don't have an account yet; role management by owner
+- Invite members by email (7-day expiring token); invitees who don't have an account are automatically joined to the household upon registration — no separate accept step required; role management by owner
 - All financial data is isolated per household
 
 ### Admin Panel
 - The **first registered user** is automatically promoted to system admin
 - Admin-only panel accessible from the sidebar under the "Admin" section
 - **User management**: list all users, promote/demote roles, lock/unlock accounts, delete users
-- **System settings**: configure SMTP (email) and OIDC (SSO) at runtime via the UI — no restart required
+- **System settings**: configure SMTP (email) and OIDC (SSO) at runtime via the UI — no restart required; manage expense categories (add, remove, reorder, reset to defaults)
 - **Audit log**: paginated, filterable log of all authentication and admin actions
 - All admin actions are written to the audit log
 
@@ -63,15 +65,17 @@ A multi-user personal budgeting and debt management application built with React
 ### Income Management
 - Add, edit, and delete income sources with contributor names
 - Record the day of month income is received; track as gross or net
-- Set recurrence type: monthly, weekly, or yearly
+- Set recurrence type: monthly, weekly, fortnightly, or yearly
 - Optional start and end dates for time-bounded income entries
+- Sortable table columns (name, amount, day, type)
 
 ### Expense Management
 - Add, edit, and delete monthly expenses
-- 11 expense categories; fixed or variable tag
-- Assign expenses to a named payment account
+- Configurable expense categories managed by admin; fixed or variable tag
+- Assign expenses to a named payment account, including joint accounts visible to all household members
 - Mark expenses as household expenses with a configurable split ratio so only your share counts in budget summaries
-- Set recurrence type and optional start/end dates
+- Set recurrence type (including fortnightly) and optional start/end dates
+- Sortable table columns (name, amount, your share, day, category, type)
 
 ### Debt Management
 - Add, edit, and delete debts
@@ -79,13 +83,14 @@ A multi-user personal budgeting and debt management application built with React
 - Full per-debt repayment schedule: month-by-month opening balance, interest charge, principal paid, and closing balance
 - Payoff summary: months remaining, total interest paid, projected payoff date
 - Debt payoff chart plotting all balances on a shared monthly timeline
+- Sortable table columns (name, balance, APR, min payment)
 
-### Savings Goals
-- Create and track savings goals with target amounts and monthly contributions
-- Optional target dates; progress bars
+### Savings
+- Create and track savings with optional target amounts and monthly contributions
+- Optional target dates; progress bars shown only when a target is set
 
 ### Settings & Appearance
-- Manage named payment accounts; month locking to prevent edits on closed months
+- Manage named payment accounts, including joint accounts shared across all household members; month locking to prevent edits on closed months
 - Change password, change email, 2FA setup/disable
 - CSV import and export for bulk data management
 - **Colour blindness palettes** — per-user accessibility setting (server-persisted); choose from Default, Deuteranopia (blue/orange), Protanopia (teal/pink), or Tritanopia (green/red); affects status colours and charts
@@ -93,7 +98,7 @@ A multi-user personal budgeting and debt management application built with React
 ### Additional
 - **Duplicate detection** — warns before saving an entry identical to an existing one
 - **Theme toggle** — light, dark, and system-preference modes
-- **Filter bar** — filter entries by contributor, account, category, or recurrence type
+- **Filter bar** — filter entries by contributor, account, category, or recurrence type; toggle a date range picker to cycle through a from/to month window
 
 ---
 

@@ -10,7 +10,7 @@ interface AuthContextValue {
   totpPending: boolean;
   login: (email: string, password: string) => Promise<{ totp_required?: boolean }>;
   logout: () => Promise<void>;
-  register: (email: string, password: string, display_name?: string) => Promise<void>;
+  register: (email: string, password: string, display_name?: string, invite_token?: string) => Promise<void>;
   refreshAuth: () => Promise<void>;
 }
 
@@ -78,8 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     palettes.forEach(p => document.documentElement.classList.remove(p));
   }, []);
 
-  const register = useCallback(async (email: string, password: string, display_name?: string) => {
-    await api.register(email, password, display_name);
+  const register = useCallback(async (email: string, password: string, display_name?: string, invite_token?: string) => {
+    await api.register(email, password, display_name, invite_token);
   }, []);
 
   return (

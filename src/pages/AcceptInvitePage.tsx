@@ -69,8 +69,7 @@ export function AcceptInvitePage() {
 
   // User not logged in and invite is for new user
   if (!loading && inviteInfo && !user && !inviteInfo.userExists) {
-    localStorage.setItem('pending_invite_token', token!);
-    navigate(`/register?email=${encodeURIComponent(inviteInfo.inviteeEmail)}`);
+    navigate(`/register?email=${encodeURIComponent(inviteInfo.inviteeEmail)}&token=${encodeURIComponent(token!)}`);
     return null;
   }
 
@@ -78,9 +77,7 @@ export function AcceptInvitePage() {
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-[var(--color-primary)] flex items-center justify-center text-white font-bold text-xl mx-auto mb-3">
-            £
-          </div>
+          <img src="/favicon.png" alt="BasicBudget" className="w-12 h-12 rounded-xl mx-auto mb-3" />
           <h1 className="text-2xl font-bold text-[var(--color-text)]">Accept Invite</h1>
         </div>
 

@@ -27,7 +27,7 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
   const [contributorName, setContributorName] = useState(initial?.contributor_name ?? '');
   const [grossOrNet, setGrossOrNet] = useState<'gross' | 'net'>(initial?.gross_or_net ?? 'net');
   const [isRecurring, setIsRecurring] = useState(initial?.is_recurring ?? true);
-  const [recurrenceType, setRecurrenceType] = useState<'monthly' | 'weekly' | 'yearly'>(
+  const [recurrenceType, setRecurrenceType] = useState<'monthly' | 'weekly' | 'yearly' | 'fortnightly'>(
     initial?.recurrence_type ?? 'monthly',
   );
   const [startDate, setStartDate] = useState(initial?.start_date ?? '');
@@ -137,12 +137,13 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
               setIsRecurring(false);
             } else {
               setIsRecurring(true);
-              setRecurrenceType(v as 'monthly' | 'weekly' | 'yearly');
+              setRecurrenceType(v as 'monthly' | 'weekly' | 'yearly' | 'fortnightly');
             }
           }}
           options={[
             { value: 'monthly', label: 'Monthly' },
             { value: 'weekly', label: 'Weekly' },
+            { value: 'fortnightly', label: 'Fortnightly' },
             { value: 'yearly', label: 'Yearly' },
             { value: 'one-off', label: 'One-off' },
           ]}

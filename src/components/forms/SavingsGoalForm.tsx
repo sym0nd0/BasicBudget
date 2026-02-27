@@ -29,7 +29,7 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = 'Name is required';
     const target = parseFloat(targetAmount);
-    if (isNaN(target) || target <= 0) e.targetAmount = 'Enter a valid target amount';
+    if (targetAmount.trim() !== '' && (isNaN(target) || target < 0)) e.targetAmount = 'Enter a valid target amount';
     const current = parseFloat(currentAmount);
     if (isNaN(current) || current < 0) e.currentAmount = 'Enter a valid current amount';
     const monthly = parseFloat(monthlyContribution);
@@ -46,7 +46,7 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
     }
     onSave({
       name: name.trim(),
-      target_amount_pence: poundsToPence(targetAmount),
+      target_amount_pence: targetAmount.trim() ? poundsToPence(targetAmount) : 0,
       current_amount_pence: poundsToPence(currentAmount),
       monthly_contribution_pence: poundsToPence(monthlyContribution),
       target_date: targetDate || null,
@@ -57,7 +57,7 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <Input
-        label="Goal Name"
+        label="Savings Name"
         value={name}
         onChange={e => setName(e.target.value)}
         placeholder="e.g. Emergency Fund"
@@ -65,7 +65,7 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
       />
       <div className="grid grid-cols-2 gap-3">
         <Input
-          label="Target Amount"
+          label="Target Amount (optional)"
           type="number"
           step="0.01"
           min="0"
@@ -111,7 +111,7 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
       />
       <div className="flex gap-3 justify-end pt-2">
         <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-        <Button type="submit">{initial ? 'Save Changes' : 'Add Goal'}</Button>
+        <Button type="submit">{initial ? 'Save Changes' : 'Add Savings'}</Button>
       </div>
     </form>
   );

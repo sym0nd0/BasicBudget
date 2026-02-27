@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import type { Expense, ExpenseCategory, Account } from '../../types';
+import type { Expense, Account } from '../../types';
 import { EXPENSE_CATEGORIES } from '../../types';
 import { Input, Select } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { poundsToPence, penceToPoundsStr } from '../../utils/formatters';
+import { useApi } from '../../hooks/useApi';
 
 interface ExpenseFormProps {
   initial?: Expense;
@@ -13,15 +14,17 @@ interface ExpenseFormProps {
 }
 
 export function ExpenseForm({ initial, accounts, onSave, onCancel }: ExpenseFormProps) {
+  const { data: categoriesData } = useApi<string[]>('/categories');
+  const categories = categoriesData ?? EXPENSE_CATEGORIES;
   const [name, setName] = useState(initial?.name ?? '');
   const [amount, setAmount] = useState(initial ? penceToPoundsStr(initial.amount_pence) : '');
   const [postingDay, setPostingDay] = useState(String(initial?.posting_day ?? '1'));
   const [accountId, setAccountId] = useState(initial?.account_id ?? '');
   const [type, setType] = useState<'fixed' | 'variable'>(initial?.type ?? 'fixed');
-  const [category, setCategory] = useState<ExpenseCategory>(initial?.category ?? 'Other');
+  const [category, setCategory] = useState<string>(initial?.category ?? 'Other');
   const [isHousehold, setIsHousehold] = useState(initial?.is_household ?? false);
   const [isRecurring, setIsRecurring] = useState(initial?.is_recurring ?? true);
-  const [recurrenceType, setRecurrenceType] = useState<'monthly' | 'weekly' | 'yearly'>(
+  const [recurrenceType, setRecurrenceType] = useState<'monthly' | 'weekly' | 'yearly' | 'fortnightly'>(
     initial?.recurrence_type ?? 'monthly',
   );
   const [startDate, setStartDate] = useState(initial?.start_date ?? '');
@@ -117,8 +120,8 @@ export function ExpenseForm({ initial, accounts, onSave, onCancel }: ExpenseForm
       <Select
         label="Category"
         value={category}
-        onChange={e => setCategory(e.target.value as ExpenseCategory)}
-        options={EXPENSE_CATEGORIES.map(c => ({ value: c, label: c }))}
+        onChange={e => setCategory(e.target.value)}
+        options={categories.map(c => ({ value: c, label: c }))}
       />
       <div className="grid grid-cols-2 gap-3">
         <Select
@@ -130,12 +133,13 @@ export function ExpenseForm({ initial, accounts, onSave, onCancel }: ExpenseForm
               setIsRecurring(false);
             } else {
               setIsRecurring(true);
-              setRecurrenceType(v as 'monthly' | 'weekly' | 'yearly');
+              setRecurrenceType(v as 'monthly' | 'weekly' | 'yearly' | 'fortnightly');
             }
           }}
           options={[
             { value: 'monthly', label: 'Monthly' },
             { value: 'weekly', label: 'Weekly' },
+            { value: 'fortnightly', label: 'Fortnightly' },
             { value: 'yearly', label: 'Yearly' },
             { value: 'one-off', label: 'One-off' },
           ]}

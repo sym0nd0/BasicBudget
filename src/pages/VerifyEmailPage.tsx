@@ -22,9 +22,7 @@ export function VerifyEmailPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] px-4">
       <div className="w-full max-w-sm text-center">
-        <div className="w-12 h-12 rounded-xl bg-[var(--color-primary)] flex items-center justify-center text-white font-bold text-xl mx-auto mb-6">
-          £
-        </div>
+        <img src="/favicon.png" alt="BasicBudget" className="w-12 h-12 rounded-xl mx-auto mb-6" />
         {status === 'verifying' && (
           <p className="text-[var(--color-text-muted)]">Verifying your email…</p>
         )}

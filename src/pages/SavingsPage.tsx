@@ -71,14 +71,14 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
 
   return (
     <PageShell
-      title="Savings Goals"
+      title="Savings"
       onMenuClick={onMenuClick}
       headerAction={
         <Button onClick={() => { setEditing(undefined); setModalOpen(true); }} size="sm">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
-          Add Goal
+          Add Savings
         </Button>
       }
     >
@@ -108,9 +108,10 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
       ) : (
         <div className="space-y-4">
           {goals.map(goal => {
-            const progress = progressPercent(goal);
-            const months = monthsToGoal(goal);
-            const achieved = progress >= 100;
+            const hasTarget = goal.target_amount_pence > 0;
+            const progress = hasTarget ? progressPercent(goal) : 0;
+            const months = hasTarget ? monthsToGoal(goal) : null;
+            const achieved = hasTarget && progress >= 100;
 
             return (
               <Card key={goal.id}>
@@ -139,23 +140,28 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                   </div>
                 </div>
 
-                {/* Progress bar */}
-                <div className="mb-3">
-                  <div className="flex justify-between text-xs text-[var(--color-text-muted)] mb-1">
-                    <span>{formatCurrency(goal.current_amount_pence)} saved</span>
-                    <span>{formatCurrency(goal.target_amount_pence)} target</span>
+                {/* Progress bar — only shown when a target is set */}
+                {hasTarget && (
+                  <div className="mb-3">
+                    <div className="flex justify-between text-xs text-[var(--color-text-muted)] mb-1">
+                      <span>{formatCurrency(goal.current_amount_pence)} saved</span>
+                      <span>{formatCurrency(goal.target_amount_pence)} target</span>
+                    </div>
+                    <div className="w-full bg-[var(--color-surface-2)] rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all ${achieved ? 'bg-[var(--color-success)]' : 'bg-[var(--color-primary)]'}`}
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1">{progress.toFixed(1)}% complete</p>
                   </div>
-                  <div className="w-full bg-[var(--color-surface-2)] rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${achieved ? 'bg-[var(--color-success)]' : 'bg-[var(--color-primary)]'}`}
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-1">{progress.toFixed(1)}% complete</p>
-                </div>
+                )}
 
                 {/* Stats */}
                 <div className="flex flex-wrap gap-4 text-sm">
+                  <span className="text-[var(--color-text-muted)]">
+                    Saved: <span className="font-medium text-[var(--color-text)]">{formatCurrency(goal.current_amount_pence)}</span>
+                  </span>
                   {goal.monthly_contribution_pence > 0 && (
                     <span className="text-[var(--color-text-muted)]">
                       <span className="font-medium text-[var(--color-text)]">{formatCurrency(goal.monthly_contribution_pence)}</span>/mo
@@ -163,7 +169,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                   )}
                   {months !== null && !achieved && (
                     <span className="text-[var(--color-text-muted)]">
-                      ~<span className="font-medium text-[var(--color-text)]">{months}</span> months to goal
+                      ~<span className="font-medium text-[var(--color-text)]">{months}</span> months to target
                     </span>
                   )}
                   {goal.target_date && (
@@ -183,7 +189,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
       <Modal
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
-        title={editing ? 'Edit Goal' : 'Add Savings Goal'}
+        title={editing ? 'Edit Savings' : 'Add Savings'}
       >
         {errorMsg && (
           <p className="mb-3 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">

@@ -15,6 +15,8 @@ export function RegisterPage() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const inviteToken = searchParams.get('token') ?? undefined;
+
   // Pre-fill email from query param if present (for invite flow)
   useEffect(() => {
     const emailParam = searchParams.get('email');
@@ -28,7 +30,7 @@ export function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      await register(email, password, displayName || undefined);
+      await register(email, password, displayName || undefined, inviteToken);
       setSuccess('Registration successful! Please check your email to verify your account.');
       setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
@@ -42,9 +44,7 @@ export function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-[var(--color-primary)] flex items-center justify-center text-white font-bold text-xl mx-auto mb-3">
-            £
-          </div>
+          <img src="/favicon.png" alt="BasicBudget" className="w-12 h-12 rounded-xl mx-auto mb-3" />
           <h1 className="text-2xl font-bold text-[var(--color-text)]">Create your account</h1>
         </div>
 
