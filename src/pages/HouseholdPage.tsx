@@ -7,6 +7,7 @@ import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { FilterBar } from '../components/layout/FilterBar';
 import { IncomeVsExpensesBar } from '../components/charts/IncomeVsExpensesBar';
+import { ExpenseDonut } from '../components/charts/ExpenseDonut';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { formatCurrency, formatPercent } from '../utils/formatters';
@@ -170,6 +171,11 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
             expenses={overview?.total_expenses_pence ?? 0}
             debtPayments={overview?.debt_payments_pence ?? 0}
           />
+        </Card>
+
+        <Card>
+          <CardHeader title="Expense Breakdown" subtitle="By category — full household" />
+          <ExpenseDonut breakdown={overview?.category_breakdown ?? []} />
         </Card>
 
         <Card>

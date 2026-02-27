@@ -6,10 +6,12 @@ import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { auditLog } from '../services/audit.js';
 import {
   setSetting,
+  getSetting,
   getSmtpConfigMasked,
   getOidcConfigMasked,
   invalidateCache,
 } from '../services/settings.js';
+import { DEFAULT_EXPENSE_CATEGORIES, getExpenseCategories } from './categories.js';
 import { resetOidcClient } from './oidc.js';
 import { sendTestEmail } from '../services/email.js';
 
@@ -309,6 +311,33 @@ router.get('/audit-log', (req: Request, res: Response) => {
   }));
 
   res.json({ data, total: totalRow.count, page, limit });
+});
+
+// GET /api/admin/settings/categories
+router.get('/settings/categories', (_req: Request, res: Response) => {
+  res.json(getExpenseCategories());
+});
+
+// PUT /api/admin/settings/categories
+router.put('/settings/categories', (req: Request, res: Response) => {
+  const schema = z.object({
+    categories: z.array(z.string().min(1).max(50)).min(1).max(50),
+  });
+  const result = schema.safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
+    return;
+  }
+  setSetting('expense_categories', JSON.stringify(result.data.categories));
+  auditLog(req.userId!, 'admin_categories_updated', { count: result.data.categories.length }, req.ip, req.get('user-agent'));
+  res.json({ message: 'Categories updated.', categories: result.data.categories });
+});
+
+// DELETE /api/admin/settings/categories (reset to defaults)
+router.delete('/settings/categories', (req: Request, res: Response) => {
+  setSetting('expense_categories', JSON.stringify(DEFAULT_EXPENSE_CATEGORIES));
+  auditLog(req.userId!, 'admin_categories_reset', {}, req.ip, req.get('user-agent'));
+  res.json({ message: 'Categories reset to defaults.', categories: DEFAULT_EXPENSE_CATEGORIES });
 });
 
 export default router;

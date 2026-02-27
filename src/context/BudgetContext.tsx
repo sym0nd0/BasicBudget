@@ -17,8 +17,8 @@ interface BudgetContextValue {
   addExpense: (data: Omit<Expense, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateExpense: (id: string, data: Partial<Omit<Expense, 'id'>>) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
-  addAccount: (data: Pick<Account, 'name' | 'sort_order'>) => Promise<void>;
-  updateAccount: (id: string, data: Partial<Pick<Account, 'name' | 'sort_order'>>) => Promise<void>;
+  addAccount: (data: Pick<Account, 'name' | 'sort_order'> & { is_joint?: boolean }) => Promise<void>;
+  updateAccount: (id: string, data: Partial<Pick<Account, 'name' | 'sort_order'>> & { is_joint?: boolean }) => Promise<void>;
   deleteAccount: (id: string) => Promise<void>;
   refetchIncomes: () => void;
   refetchExpenses: () => void;

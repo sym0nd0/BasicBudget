@@ -47,8 +47,8 @@ router.post('/', (req: Request, res: Response) => {
     return;
   }
   const recurrenceType = body.recurrence_type ?? 'monthly';
-  if (!['monthly', 'weekly', 'yearly'].includes(recurrenceType)) {
-    res.status(400).json({ message: "recurrence_type must be 'monthly', 'weekly', or 'yearly'" });
+  if (!['monthly', 'weekly', 'yearly', 'fortnightly'].includes(recurrenceType)) {
+    res.status(400).json({ message: "recurrence_type must be 'monthly', 'weekly', 'yearly', or 'fortnightly'" });
     return;
   }
   const id = randomUUID();
@@ -112,8 +112,8 @@ router.put('/:id', (req: Request, res: Response) => {
     res.status(400).json({ message: "type must be 'fixed' or 'variable'" });
     return;
   }
-  if (body.recurrence_type !== undefined && !['monthly', 'weekly', 'yearly'].includes(body.recurrence_type)) {
-    res.status(400).json({ message: "recurrence_type must be 'monthly', 'weekly', or 'yearly'" });
+  if (body.recurrence_type !== undefined && !['monthly', 'weekly', 'yearly', 'fortnightly'].includes(body.recurrence_type)) {
+    res.status(400).json({ message: "recurrence_type must be 'monthly', 'weekly', 'yearly', or 'fortnightly'" });
     return;
   }
   const isHousehold = body.is_household !== undefined

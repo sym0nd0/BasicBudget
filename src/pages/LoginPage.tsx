@@ -48,9 +48,7 @@ export function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-[var(--color-primary)] flex items-center justify-center text-white font-bold text-xl mx-auto mb-3">
-            £
-          </div>
+          <img src="/favicon.png" alt="BasicBudget" className="w-12 h-12 rounded-xl mx-auto mb-3" />
           <h1 className="text-2xl font-bold text-[var(--color-text)]">Sign in to BasicBudget</h1>
         </div>
 

@@ -44,9 +44,7 @@ export function TotpPage() {
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-[var(--color-primary)] flex items-center justify-center text-white font-bold text-xl mx-auto mb-3">
-            £
-          </div>
+          <img src="/favicon.png" alt="BasicBudget" className="w-12 h-12 rounded-xl mx-auto mb-3" />
           <h1 className="text-2xl font-bold text-[var(--color-text)]">Two-factor authentication</h1>
           <p className="text-sm text-[var(--color-text-muted)] mt-2">
             {useRecovery ? 'Enter a recovery code.' : 'Enter the 6-digit code from your authenticator app.'}

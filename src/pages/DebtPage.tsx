@@ -7,6 +7,8 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { DebtForm } from '../components/forms/DebtForm';
 import { Badge } from '../components/ui/Badge';
+import { SortableHeader } from '../components/ui/SortableHeader';
+import { useSortableTable } from '../hooks/useSortableTable';
 import { formatCurrency, formatPercent, formatYearMonth } from '../utils/formatters';
 import { findDuplicateDebt } from '../utils/duplicates';
 import type { Debt, RepaymentRow, DebtPayoffSummary } from '../types';
@@ -62,6 +64,7 @@ function RepaymentPanel({ debtId }: { debtId: string }) {
 
 export function DebtPage({ onMenuClick }: DebtPageProps) {
   const { debts, addDebt, updateDebt, deleteDebt } = useDebt();
+  const { sorted: sortedDebts, sortKey, sortDir, toggleSort } = useSortableTable<Debt>(debts, 'name');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Debt | undefined>();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -157,11 +160,11 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-2)]">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Name</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Balance</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">APR</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Min Payment</th>
+              <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-2)] group">
+                <SortableHeader label="Name" sortKey="name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Debt)} className="text-left" />
+                <SortableHeader label="Balance" sortKey="balance_pence" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Debt)} className="text-right" />
+                <SortableHeader label="APR" sortKey="interest_rate" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Debt)} className="text-right" />
+                <SortableHeader label="Min Payment" sortKey="minimum_payment_pence" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Debt)} className="text-right" />
                 <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Overpayment</th>
                 <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Your Share</th>
                 <th className="px-5 py-3 w-24"></th>
@@ -175,7 +178,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                   </td>
                 </tr>
               )}
-              {debts.map(debt => {
+              {sortedDebts.map(debt => {
                 const isExpanded = expandedId === debt.id;
 
                 return (

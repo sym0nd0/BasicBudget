@@ -104,6 +104,31 @@ export function isActiveInMonth(
     return { active: count > 0, effectivePence };
   }
 
+  if (type === 'fortnightly') {
+    // posting_day is day-of-week: 1=Mon ... 7=Sun (ISO)
+    // Anchor: start_date determines which weeks are "on"
+    if (!startDate) return { active: false };
+    const targetDow = item.posting_day; // 1–7
+    // Find all days in month matching the target day-of-week
+    // then filter to those where (date - startDate) % 14 === 0
+    const anchorTime = startDate.getTime();
+    let count = 0;
+    const d = new Date(year, month - 1, 1);
+    const MS_PER_DAY = 86400000;
+    while (d.getMonth() === month - 1) {
+      const jsDay = d.getDay();
+      const isoDow = jsDay === 0 ? 7 : jsDay;
+      if (isoDow === targetDow) {
+        const diffDays = Math.round((d.getTime() - anchorTime) / MS_PER_DAY);
+        if (diffDays >= 0 && diffDays % 14 === 0) count++;
+      }
+      d.setDate(d.getDate() + 1);
+    }
+    const effectivePence =
+      item.amount_pence !== undefined ? item.amount_pence * count : undefined;
+    return { active: count > 0, effectivePence };
+  }
+
   return { active: false };
 }
 

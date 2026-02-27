@@ -22,6 +22,7 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | undefined>();
   const [accountName, setAccountName] = useState('');
+  const [accountIsJoint, setAccountIsJoint] = useState(false);
   const [accountError, setAccountError] = useState('');
 
   // CSV import
@@ -70,12 +71,13 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
     if (!accountName.trim()) { setAccountError('Name is required'); return; }
     try {
       if (editingAccount) {
-        await updateAccount(editingAccount.id, { name: accountName.trim() });
+        await updateAccount(editingAccount.id, { name: accountName.trim(), is_joint: accountIsJoint });
       } else {
-        await addAccount({ name: accountName.trim(), sort_order: accounts.length });
+        await addAccount({ name: accountName.trim(), sort_order: accounts.length, is_joint: accountIsJoint });
       }
       setAccountModalOpen(false);
       setAccountName('');
+      setAccountIsJoint(false);
       setEditingAccount(undefined);
       setAccountError('');
     } catch (err) {
@@ -86,6 +88,7 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   const handleAccountEdit = (account: Account) => {
     setEditingAccount(account);
     setAccountName(account.name);
+    setAccountIsJoint(account.is_joint ?? false);
     setAccountModalOpen(true);
   };
 
@@ -262,7 +265,14 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
               <tbody>
                 {accounts.map(account => (
                   <tr key={account.id} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)]">
-                    <td className="px-5 py-3 font-medium text-[var(--color-text)]">{account.name}</td>
+                    <td className="px-5 py-3 font-medium text-[var(--color-text)]">
+                      {account.name}
+                      {account.is_joint && (
+                        <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-[var(--color-primary-light)] text-[var(--color-primary)]">
+                          Joint
+                        </span>
+                      )}
+                    </td>
                     <td className="px-5 py-3 text-right">
                       <div className="flex items-center gap-1 justify-end">
                         <Button variant="ghost" size="sm" onClick={() => handleAccountEdit(account)}>
@@ -534,7 +544,7 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
       {/* Account modal */}
       <Modal
         isOpen={accountModalOpen}
-        onClose={() => { setAccountModalOpen(false); setEditingAccount(undefined); setAccountName(''); setAccountError(''); }}
+        onClose={() => { setAccountModalOpen(false); setEditingAccount(undefined); setAccountName(''); setAccountIsJoint(false); setAccountError(''); }}
         title={editingAccount ? 'Edit Account' : 'Add Account'}
       >
         <div className="flex flex-col gap-4">
@@ -545,8 +555,18 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
             placeholder="e.g. Barclays Current"
             error={accountError}
           />
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={accountIsJoint}
+              onChange={e => setAccountIsJoint(e.target.checked)}
+              className="rounded"
+            />
+            <span className="text-sm text-[var(--color-text)]">Joint account</span>
+            <span className="text-xs text-[var(--color-text-muted)]">(visible to all household members)</span>
+          </label>
           <div className="flex gap-3 justify-end">
-            <Button variant="secondary" onClick={() => { setAccountModalOpen(false); setEditingAccount(undefined); setAccountName(''); setAccountError(''); }}>
+            <Button variant="secondary" onClick={() => { setAccountModalOpen(false); setEditingAccount(undefined); setAccountName(''); setAccountIsJoint(false); setAccountError(''); }}>
               Cancel
             </Button>
             <Button onClick={handleAccountSave}>

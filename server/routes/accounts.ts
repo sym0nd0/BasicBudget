@@ -9,18 +9,21 @@ const router = Router();
 router.use(requireAuth);
 
 function mapAccount(row: Record<string, unknown>): Account {
-  return row as unknown as Account;
+  return { ...(row as unknown as Account), is_joint: Boolean(row.is_joint) };
 }
 
 // GET /api/accounts
 router.get('/', (req: Request, res: Response) => {
-  const rows = db.prepare('SELECT * FROM accounts WHERE household_id = ? ORDER BY sort_order, name').all(req.householdId!) as Record<string, unknown>[];
+  // Return accounts owned by the user OR joint accounts in the household
+  const rows = db.prepare(
+    'SELECT * FROM accounts WHERE household_id = ? AND (user_id = ? OR is_joint = 1) ORDER BY sort_order, name'
+  ).all(req.householdId!, req.userId!) as Record<string, unknown>[];
   res.json(rows.map(mapAccount));
 });
 
 // POST /api/accounts
 router.post('/', (req: Request, res: Response) => {
-  const { name, sort_order = 0 } = req.body as { name: string; sort_order?: number };
+  const { name, sort_order = 0, is_joint = false } = req.body as { name: string; sort_order?: number; is_joint?: boolean };
   if (!name?.trim()) {
     res.status(400).json({ message: 'name is required' });
     return;
@@ -33,8 +36,8 @@ router.post('/', (req: Request, res: Response) => {
   const id = randomUUID();
   try {
     db.prepare(
-      'INSERT INTO accounts (id, household_id, user_id, name, sort_order) VALUES (?, ?, ?, ?, ?)',
-    ).run(id, req.householdId!, req.userId!, name.trim(), sort_order);
+      'INSERT INTO accounts (id, household_id, user_id, name, sort_order, is_joint) VALUES (?, ?, ?, ?, ?, ?)',
+    ).run(id, req.householdId!, req.userId!, name.trim(), sort_order, is_joint ? 1 : 0);
   } catch (err) {
     res.status(400).json({ message: (err as Error).message });
     return;
@@ -46,7 +49,7 @@ router.post('/', (req: Request, res: Response) => {
 // PUT /api/accounts/:id
 router.put('/:id', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
-  const { name, sort_order } = req.body as { name?: string; sort_order?: number };
+  const { name, sort_order, is_joint } = req.body as { name?: string; sort_order?: number; is_joint?: boolean };
   const existing = db.prepare('SELECT * FROM accounts WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!existing) {
     res.status(404).json({ message: 'Account not found' });
@@ -69,6 +72,9 @@ router.put('/:id', (req: Request, res: Response) => {
     }
     if (sort_order !== undefined) {
       db.prepare('UPDATE accounts SET sort_order = ? WHERE id = ?').run(sort_order, id);
+    }
+    if (is_joint !== undefined) {
+      db.prepare('UPDATE accounts SET is_joint = ? WHERE id = ?').run(is_joint ? 1 : 0, id);
     }
   } catch (err) {
     res.status(400).json({ message: (err as Error).message });

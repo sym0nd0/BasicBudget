@@ -4,6 +4,7 @@ import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { api } from '../api/client';
 import type { SmtpConfig, OidcConfig } from '../types';
+import { EXPENSE_CATEGORIES } from '../types';
 
 interface AdminSettingsPageProps {
   onMenuClick: () => void;
@@ -32,6 +33,14 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
   const [smtpMsg, setSmtpMsg] = useState('');
   const [smtpError, setSmtpError] = useState('');
 
+  // ── Categories ──
+  const [cats, setCats] = useState<string[]>([...EXPENSE_CATEGORIES]);
+  const [catsLoading, setCatsLoading] = useState(true);
+  const [catsSaving, setCatsSaving] = useState(false);
+  const [catsMsg, setCatsMsg] = useState('');
+  const [catsError, setCatsError] = useState('');
+  const [newCat, setNewCat] = useState('');
+
   // ── OIDC ──
   const [oidc, setOidc] = useState<OidcConfig>({ issuer_url: '', client_id: '', client_secret: '' });
   const [oidcLoading, setOidcLoading] = useState(true);
@@ -47,6 +56,10 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
     api.getOidcConfig().then(cfg => {
       if (cfg) setOidc(cfg);
     }).catch(() => {}).finally(() => setOidcLoading(false));
+
+    api.getAdminCategories().then(c => {
+      if (c) setCats(c);
+    }).catch(() => {}).finally(() => setCatsLoading(false));
   }, []);
 
   const saveSMTP = async () => {
@@ -91,12 +104,92 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
     }
   };
 
+  const saveCats = async () => {
+    setCatsSaving(true);
+    setCatsMsg('');
+    setCatsError('');
+    try {
+      const result = await api.updateAdminCategories(cats);
+      setCatsMsg(result.message);
+    } catch (e) {
+      setCatsError(e instanceof Error ? e.message : 'Failed to save categories');
+    } finally {
+      setCatsSaving(false);
+    }
+  };
+
+  const resetCats = async () => {
+    if (!confirm('Reset categories to defaults?')) return;
+    try {
+      const result = await api.resetAdminCategories();
+      setCats(result.categories);
+      setCatsMsg('Categories reset to defaults.');
+    } catch (e) {
+      setCatsError(e instanceof Error ? e.message : 'Failed to reset');
+    }
+  };
+
   const smtpConfigured = !!smtp.host;
   const oidcConfigured = !!(oidc.issuer_url && oidc.client_id);
 
   return (
     <PageShell title="Admin — System Settings" onMenuClick={onMenuClick}>
       <div className="space-y-5">
+
+        {/* Categories Card */}
+        <Card>
+          <CardHeader title="Expense Categories" subtitle="Manage the categories available for expenses." />
+          {catsLoading ? (
+            <p className="text-sm text-[var(--color-text-muted)] mt-3">Loading…</p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              <ul className="space-y-1">
+                {cats.map((cat, idx) => (
+                  <li key={idx} className="flex items-center justify-between py-1 px-2 rounded-lg hover:bg-[var(--color-surface-2)]">
+                    <span className="text-sm text-[var(--color-text)]">{cat}</span>
+                    <button
+                      className="text-xs text-[var(--color-danger)] hover:underline"
+                      onClick={() => setCats(prev => prev.filter((_, i) => i !== idx))}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex gap-2">
+                <input
+                  className={inputClass + ' flex-1'}
+                  value={newCat}
+                  onChange={e => setNewCat(e.target.value)}
+                  placeholder="Add new category…"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && newCat.trim()) {
+                      setCats(prev => [...prev, newCat.trim()]);
+                      setNewCat('');
+                    }
+                  }}
+                />
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => { if (newCat.trim()) { setCats(prev => [...prev, newCat.trim()]); setNewCat(''); } }}
+                >
+                  Add
+                </Button>
+              </div>
+              {catsMsg && <p className="text-sm text-[var(--color-success)]">{catsMsg}</p>}
+              {catsError && <p className="text-sm text-[var(--color-danger)]">{catsError}</p>}
+              <div className="flex gap-3">
+                <Button onClick={saveCats} disabled={catsSaving}>
+                  {catsSaving ? 'Saving…' : 'Save Categories'}
+                </Button>
+                <Button variant="secondary" onClick={resetCats}>
+                  Reset to Defaults
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
 
         {/* SMTP Card */}
         <Card>

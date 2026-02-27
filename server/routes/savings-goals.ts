@@ -25,8 +25,8 @@ router.post('/', (req: Request, res: Response) => {
     res.status(400).json({ message: 'name is required' });
     return;
   }
-  if (typeof body.target_amount_pence !== 'number' || body.target_amount_pence <= 0) {
-    res.status(400).json({ message: 'target_amount_pence must be a positive integer' });
+  if (body.target_amount_pence !== undefined && (typeof body.target_amount_pence !== 'number' || body.target_amount_pence < 0)) {
+    res.status(400).json({ message: 'target_amount_pence must be a non-negative integer' });
     return;
   }
   const id = randomUUID();
@@ -40,7 +40,7 @@ router.post('/', (req: Request, res: Response) => {
       req.householdId!,
       req.userId!,
       body.name.trim(),
-      body.target_amount_pence,
+      body.target_amount_pence ?? 0,
       body.current_amount_pence ?? 0,
       body.monthly_contribution_pence ?? 0,
       body.target_date ?? null,

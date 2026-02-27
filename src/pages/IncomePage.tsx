@@ -8,6 +8,8 @@ import { Modal } from '../components/ui/Modal';
 import { IncomeForm } from '../components/forms/IncomeForm';
 import { FilterBar } from '../components/layout/FilterBar';
 import { Badge } from '../components/ui/Badge';
+import { SortableHeader } from '../components/ui/SortableHeader';
+import { useSortableTable } from '../hooks/useSortableTable';
 import { formatCurrency, formatOrdinal } from '../utils/formatters';
 import { findDuplicateIncome } from '../utils/duplicates';
 import type { Income } from '../types';
@@ -19,6 +21,7 @@ interface IncomePageProps {
 export function IncomePage({ onMenuClick }: IncomePageProps) {
   const { incomes, addIncome, updateIncome, deleteIncome } = useBudget();
   useFilter();
+  const { sorted: sortedIncomes, sortKey, sortDir, toggleSort } = useSortableTable<Income>(incomes, 'name');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Income | undefined>();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -112,12 +115,12 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-2)]">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Name</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Contributor</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Amount/mo</th>
-                <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Day</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Type</th>
+              <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-2)] group">
+                <SortableHeader label="Name" sortKey="name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} className="text-left" />
+                <SortableHeader label="Contributor" sortKey="contributor_name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} className="text-left" />
+                <SortableHeader label="Amount/mo" sortKey="amount_pence" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} className="text-right" />
+                <SortableHeader label="Day" sortKey="posting_day" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} className="text-center" />
+                <SortableHeader label="Type" sortKey="recurrence_type" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} className="text-left" />
                 <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Notes</th>
                 <th className="px-5 py-3 w-24"></th>
               </tr>
@@ -130,7 +133,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
                   </td>
                 </tr>
               )}
-              {incomes.map(income => (
+              {sortedIncomes.map(income => (
                 <tr
                   key={income.id}
                   className="border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-2)]"

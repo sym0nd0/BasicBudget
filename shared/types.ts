@@ -75,6 +75,7 @@ export interface Account {
   user_id?: string;
   name: string;
   sort_order: number;
+  is_joint?: boolean;
   created_at?: string;
 }
 
@@ -90,7 +91,7 @@ export interface Income {
   contributor_name?: string | null;
   gross_or_net: 'gross' | 'net';
   is_recurring: boolean;
-  recurrence_type: 'monthly' | 'weekly' | 'yearly';
+  recurrence_type: 'monthly' | 'weekly' | 'yearly' | 'fortnightly';
   start_date?: string | null;
   end_date?: string | null;
   notes?: string | null;
@@ -125,11 +126,11 @@ export interface Expense {
   posting_day: number;
   account_id?: string | null;
   type: 'fixed' | 'variable';
-  category: ExpenseCategory;
+  category: string;
   is_household: boolean;
   split_ratio: number;
   is_recurring: boolean;
-  recurrence_type: 'monthly' | 'weekly' | 'yearly';
+  recurrence_type: 'monthly' | 'weekly' | 'yearly' | 'fortnightly';
   start_date?: string | null;
   end_date?: string | null;
   notes?: string | null;
@@ -234,6 +235,7 @@ export interface HouseholdOverview {
   disposable_income_pence: number;
   debt_to_income_ratio: number;
   total_debt_balance_pence: number;
+  category_breakdown?: CategoryBreakdown[];
 }
 
 // ─── Theme ────────────────────────────────────────────────────────────────────

@@ -135,9 +135,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 h-16 border-b border-white/10">
-          <div className="w-8 h-8 rounded-lg bg-[var(--color-primary)] flex items-center justify-center text-white font-bold text-sm">
-            £
-          </div>
+          <img src="/favicon.png" alt="BasicBudget" className="w-8 h-8 rounded-xl" />
           <span className="font-bold text-white text-lg tracking-tight">BasicBudget</span>
         </div>
 
