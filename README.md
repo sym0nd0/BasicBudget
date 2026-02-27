@@ -41,7 +41,7 @@ A multi-user personal budgeting and debt management application built with React
 
 ### Households & RBAC
 - Every user belongs to a household (created automatically on registration)
-- **Owner** role: read and write all household entries
+- **Owner** role: read and write all household entries; can customize household name
 - **Member** role: read all entries, write only own entries
 - Invite members by email (7-day expiring token); invitees can register and join even if they don't have an account yet; role management by owner
 - All financial data is isolated per household
@@ -424,7 +424,7 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 | GET/POST | `/api/accounts` | List / create account |
 | GET/PUT/DELETE | `/api/accounts/:id` | Get / update / delete account |
 | GET | `/api/summary` | Budget summary with category breakdown |
-| GET | `/api/household` | Household details + members |
+| GET/PUT | `/api/household` | Get household details + members / update household name (owner only) |
 | GET/POST | `/api/months` | List locked months / lock a month |
 | POST | `/api/import` | JSON bulk import |
 | GET | `/api/export` | JSON export |
