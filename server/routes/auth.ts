@@ -50,6 +50,7 @@ function mapUser(row: Record<string, unknown>): User {
     system_role: row.system_role as 'admin' | 'user',
     created_at: row.created_at as string,
     has_totp: Boolean(totpRow),
+    colour_palette: (row.colour_palette as string | undefined) ?? 'default',
   };
 }
 
