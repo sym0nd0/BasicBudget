@@ -6,7 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { SavingsGoalForm } from '../components/forms/SavingsGoalForm';
 import { Badge } from '../components/ui/Badge';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, formatPercent } from '../utils/formatters';
 import { findDuplicateSavingsGoal } from '../utils/duplicates';
 import type { SavingsGoal } from '../types';
 
@@ -153,7 +153,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                         style={{ width: `${progress}%` }}
                       />
                     </div>
-                    <p className="text-xs text-[var(--color-text-muted)] mt-1">{progress.toFixed(1)}% complete</p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1">{formatPercent(progress)} complete</p>
                   </div>
                 )}
 

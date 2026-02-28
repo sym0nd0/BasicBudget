@@ -72,6 +72,27 @@ All GET list endpoints filter through `filterActiveInMonth(items, yearMonth)` be
 
 All monetary values are stored and passed as **integer pence** (`amount_pence`, `balance_pence`, etc.). `src/utils/formatters.ts` handles pence → display conversion. Never store or compute with floating-point pounds.
 
+### Percentage formatting
+
+**All percentage values displayed as text must use `formatPercent()` to ensure consistent 2 decimal place formatting.**
+
+The `formatPercent(value: number)` function in `src/utils/formatters.ts` formats numbers to exactly 2 decimal places with a `%` suffix:
+
+```typescript
+import { formatPercent } from '../utils/formatters';
+
+// ✓ Good
+<Badge>{formatPercent(debt.interest_rate)}</Badge>  // e.g. "19.95%"
+<p>{formatPercent(progress)} complete</p>           // e.g. "75.50% complete"
+<td>{formatPercent(period.interest_rate)}</td>      // e.g. "0.00%"
+
+// ✗ Bad
+<p>{value.toFixed(1)}%</p>                          // inconsistent with 1 decimal
+<p>{value}%</p>                                      // no formatting
+```
+
+**Exception:** Inline CSS width values for progress bars (`style={{ width: \`${percentage}%\` }}`) are not text display and do not need `formatPercent()`.
+
 ### Settings service (`server/services/settings.ts`)
 
 SMTP and OIDC configuration is stored in the `system_settings` SQLite table (key/value pairs) and accessed through this service. It maintains an in-memory cache invalidated on writes.

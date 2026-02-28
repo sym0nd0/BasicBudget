@@ -6,7 +6,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatPercent } from '../../utils/formatters';
 import type { CategoryBreakdown } from '../../types';
 
 interface ExpenseDonutProps {
@@ -31,7 +31,7 @@ const CustomTooltip = ({ active, payload }: any) => {
     <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg p-3 text-sm">
       <p className="font-semibold text-[var(--color-text)]">{entry.name}</p>
       <p style={{ color: entry.payload.fill }}>{formatCurrency(entry.value)}</p>
-      <p className="text-[var(--color-text-muted)]">{entry.payload.percentage.toFixed(1)}%</p>
+      <p className="text-[var(--color-text-muted)]">{formatPercent(entry.payload.percentage)}</p>
     </div>
   );
 };
