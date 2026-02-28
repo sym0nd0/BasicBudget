@@ -74,14 +74,15 @@ All monetary values are stored and passed as **integer pence** (`amount_pence`, 
 
 ### Percentage formatting
 
-**All percentage values displayed as text must use `formatPercent()` to ensure consistent 2 decimal place formatting.**
+**All percentage values — both displayed text and user input fields — must support exactly 2 decimal places.**
 
+**Display formatting:** Use `formatPercent()` function
 The `formatPercent(value: number)` function in `src/utils/formatters.ts` formats numbers to exactly 2 decimal places with a `%` suffix:
 
 ```typescript
 import { formatPercent } from '../utils/formatters';
 
-// ✓ Good
+// ✓ Good — displayed text
 <Badge>{formatPercent(debt.interest_rate)}</Badge>  // e.g. "19.95%"
 <p>{formatPercent(progress)} complete</p>           // e.g. "75.50% complete"
 <td>{formatPercent(period.interest_rate)}</td>      // e.g. "0.00%"
@@ -90,6 +91,22 @@ import { formatPercent } from '../utils/formatters';
 <p>{value.toFixed(1)}%</p>                          // inconsistent with 1 decimal
 <p>{value}%</p>                                      // no formatting
 ```
+
+**Input field formatting:** Use `step="0.01"`
+All number input fields accepting percentages must use `step="0.01"` to allow users to enter values with 2 decimal places:
+
+```typescript
+<Input
+  label="APR (%)"
+  type="number"
+  step="0.01"  // ← Allows 0.01 increments (e.g., 19.95%), NOT 0.1
+  min="0"
+  value={interestRate}
+  suffix="%"
+/>
+```
+
+Without `step="0.01"`, HTML5 validation rejects valid 2-decimal values with "Please enter a valid value. The nearest values are X and Y."
 
 **Exception:** Inline CSS width values for progress bars (`style={{ width: \`${percentage}%\` }}`) are not text display and do not need `formatPercent()`.
 

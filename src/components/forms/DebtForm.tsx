@@ -147,7 +147,7 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
         <Input
           label="APR (%)"
           type="number"
-          step="0.1"
+          step="0.01"
           min="0"
           value={interestRate}
           onChange={e => setInterestRate(e.target.value)}
@@ -280,7 +280,7 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
                   <label className="text-xs text-[var(--color-text-muted)]">Rate %</label>
                   <input
                     type="number"
-                    step="0.1"
+                    step="0.01"
                     min="0"
                     value={period.interest_rate}
                     onChange={e => updatePeriod(period.key, 'interest_rate', e.target.value)}
