@@ -51,6 +51,20 @@ router.post('/', (req: Request, res: Response) => {
   const reminderMonths = body.reminder_months ?? 0;
   const nameValue = body.name.trim();
 
+  // Validate deal periods don't extend past debt end date
+  if (body.end_date) {
+    for (const period of dealPeriods) {
+      if (period.start_date > body.end_date) {
+        res.status(400).json({ message: `Deal period cannot start after debt end date (${body.end_date})` });
+        return;
+      }
+      if (period.end_date && period.end_date > body.end_date) {
+        res.status(400).json({ message: `Deal period cannot end after debt end date (${body.end_date})` });
+        return;
+      }
+    }
+  }
+
   try {
     db.transaction(() => {
       db.prepare(`
@@ -126,6 +140,21 @@ router.put('/:id', (req: Request, res: Response) => {
   const updSplitRatio = updIsHousehold ? 0.5 : 1.0;
   const dealPeriods = (body.deal_periods ?? []) as Omit<DebtDealPeriod, 'id' | 'debt_id' | 'created_at'>[];
   const reminderMonths = body.reminder_months !== undefined ? body.reminder_months : existing.reminder_months;
+  const endDate = body.end_date !== undefined ? body.end_date : (existing.end_date as string | null);
+
+  // Validate deal periods don't extend past debt end date
+  if (endDate) {
+    for (const period of dealPeriods) {
+      if (period.start_date > endDate) {
+        res.status(400).json({ message: `Deal period cannot start after debt end date (${endDate})` });
+        return;
+      }
+      if (period.end_date && period.end_date > endDate) {
+        res.status(400).json({ message: `Deal period cannot end after debt end date (${endDate})` });
+        return;
+      }
+    }
+  }
 
   try {
     db.transaction(() => {
@@ -221,6 +250,12 @@ const MAX_MONTHS = 600;
 
 function getMonthlyRateForDate(debt: Debt, date: Date): number {
   const iso = date.toISOString().slice(0, 10);
+
+  // If debt has ended, no more interest accrues
+  if (debt.end_date && iso > debt.end_date) {
+    return 0;
+  }
+
   const periods = debt.deal_periods ?? [];
 
   // Find which deal period is active for this date
@@ -248,6 +283,13 @@ export function computeRepayments(debt: Debt): DebtPayoffSummary {
   while (currentBalance > 0 && month < MAX_MONTHS) {
     month++;
     const paymentDate = new Date(startYear, startMonth + month, 1);
+    const paymentDateStr = paymentDate.toISOString().slice(0, 10);
+
+    // Stop if we've reached the debt's end date
+    if (debt.end_date && paymentDateStr > debt.end_date) {
+      break;
+    }
+
     const monthlyRate = getMonthlyRateForDate(debt, paymentDate);
 
     const openingBalance = currentBalance;
