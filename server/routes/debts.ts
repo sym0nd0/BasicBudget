@@ -4,7 +4,7 @@ import db from '../db.js';
 import { randomUUID } from 'node:crypto';
 import { isMonthLocked } from './months.js';
 import { requireAuth } from '../middleware/auth.js';
-import type { Debt, RepaymentRow, DebtPayoffSummary } from '../../shared/types.js';
+import type { Debt, DebtDealPeriod, RepaymentRow, DebtPayoffSummary } from '../../shared/types.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -17,10 +17,15 @@ function mapDebt(row: Record<string, unknown>): Debt {
   };
 }
 
+function enrichDebtWithPeriods(debt: Debt): Debt {
+  const periods = db.prepare('SELECT * FROM debt_deal_periods WHERE debt_id = ? ORDER BY start_date').all(debt.id) as DebtDealPeriod[];
+  return { ...debt, deal_periods: periods };
+}
+
 // GET /api/debts
 router.get('/', (req: Request, res: Response) => {
   const rows = db.prepare('SELECT * FROM debts WHERE household_id = ? ORDER BY created_at').all(req.householdId!) as Record<string, unknown>[];
-  res.json(rows.map(mapDebt));
+  res.json(rows.map(mapDebt).map(enrichDebtWithPeriods));
 });
 
 // POST /api/debts
@@ -42,38 +47,54 @@ router.post('/', (req: Request, res: Response) => {
   const isHousehold = Boolean(body.is_household);
   const splitRatio = isHousehold ? 0.5 : 1.0;
   const id = randomUUID();
+  const dealPeriods = (body.deal_periods ?? []) as Omit<DebtDealPeriod, 'id' | 'debt_id' | 'created_at'>[];
+  const reminderMonths = body.reminder_months ?? 0;
+  const nameValue = body.name.trim();
+
   try {
-    db.prepare(`
-      INSERT INTO debts
-        (id, household_id, user_id, name, balance_pence, interest_rate, minimum_payment_pence,
-         overpayment_pence, compounding_frequency, is_recurring, recurrence_type,
-         posting_day, start_date, end_date, is_household, split_ratio, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      req.householdId!,
-      req.userId!,
-      body.name.trim(),
-      body.balance_pence,
-      body.interest_rate ?? 0,
-      body.minimum_payment_pence ?? 0,
-      body.overpayment_pence ?? 0,
-      body.compounding_frequency ?? 'monthly',
-      body.is_recurring ? 1 : 0,
-      recurrenceType,
-      body.posting_day ?? 1,
-      body.start_date ?? null,
-      body.end_date ?? null,
-      isHousehold ? 1 : 0,
-      splitRatio,
-      body.notes ?? null,
-    );
+    db.transaction(() => {
+      db.prepare(`
+        INSERT INTO debts
+          (id, household_id, user_id, name, balance_pence, interest_rate, minimum_payment_pence,
+           overpayment_pence, compounding_frequency, is_recurring, recurrence_type,
+           posting_day, start_date, end_date, is_household, split_ratio, notes, reminder_months)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        req.householdId!,
+        req.userId!,
+        nameValue,
+        body.balance_pence,
+        body.interest_rate ?? 0,
+        body.minimum_payment_pence ?? 0,
+        body.overpayment_pence ?? 0,
+        body.compounding_frequency ?? 'monthly',
+        body.is_recurring ? 1 : 0,
+        recurrenceType,
+        body.posting_day ?? 1,
+        body.start_date ?? null,
+        body.end_date ?? null,
+        isHousehold ? 1 : 0,
+        splitRatio,
+        body.notes ?? null,
+        reminderMonths,
+      );
+
+      // Insert deal periods
+      for (const period of dealPeriods) {
+        const periodId = randomUUID();
+        db.prepare(`
+          INSERT INTO debt_deal_periods (id, debt_id, label, interest_rate, start_date, end_date)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(periodId, id, period.label ?? null, period.interest_rate, period.start_date, period.end_date ?? null);
+      }
+    })();
   } catch (err) {
     res.status(400).json({ message: (err as Error).message });
     return;
   }
   const row = db.prepare('SELECT * FROM debts WHERE id = ?').get(id) as Record<string, unknown>;
-  res.status(201).json(mapDebt(row));
+  res.status(201).json(enrichDebtWithPeriods(mapDebt(row)));
 });
 
 // PUT /api/debts/:id
@@ -103,39 +124,55 @@ router.put('/:id', (req: Request, res: Response) => {
   }
   const updIsHousehold = body.is_household !== undefined ? Boolean(body.is_household) : Boolean(existing.is_household);
   const updSplitRatio = updIsHousehold ? 0.5 : 1.0;
+  const dealPeriods = (body.deal_periods ?? []) as Omit<DebtDealPeriod, 'id' | 'debt_id' | 'created_at'>[];
+  const reminderMonths = body.reminder_months !== undefined ? body.reminder_months : existing.reminder_months;
+
   try {
-    db.prepare(`
-      UPDATE debts SET
-        name = ?, balance_pence = ?, interest_rate = ?,
-        minimum_payment_pence = ?, overpayment_pence = ?,
-        compounding_frequency = ?, is_recurring = ?, recurrence_type = ?,
-        posting_day = ?, start_date = ?, end_date = ?,
-        is_household = ?, split_ratio = ?, notes = ?,
-        updated_at = datetime('now')
-      WHERE id = ?
-    `).run(
-      body.name?.trim() ?? existing.name,
-      body.balance_pence ?? existing.balance_pence,
-      body.interest_rate ?? existing.interest_rate,
-      body.minimum_payment_pence ?? existing.minimum_payment_pence,
-      body.overpayment_pence ?? existing.overpayment_pence,
-      body.compounding_frequency ?? existing.compounding_frequency,
-      body.is_recurring !== undefined ? (body.is_recurring ? 1 : 0) : existing.is_recurring,
-      body.recurrence_type ?? existing.recurrence_type,
-      body.posting_day ?? existing.posting_day,
-      body.start_date !== undefined ? body.start_date : existing.start_date,
-      body.end_date !== undefined ? body.end_date : existing.end_date,
-      updIsHousehold ? 1 : 0,
-      updSplitRatio,
-      body.notes !== undefined ? body.notes : existing.notes,
-      id,
-    );
+    db.transaction(() => {
+      db.prepare(`
+        UPDATE debts SET
+          name = ?, balance_pence = ?, interest_rate = ?,
+          minimum_payment_pence = ?, overpayment_pence = ?,
+          compounding_frequency = ?, is_recurring = ?, recurrence_type = ?,
+          posting_day = ?, start_date = ?, end_date = ?,
+          is_household = ?, split_ratio = ?, notes = ?, reminder_months = ?,
+          updated_at = datetime('now')
+        WHERE id = ?
+      `).run(
+        body.name?.trim() ?? existing.name,
+        body.balance_pence ?? existing.balance_pence,
+        body.interest_rate ?? existing.interest_rate,
+        body.minimum_payment_pence ?? existing.minimum_payment_pence,
+        body.overpayment_pence ?? existing.overpayment_pence,
+        body.compounding_frequency ?? existing.compounding_frequency,
+        body.is_recurring !== undefined ? (body.is_recurring ? 1 : 0) : existing.is_recurring,
+        body.recurrence_type ?? existing.recurrence_type,
+        body.posting_day ?? existing.posting_day,
+        body.start_date !== undefined ? body.start_date : existing.start_date,
+        body.end_date !== undefined ? body.end_date : existing.end_date,
+        updIsHousehold ? 1 : 0,
+        updSplitRatio,
+        body.notes !== undefined ? body.notes : existing.notes,
+        reminderMonths,
+        id,
+      );
+
+      // Replace all deal periods with new ones
+      db.prepare('DELETE FROM debt_deal_periods WHERE debt_id = ?').run(id);
+      for (const period of dealPeriods) {
+        const periodId = randomUUID();
+        db.prepare(`
+          INSERT INTO debt_deal_periods (id, debt_id, label, interest_rate, start_date, end_date)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `).run(periodId, id, period.label ?? null, period.interest_rate, period.start_date, period.end_date ?? null);
+      }
+    })();
   } catch (err) {
     res.status(400).json({ message: (err as Error).message });
     return;
   }
   const row = db.prepare('SELECT * FROM debts WHERE id = ?').get(id) as Record<string, unknown>;
-  res.json(mapDebt(row));
+  res.json(enrichDebtWithPeriods(mapDebt(row)));
 });
 
 // DELETE /api/debts/:id
@@ -175,15 +212,27 @@ router.get('/:id/repayments', (req: Request, res: Response) => {
     res.status(404).json({ message: 'Debt not found' });
     return;
   }
-  const debt = mapDebt(row);
+  const debt = enrichDebtWithPeriods(mapDebt(row));
   const summary = computeRepayments(debt);
   res.json(summary);
 });
 
 const MAX_MONTHS = 600;
 
+function getMonthlyRateForDate(debt: Debt, date: Date): number {
+  const iso = date.toISOString().slice(0, 10);
+  const periods = debt.deal_periods ?? [];
+
+  // Find which deal period is active for this date
+  const activePeriod = periods.find(p =>
+    p.start_date <= iso && (!p.end_date || p.end_date >= iso)
+  );
+
+  const rate = activePeriod ? activePeriod.interest_rate : debt.interest_rate;
+  return rate / 100 / 12;
+}
+
 export function computeRepayments(debt: Debt): DebtPayoffSummary {
-  const monthlyRate = debt.interest_rate / 100 / 12;
   const paymentPence = debt.minimum_payment_pence + debt.overpayment_pence;
   const schedule: RepaymentRow[] = [];
 
@@ -198,6 +247,9 @@ export function computeRepayments(debt: Debt): DebtPayoffSummary {
 
   while (currentBalance > 0 && month < MAX_MONTHS) {
     month++;
+    const paymentDate = new Date(startYear, startMonth + month, 1);
+    const monthlyRate = getMonthlyRateForDate(debt, paymentDate);
+
     const openingBalance = currentBalance;
     const interestCharge = Math.round(openingBalance * monthlyRate);
     const balanceWithInterest = openingBalance + interestCharge;
@@ -208,7 +260,6 @@ export function computeRepayments(debt: Debt): DebtPayoffSummary {
     totalInterestPaid += interestCharge;
     totalPaid += payment;
 
-    const paymentDate = new Date(startYear, startMonth + month, 1);
     const dateStr = `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, '0')}`;
 
     schedule.push({

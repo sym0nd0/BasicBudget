@@ -106,3 +106,21 @@ export async function sendTestEmail(to: string): Promise<void> {
     `<p>This is a test email from BasicBudget. Your SMTP configuration is working correctly.</p>`,
   );
 }
+
+export async function sendDealPeriodReminder(
+  to: string,
+  debtName: string,
+  periodLabel: string,
+  endDate: string,
+  monthsUntilEnd: number,
+): Promise<void> {
+  const formattedDate = new Date(endDate).toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+  const timeText = monthsUntilEnd === 0 ? 'ends today' : monthsUntilEnd === 1 ? 'ends in 1 month' : `ends in ${monthsUntilEnd} months`;
+
+  await sendMail(
+    to,
+    `Deal period expiring: ${debtName}`,
+    `<p>Your deal period <strong>"${periodLabel}"</strong> on <strong>${debtName}</strong> ${timeText} — on <strong>${formattedDate}</strong>.</p>
+     <p>Log in to your BasicBudget account to review your options and plan for any rate changes or payment adjustments.</p>`,
+  );
+}

@@ -140,6 +140,20 @@ export interface Expense {
 
 // ─── Debt ──────────────────────────────────────────────────────────────────────
 
+// ─── Debt Deal Period ─────────────────────────────────────────────────────────────
+
+export interface DebtDealPeriod {
+  id: string;
+  debt_id: string;
+  label?: string | null;
+  interest_rate: number;
+  start_date: string;
+  end_date?: string | null;
+  created_at?: string;
+}
+
+// ─── Debt ──────────────────────────────────────────────────────────────────────────
+
 export interface Debt {
   id: string;
   household_id?: string;
@@ -158,6 +172,8 @@ export interface Debt {
   is_household: boolean;
   split_ratio: number;
   notes?: string | null;
+  reminder_months?: number;
+  deal_periods?: DebtDealPeriod[];
   created_at?: string;
   updated_at?: string;
 }

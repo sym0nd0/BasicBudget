@@ -27,6 +27,7 @@ import importRouter from './routes/import.js';
 import exportRouter from './routes/export.js';
 import adminRouter from './routes/admin.js';
 import categoriesRouter from './routes/categories.js';
+import { checkAndSendDealReminders } from './services/debtNotifications.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -116,6 +117,14 @@ app.use((err: Error & { status?: number; code?: string }, _req: express.Request,
 });
 
 if (config.NODE_ENV !== 'test') {
+  // Schedule daily deal period reminder checks (run once on startup after 10s delay, then every 24h)
+  setTimeout(() => {
+    checkAndSendDealReminders().catch(console.error);
+    setInterval(() => {
+      checkAndSendDealReminders().catch(console.error);
+    }, 24 * 60 * 60 * 1000);
+  }, 10_000);
+
   app.listen(PORT, () => {
     console.log(`BasicBudget server listening on port ${PORT}`);
   });

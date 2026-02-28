@@ -199,6 +199,9 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                           {debt.is_household && (
                             <Badge variant="primary" className="text-[10px]">½</Badge>
                           )}
+                          {debt.deal_periods && debt.deal_periods.length > 0 && (
+                            <Badge variant="info" className="text-[10px]">{debt.deal_periods.length} rates</Badge>
+                          )}
                           {debt.interest_rate > 0 && (
                             <Badge variant="danger" className="text-[10px]">Interest</Badge>
                           )}
@@ -247,6 +250,42 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                     {isExpanded && (
                       <tr className="border-t border-[var(--color-border)]">
                         <td colSpan={7} className="px-5 py-4 bg-[var(--color-surface-2)]">
+                          {debt.reminder_months && debt.reminder_months > 0 && (
+                            <div className="mb-3 flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                              </svg>
+                              <span>Reminder enabled: {debt.reminder_months} month{debt.reminder_months !== 1 ? 's' : ''} before deal period ends</span>
+                            </div>
+                          )}
+
+                          {/* Deal periods table */}
+                          {debt.deal_periods && debt.deal_periods.length > 0 && (
+                            <div className="mb-4">
+                              <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-2">Deal Periods</p>
+                              <table className="w-full text-xs">
+                                <thead>
+                                  <tr className="bg-[var(--color-surface)]">
+                                    <th className="text-left px-2 py-1 text-[var(--color-text-muted)]">Period</th>
+                                    <th className="text-right px-2 py-1 text-[var(--color-text-muted)]">Rate</th>
+                                    <th className="text-left px-2 py-1 text-[var(--color-text-muted)]">From</th>
+                                    <th className="text-left px-2 py-1 text-[var(--color-text-muted)]">Until</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {debt.deal_periods.map((period) => (
+                                    <tr key={period.id} className="border-t border-[var(--color-border)]">
+                                      <td className="px-2 py-1 text-[var(--color-text)]">{period.label || '—'}</td>
+                                      <td className="text-right px-2 py-1 font-mono text-[var(--color-text)]">{period.interest_rate}%</td>
+                                      <td className="px-2 py-1 font-mono text-[var(--color-text-muted)] text-xs">{period.start_date}</td>
+                                      <td className="px-2 py-1 font-mono text-[var(--color-text-muted)] text-xs">{period.end_date ? period.end_date : 'ongoing'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+
                           <RepaymentPanel debtId={debt.id} />
                         </td>
                       </tr>

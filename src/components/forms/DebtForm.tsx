@@ -4,6 +4,14 @@ import { Input, Select } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { poundsToPence, penceToPoundsStr } from '../../utils/formatters';
 
+interface DraftPeriod {
+  key: string;
+  label: string;
+  interest_rate: string;
+  start_date: string;
+  end_date: string;
+}
+
 interface DebtFormProps {
   initial?: Debt;
   onSave: (data: Omit<Debt, 'id' | 'created_at' | 'updated_at'>) => void;
@@ -27,6 +35,16 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
   const [endDate, setEndDate] = useState(initial?.end_date ?? '');
   const [isHousehold, setIsHousehold] = useState(initial?.is_household ?? false);
   const [notes, setNotes] = useState(initial?.notes ?? '');
+  const [reminderMonths, setReminderMonths] = useState(String(initial?.reminder_months ?? '0'));
+  const [dealPeriods, setDealPeriods] = useState<DraftPeriod[]>(
+    initial?.deal_periods?.map((p) => ({
+      key: p.id,
+      label: p.label ?? '',
+      interest_rate: String(p.interest_rate),
+      start_date: p.start_date,
+      end_date: p.end_date ?? '',
+    })) ?? [],
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -36,7 +54,31 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
     if (isNaN(parseFloat(interestRate)) || parseFloat(interestRate) < 0) e.interestRate = 'Enter a valid APR (0 for interest-free)';
     if (isNaN(parseFloat(minimumPayment)) || parseFloat(minimumPayment) < 0) e.minimumPayment = 'Enter a valid minimum payment';
     if (isNaN(parseFloat(overpayment)) || parseFloat(overpayment) < 0) e.overpayment = 'Enter a valid overpayment (0 if none)';
+    if (reminderMonths && (isNaN(parseInt(reminderMonths)) || parseInt(reminderMonths) < 0 || parseInt(reminderMonths) > 24)) {
+      e.reminderMonths = 'Enter a valid reminder (0-24 months, 0 = off)';
+    }
     return e;
+  };
+
+  const addPeriod = () => {
+    const newKey = `period-${Date.now()}-${Math.random()}`;
+    setDealPeriods([...dealPeriods, {
+      key: newKey,
+      label: '',
+      interest_rate: '0',
+      start_date: '',
+      end_date: '',
+    }]);
+  };
+
+  const removePeriod = (key: string) => {
+    setDealPeriods(dealPeriods.filter(p => p.key !== key));
+  };
+
+  const updatePeriod = (key: string, field: keyof Omit<DraftPeriod, 'key'>, value: string) => {
+    setDealPeriods(dealPeriods.map(p =>
+      p.key === key ? { ...p, [field]: value } : p
+    ));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -46,6 +88,17 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
       setErrors(errs);
       return;
     }
+
+    // Convert deal periods to proper format (without id and debt_id, those are assigned server-side)
+    const convertedPeriods = dealPeriods
+      .filter(p => p.start_date) // Only include periods with a start date
+      .map(p => ({
+        label: p.label || null,
+        interest_rate: parseFloat(p.interest_rate) || 0,
+        start_date: p.start_date,
+        end_date: p.end_date || null,
+      }));
+
     onSave({
       name: name.trim(),
       balance_pence: poundsToPence(balance),
@@ -61,6 +114,8 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
       is_household: isHousehold,
       split_ratio: isHousehold ? 0.5 : 1.0,
       notes: notes.trim() || null,
+      reminder_months: parseInt(reminderMonths) || 0,
+      deal_periods: convertedPeriods as any,
     });
   };
 
@@ -177,6 +232,116 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
         onChange={e => setNotes(e.target.value)}
         placeholder="e.g. 0% ends June 2025"
       />
+
+      {/* Deal Periods */}
+      <div className="border-t border-[var(--color-border)] pt-4 mt-2">
+        <div className="flex items-center justify-between mb-3">
+          <label className="block text-sm font-medium text-[var(--color-text)]">
+            Deal Periods (optional)
+          </label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={addPeriod}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Period
+          </Button>
+        </div>
+        <p className="text-xs text-[var(--color-text-muted)] mb-3">
+          Track different interest rates or promotional periods (e.g. 0% for 12 months, then 19.9%).
+        </p>
+
+        {dealPeriods.length === 0 ? (
+          <p className="text-xs text-[var(--color-text-muted)] py-2">No deal periods. Click "Add Period" to create one.</p>
+        ) : (
+          <div className="space-y-2 mb-3">
+            {dealPeriods.map((period) => (
+              <div key={period.key} className="flex gap-2 items-end bg-[var(--color-surface-2)] rounded-lg p-3">
+                <div className="flex-1">
+                  <label className="text-xs text-[var(--color-text-muted)]">Label</label>
+                  <input
+                    type="text"
+                    value={period.label}
+                    onChange={e => updatePeriod(period.key, 'label', e.target.value)}
+                    placeholder="e.g. 0% intro"
+                    className="w-full text-sm border border-[var(--color-border)] rounded px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text)]"
+                  />
+                </div>
+                <div className="w-20">
+                  <label className="text-xs text-[var(--color-text-muted)]">Rate %</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={period.interest_rate}
+                    onChange={e => updatePeriod(period.key, 'interest_rate', e.target.value)}
+                    className="w-full text-sm border border-[var(--color-border)] rounded px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text)]"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-[var(--color-text-muted)]">From</label>
+                  <input
+                    type="date"
+                    value={period.start_date}
+                    onChange={e => updatePeriod(period.key, 'start_date', e.target.value)}
+                    className="w-full text-sm border border-[var(--color-border)] rounded px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text)]"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-[var(--color-text-muted)]">Until</label>
+                  <input
+                    type="date"
+                    value={period.end_date}
+                    onChange={e => updatePeriod(period.key, 'end_date', e.target.value)}
+                    placeholder="Leave blank for ongoing"
+                    className="w-full text-sm border border-[var(--color-border)] rounded px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text)]"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removePeriod(period.key)}
+                  className="text-[var(--color-danger)] hover:bg-[var(--color-danger-light)] rounded p-1.5"
+                  title="Remove period"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="border-t border-[var(--color-border)] pt-4 mt-2">
+        <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+          Deal Period Reminder (optional)
+        </label>
+        <div className="flex items-start gap-3">
+          <Input
+            type="number"
+            min="0"
+            max="24"
+            value={reminderMonths}
+            onChange={e => setReminderMonths(e.target.value)}
+            placeholder="0"
+            error={errors.reminderMonths}
+            className="w-24"
+          />
+          <div className="flex-1">
+            <p className="text-sm text-[var(--color-text)]">
+              months before a deal period ends
+            </p>
+            <p className="text-xs text-[var(--color-text-muted)] mt-1">
+              Set to 0 to disable reminders. Only applies to debts with deal periods that have end dates.
+            </p>
+          </div>
+        </div>
+      </div>
       <div className="flex gap-3 justify-end pt-2">
         <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
         <Button type="submit">{initial ? 'Save Changes' : 'Add Debt'}</Button>

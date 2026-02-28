@@ -150,4 +150,11 @@ try {
   // Column already exists, ignore
 }
 
+// Add reminder_months column to debts for deal period notifications
+try {
+  db.prepare('ALTER TABLE debts ADD COLUMN reminder_months INTEGER DEFAULT 0').run();
+} catch {
+  // Column already exists, ignore
+}
+
 export default db;
