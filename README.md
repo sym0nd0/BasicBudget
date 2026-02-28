@@ -80,7 +80,8 @@ A multi-user personal budgeting and debt management application built with React
 ### Debt Management
 - Add, edit, and delete debts
 - Record balance, APR, minimum payment, and overpayment amount
-- Full per-debt repayment schedule: month-by-month opening balance, interest charge, principal paid, and closing balance
+- **Deal periods** — track multiple interest rate periods per debt (e.g. 0% intro offer for 12 months, then 19.9% APR); repayment schedule automatically applies correct rate for each month; optional email reminder X months before a deal period ends
+- Full per-debt repayment schedule: month-by-month opening balance, interest charge, principal paid, and closing balance; rates vary automatically if deal periods are set
 - Payoff summary: months remaining, total interest paid, projected payoff date
 - Debt payoff chart plotting all balances on a shared monthly timeline
 - Sortable table columns (name, balance, APR, min payment)
