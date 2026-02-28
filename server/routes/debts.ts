@@ -94,13 +94,15 @@ router.post('/', (req: Request, res: Response) => {
         reminderMonths,
       );
 
-      // Insert deal periods
-      for (const period of dealPeriods) {
+      // Insert deal periods with auto-generated labels
+      for (let i = 0; i < dealPeriods.length; i++) {
+        const period = dealPeriods[i];
         const periodId = randomUUID();
+        const label = `Period ${i + 1}`;
         db.prepare(`
           INSERT INTO debt_deal_periods (id, debt_id, label, interest_rate, start_date, end_date)
           VALUES (?, ?, ?, ?, ?, ?)
-        `).run(periodId, id, period.label ?? null, period.interest_rate, period.start_date, period.end_date ?? null);
+        `).run(periodId, id, label, period.interest_rate, period.start_date, period.end_date ?? null);
       }
     })();
   } catch (err) {
@@ -186,14 +188,16 @@ router.put('/:id', (req: Request, res: Response) => {
         id,
       );
 
-      // Replace all deal periods with new ones
+      // Replace all deal periods with new ones (auto-generate labels based on index)
       db.prepare('DELETE FROM debt_deal_periods WHERE debt_id = ?').run(id);
-      for (const period of dealPeriods) {
+      for (let i = 0; i < dealPeriods.length; i++) {
+        const period = dealPeriods[i];
         const periodId = randomUUID();
+        const label = `Period ${i + 1}`;
         db.prepare(`
           INSERT INTO debt_deal_periods (id, debt_id, label, interest_rate, start_date, end_date)
           VALUES (?, ?, ?, ?, ?, ?)
-        `).run(periodId, id, period.label ?? null, period.interest_rate, period.start_date, period.end_date ?? null);
+        `).run(periodId, id, label, period.interest_rate, period.start_date, period.end_date ?? null);
       }
     })();
   } catch (err) {

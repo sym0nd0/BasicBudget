@@ -7,7 +7,6 @@ import { poundsToPence, penceToPoundsStr } from '../../utils/formatters';
 
 interface DraftPeriod {
   key: string;
-  label: string;
   interest_rate: string;
   start_date: string;
   end_date: string;
@@ -44,7 +43,6 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
   const [dealPeriods, setDealPeriods] = useState<DraftPeriod[]>(
     initial?.deal_periods?.map((p) => ({
       key: p.id,
-      label: p.label ?? '',
       interest_rate: String(p.interest_rate),
       start_date: p.start_date,
       end_date: p.end_date ?? '',
@@ -69,7 +67,6 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
     const newKey = `period-${Date.now()}-${Math.random()}`;
     setDealPeriods([...dealPeriods, {
       key: newKey,
-      label: '',
       interest_rate: '0',
       start_date: '',
       end_date: '',
@@ -95,10 +92,10 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
     }
 
     // Convert deal periods to proper format (without id and debt_id, those are assigned server-side)
+    // Labels are auto-generated server-side based on period index
     const convertedPeriods = dealPeriods
       .filter(p => p.start_date) // Only include periods with a start date
       .map(p => ({
-        label: p.label || null,
         interest_rate: parseFloat(p.interest_rate) || 0,
         start_date: p.start_date,
         end_date: p.end_date || null,
@@ -264,17 +261,13 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
           <p className="text-xs text-[var(--color-text-muted)] py-2">No deal periods. Click "Add Period" to create one.</p>
         ) : (
           <div className="space-y-2 mb-3">
-            {dealPeriods.map((period) => (
+            {dealPeriods.map((period, idx) => (
               <div key={period.key} className="flex gap-2 items-end bg-[var(--color-surface-2)] rounded-lg p-3">
-                <div className="flex-1">
-                  <label className="text-xs text-[var(--color-text-muted)]">Label</label>
-                  <input
-                    type="text"
-                    value={period.label}
-                    onChange={e => updatePeriod(period.key, 'label', e.target.value)}
-                    placeholder="e.g. 0% intro"
-                    className="w-full text-sm border border-[var(--color-border)] rounded px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text)]"
-                  />
+                <div className="w-16">
+                  <label className="text-xs text-[var(--color-text-muted)]">Period</label>
+                  <div className="w-full text-sm px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text)] rounded border border-[var(--color-border)] flex items-center">
+                    {idx + 1}
+                  </div>
                 </div>
                 <div className="w-20">
                   <label className="text-xs text-[var(--color-text-muted)]">Rate %</label>
