@@ -8,7 +8,7 @@ import { Badge } from '../components/ui/Badge';
 import { FilterBar } from '../components/layout/FilterBar';
 import { IncomeVsExpensesBar } from '../components/charts/IncomeVsExpensesBar';
 import { ExpenseDonut } from '../components/charts/ExpenseDonut';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, formatPercent } from '../utils/formatters';
 import type { BudgetSummary } from '../types';
 
 interface DashboardProps {
@@ -186,7 +186,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
                       {formatCurrency(cat.total_pence)}
                     </td>
                     <td className="px-5 py-3 text-right text-[var(--color-text-muted)]">
-                      {cat.percentage.toFixed(1)}%
+                      {formatPercent(cat.percentage)}
                     </td>
                     <td className="px-5 py-3">
                       <div className="w-full bg-[var(--color-surface-2)] rounded-full h-1.5">

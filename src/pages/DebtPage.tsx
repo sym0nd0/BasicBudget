@@ -276,7 +276,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                                   {debt.deal_periods.map((period) => (
                                     <tr key={period.id} className="border-t border-[var(--color-border)]">
                                       <td className="px-2 py-1 text-[var(--color-text)]">{period.label || '—'}</td>
-                                      <td className="text-right px-2 py-1 font-mono text-[var(--color-text)]">{period.interest_rate}%</td>
+                                      <td className="text-right px-2 py-1 font-mono text-[var(--color-text)]">{formatPercent(period.interest_rate)}</td>
                                       <td className="px-2 py-1 font-mono text-[var(--color-text-muted)] text-xs">{period.start_date}</td>
                                       <td className="px-2 py-1 font-mono text-[var(--color-text-muted)] text-xs">{period.end_date ? period.end_date : 'ongoing'}</td>
                                     </tr>
