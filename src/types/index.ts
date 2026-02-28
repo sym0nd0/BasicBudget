@@ -5,6 +5,7 @@ export type {
   Expense,
   ExpenseCategory,
   Debt,
+  DebtDealPeriod,
   SavingsGoal,
   MonthLock,
   RepaymentRow,

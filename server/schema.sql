@@ -163,7 +163,26 @@ CREATE TABLE IF NOT EXISTS debts (
     split_ratio             REAL DEFAULT 1.0,
     notes                   TEXT,
     created_at              TEXT DEFAULT (datetime('now')),
-    updated_at              TEXT DEFAULT (datetime('now'))
+    updated_at              TEXT DEFAULT (datetime('now')),
+    reminder_months         INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS debt_deal_periods (
+    id              TEXT PRIMARY KEY,
+    debt_id         TEXT NOT NULL REFERENCES debts(id) ON DELETE CASCADE,
+    label           TEXT,
+    interest_rate   REAL NOT NULL DEFAULT 0,
+    start_date      TEXT NOT NULL,
+    end_date        TEXT,
+    created_at      TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS debt_notifications_sent (
+    id              TEXT PRIMARY KEY,
+    debt_id         TEXT NOT NULL,
+    deal_period_id  TEXT NOT NULL REFERENCES debt_deal_periods(id) ON DELETE CASCADE,
+    sent_at         TEXT DEFAULT (datetime('now')),
+    UNIQUE(debt_id, deal_period_id)
 );
 
 CREATE TABLE IF NOT EXISTS savings_goals (
@@ -215,6 +234,8 @@ CREATE INDEX IF NOT EXISTS idx_expenses_household ON expenses(household_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);
 CREATE INDEX IF NOT EXISTS idx_expenses_account ON expenses(account_id);
 CREATE INDEX IF NOT EXISTS idx_debts_household ON debts(household_id);
+CREATE INDEX IF NOT EXISTS idx_deal_periods_debt ON debt_deal_periods(debt_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_sent_debt ON debt_notifications_sent(debt_id);
 CREATE INDEX IF NOT EXISTS idx_savings_goals_household ON savings_goals(household_id);
 CREATE INDEX IF NOT EXISTS idx_month_locks_household ON month_locks(household_id);
 CREATE INDEX IF NOT EXISTS idx_incomes_contributor ON incomes(contributor_name);
