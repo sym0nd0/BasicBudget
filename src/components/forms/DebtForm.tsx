@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { Debt } from '../../types';
+import type { Debt, HouseholdMember } from '../../types';
+import { useApi } from '../../hooks/useApi';
 import { Input, Select } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { poundsToPence, penceToPoundsStr } from '../../utils/formatters';
@@ -19,6 +20,10 @@ interface DebtFormProps {
 }
 
 export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
+  const { data: householdDetails } = useApi<{ id?: string; name?: string; members?: HouseholdMember[] }>('/household');
+  const memberCount = householdDetails?.members?.length ?? 2;
+  const splitText = memberCount === 2 ? 'split equally with 2 members' : `split equally with ${memberCount} members`;
+
   const [name, setName] = useState(initial?.name ?? '');
   const [balance, setBalance] = useState(initial ? penceToPoundsStr(initial.balance_pence) : '');
   const [interestRate, setInterestRate] = useState(String(initial?.interest_rate ?? '0'));
@@ -223,7 +228,7 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
           className="w-4 h-4 rounded border-[var(--color-border)] accent-[var(--color-primary)]"
         />
         <span className="text-sm text-[var(--color-text)]">
-          Household debt <span className="text-[var(--color-text-muted)]">(split 50/50 with partner)</span>
+          Household debt <span className="text-[var(--color-text-muted)]">({splitText})</span>
         </span>
       </label>
       <Input

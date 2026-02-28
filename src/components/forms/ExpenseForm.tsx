@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Expense, Account } from '../../types';
+import type { Expense, Account, HouseholdMember } from '../../types';
 import { EXPENSE_CATEGORIES } from '../../types';
 import { Input, Select } from '../ui/Input';
 import { Button } from '../ui/Button';
@@ -14,8 +14,12 @@ interface ExpenseFormProps {
 }
 
 export function ExpenseForm({ initial, accounts, onSave, onCancel }: ExpenseFormProps) {
+  const { data: householdDetails } = useApi<{ id?: string; name?: string; members?: HouseholdMember[] }>('/household');
   const { data: categoriesData } = useApi<string[]>('/categories');
   const categories = categoriesData ?? EXPENSE_CATEGORIES;
+  const memberCount = householdDetails?.members?.length ?? 2;
+  const splitText = memberCount === 2 ? 'split equally with 2 members' : `split equally with ${memberCount} members`;
+
   const [name, setName] = useState(initial?.name ?? '');
   const [amount, setAmount] = useState(initial ? penceToPoundsStr(initial.amount_pence) : '');
   const [postingDay, setPostingDay] = useState(String(initial?.posting_day ?? '1'));
@@ -167,7 +171,7 @@ export function ExpenseForm({ initial, accounts, onSave, onCancel }: ExpenseForm
           className="w-4 h-4 rounded border-[var(--color-border)] accent-[var(--color-primary)]"
         />
         <span className="text-sm text-[var(--color-text)]">
-          Household expense <span className="text-[var(--color-text-muted)]">(split 50/50 with partner)</span>
+          Household expense <span className="text-[var(--color-text-muted)]">({splitText})</span>
         </span>
       </label>
       <Input
