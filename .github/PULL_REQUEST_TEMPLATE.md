@@ -1,19 +1,19 @@
 ## Description
 
 Please include a summary of the changes made in this PR and provide any context necessary for the change.
-Fixes # (issues)
+Fixes # (issues).
 
 ## Type of change
 
 Please tick any that are relevant to this PR and remove any that aren't.
 
-- [ ] Bugfix (non breaking change which resolve an issue)
-- [ ] Feature (non breaking change which adds functionality)
-- [ ] Breaking Change (a change which would cause existing functionality to not work as expected)
-- [ ] Documentation (a change to documentation)
+- [ ] Bugfix (non breaking change which resolve an issue).
+- [ ] Feature (non breaking change which adds functionality).
+- [ ] Breaking Change (a change which would cause existing functionality to not work as expected).
+- [ ] Documentation (a change to documentation).
 
 ## Submission checklist
 
-- [ ] I have performed a self review of my changes
-- [ ] I have updated the documentation where relevant
-- [ ] My changes are well written and all ci is passing
+- [ ] I have performed a self review of my changes.
+- [ ] I have updated the documentation where relevant.
+- [ ] My changes are well written and all CI is passing.
