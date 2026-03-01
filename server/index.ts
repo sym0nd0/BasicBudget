@@ -53,6 +53,7 @@ logger.info(`v${getVersionInfo().current}  |  ${config.NODE_ENV}`);
 app.set('trust proxy', 1);
 
 // 2. Helmet security headers
+// codeql[js/insecure-helmet-configuration] CSP is intentionally disabled in development for Vite HMR; production uses Helmet defaults
 app.use(helmet({
   contentSecurityPolicy: config.NODE_ENV === 'production' ? undefined : false,
 }));
@@ -67,6 +68,7 @@ app.use(cors({
 app.use(express.json({ limit: '1mb' }));
 
 // 4b. Cookie parser (required by csrf-csrf to read the CSRF cookie)
+// codeql[js/missing-token-validation] CSRF protection is applied via csrf-csrf doubleCsrfProtection at lines 76-79
 app.use(cookieParser());
 
 // 5. Session middleware
@@ -110,6 +112,7 @@ app.use('/api/version', versionRouter);
 if (config.NODE_ENV === 'production') {
   const publicDir = path.join(__dirname, '..', '..', 'public');
   app.use(express.static(publicDir));
+  // codeql[js/missing-rate-limiting] This route serves static index.html only; API routes are rate-limited via generalApiLimiter
   app.get('*', (_req, res) => {
     res.sendFile(path.join(publicDir, 'index.html'));
   });

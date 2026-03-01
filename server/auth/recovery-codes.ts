@@ -7,9 +7,13 @@ const CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars
 
 function randomCode(): string {
   let code = '';
-  const bytes = randomBytes(CODE_LENGTH);
-  for (let i = 0; i < CODE_LENGTH; i++) {
-    code += CHARSET[bytes[i] % CHARSET.length];
+  // Rejection sampling to avoid modular bias if CHARSET length changes in future
+  const limit = 256 - (256 % CHARSET.length);
+  while (code.length < CODE_LENGTH) {
+    const byte = randomBytes(1)[0];
+    if (byte < limit) {
+      code += CHARSET[byte % CHARSET.length];
+    }
   }
   return code;
 }

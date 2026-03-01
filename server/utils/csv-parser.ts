@@ -31,7 +31,12 @@ export function parseCsv(text: string): CsvRow[] {
   return rows;
 }
 
+const MAX_LINE_LENGTH = 1_000_000; // 1 MB
+
 function parseLine(line: string): string[] {
+  if (line.length > MAX_LINE_LENGTH) {
+    throw new Error(`CSV line exceeds maximum length of ${MAX_LINE_LENGTH} characters`);
+  }
   const fields: string[] = [];
   let current = '';
   let inQuotes = false;
