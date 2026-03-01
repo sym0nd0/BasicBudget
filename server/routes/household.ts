@@ -42,7 +42,7 @@ router.put('/', requireOwner, (req: Request, res: Response) => {
 
 // POST /api/household/invite
 router.post('/invite', requireOwner, inviteLimiter, async (req: Request, res: Response) => {
-  const schema = z.object({ email: z.string().email() });
+  const schema = z.object({ email: z.email() });
   const result = schema.safeParse(req.body);
   if (!result.success) { res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' }); return; }
 

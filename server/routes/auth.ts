@@ -17,19 +17,19 @@ import type { User, AuthStatusResponse } from '../../shared/types.js';
 const router = Router();
 
 const registerSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
   display_name: z.string().optional(),
   invite_token: z.string().optional(),
 });
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
 });
 
 const forgotSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.email('Invalid email address'),
 });
 
 const resetSchema = z.object({

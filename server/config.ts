@@ -16,7 +16,7 @@ const envSchema = z.object({
     .regex(/^[0-9a-fA-F]{64}$/, 'TOTP_ENCRYPTION_KEY must be exactly 64 hex characters'),
 
   // Application URLs
-  APP_URL: z.string().url().default('http://localhost:5173'),
+  APP_URL: z.url().default('http://localhost:5173'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
 
 });

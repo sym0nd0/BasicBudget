@@ -103,7 +103,7 @@ router.post('/change-email', async (req: Request, res: Response) => {
   };
   if (!email || !password) { res.status(400).json({ message: 'email and password are required' }); return; }
 
-  const emailResult = z.string().email().safeParse(email);
+  const emailResult = z.email().safeParse(email);
   if (!emailResult.success) { res.status(400).json({ message: 'Invalid email address' }); return; }
 
   const userRow = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId!) as Record<string, unknown> | undefined;
