@@ -1,1 +1,3 @@
-export const VERSION = '2.10.0';
+import packageJson from '../../package.json' assert { type: 'json' };
+
+export const VERSION = packageJson.version;
