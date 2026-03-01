@@ -201,6 +201,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
           )}
           <div className="flex items-center gap-2">
+            <div className="flex-1">
+              <ThemeToggle />
+            </div>
             <a
               href={`https://github.com/sym0nd0/BasicBudget/releases/tag/v${VERSION}`}
               target="_blank"
@@ -210,9 +213,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             >
               v{VERSION}
             </a>
-            <div className="flex-1">
-              <ThemeToggle />
-            </div>
             <a
               href="https://github.com/sym0nd0/BasicBudget"
               target="_blank"
