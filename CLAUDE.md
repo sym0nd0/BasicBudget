@@ -150,6 +150,24 @@ Examples:
 
 ---
 
+## Critical Rules (non-negotiable)
+
+### Language
+**Use UK English exclusively** in all contexts — no exceptions:
+- Spelling: colour, centre, organisation, realise, analyse, favour, honour, etc.
+- Terminology: British English conventions throughout
+- All replies, documentation, comments, and commit messages must use UK English
+
+### Git Workflow
+**All work MUST be on named branches — NEVER commit directly to master:**
+- Every change (feature, fix, docs, anything) goes to a descriptive named branch
+- Push the branch to origin
+- Create a PR immediately after pushing
+- Merge via PR only (never direct push to master)
+- This is non-negotiable and applies without exception
+
+---
+
 ## Workflow Rules (mandatory — no exceptions)
 
 ### ⚠️ CRITICAL: All work MUST be on a named branch — ALWAYS
