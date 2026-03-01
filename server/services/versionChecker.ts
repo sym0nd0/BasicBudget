@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { logger } from './logger.js';
 
 const pkg = JSON.parse(readFileSync(resolve('package.json'), 'utf-8')) as { version: string };
 const CURRENT_VERSION = pkg.version;
@@ -23,7 +24,7 @@ export function getVersionInfo(): VersionInfo {
 }
 
 export async function refreshVersionCheck(): Promise<void> {
-  // Skip re-fetch if cache is less than 24 hours old
+  // Skip re-fetch if cache is less than 1 hour old
   if (cache.checked_at) {
     const age = Date.now() - new Date(cache.checked_at).getTime();
     if (age < 60 * 60 * 1000) return;  // 1 hour
@@ -42,7 +43,9 @@ export async function refreshVersionCheck(): Promise<void> {
       update_available: latest !== CURRENT_VERSION,
       checked_at: new Date().toISOString(),
     };
-  } catch {
+    logger.info('Version check complete', { current: CURRENT_VERSION, latest, update_available: latest !== CURRENT_VERSION });
+  } catch (err) {
+    logger.error('Version check failed', { error: err instanceof Error ? err.message : String(err) });
     cache = {
       current: CURRENT_VERSION,
       latest: null,
