@@ -138,8 +138,8 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
                   key={income.id}
                   className="border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-2)]"
                 >
-                  <td className="px-5 py-3 font-medium text-[var(--color-text)]">
-                    <div className="flex items-center gap-2">
+                  <td className="px-5 py-3 font-medium text-[var(--color-text)] text-center">
+                    <div className="flex items-center justify-center gap-2">
                       {income.name}
                       {income.is_recurring && (
                         <Badge variant="info" className="text-[10px]">
@@ -148,23 +148,23 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
                       )}
                     </div>
                   </td>
-                  <td className="px-5 py-3 text-[var(--color-text-muted)] text-sm">
+                  <td className="px-5 py-3 text-[var(--color-text-muted)] text-sm text-center">
                     {income.contributor_name ?? '—'}
                   </td>
-                  <td className="px-5 py-3 text-right font-mono font-semibold text-[var(--color-success)]">
+                  <td className="px-5 py-3 font-mono font-semibold text-[var(--color-success)] text-center">
                     {formatCurrency(income.amount_pence)}
                   </td>
                   <td className="px-5 py-3 text-center">
                     <Badge variant="default">{formatOrdinal(income.posting_day)}</Badge>
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-5 py-3 text-center">
                     <Badge variant="default">{income.gross_or_net}</Badge>
                   </td>
-                  <td className="px-5 py-3 text-[var(--color-text-muted)] max-w-xs truncate">
+                  <td className="px-5 py-3 text-[var(--color-text-muted)] max-w-xs truncate text-center">
                     {income.notes ?? '—'}
                   </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-1 justify-end">
+                  <td className="px-5 py-3 text-center">
+                    <div className="flex items-center gap-1 justify-center">
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(income)}>
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -183,10 +183,10 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
               {/* Totals row */}
               {incomes.length > 0 && (
                 <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-surface-2)]">
-                  <td className="px-5 py-3 font-semibold text-[var(--color-text)]">Total ({incomes.length})</td>
-                  <td></td>
-                  <td className="px-5 py-3 text-right font-mono font-bold text-[var(--color-success)]">{formatCurrency(total)}</td>
-                  <td colSpan={4}></td>
+                  <td className="px-5 py-3 font-semibold text-[var(--color-text)] text-center">Total ({incomes.length})</td>
+                  <td className="text-center"></td>
+                  <td className="px-5 py-3 font-mono font-bold text-[var(--color-success)] text-center">{formatCurrency(total)}</td>
+                  <td colSpan={4} className="text-center"></td>
                 </tr>
               )}
             </tbody>

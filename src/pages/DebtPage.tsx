@@ -46,13 +46,13 @@ function RepaymentPanel({ debtId }: { debtId: string }) {
           <tbody>
             {summary.schedule.map((row: RepaymentRow) => (
               <tr key={row.month} className="border-t border-[var(--color-border)]">
-                <td className="py-1.5 pr-4 text-[var(--color-text-muted)]">{row.month}</td>
-                <td className="py-1.5 pr-4 text-[var(--color-text-muted)]">{formatYearMonth(row.date)}</td>
-                <td className="py-1.5 pr-4 text-right font-mono text-[var(--color-text)]">{formatCurrency(row.opening_balance_pence)}</td>
-                <td className="py-1.5 pr-4 text-right font-mono text-[var(--color-danger)]">{formatCurrency(row.interest_charge_pence)}</td>
-                <td className="py-1.5 pr-4 text-right font-mono text-[var(--color-warning)]">{formatCurrency(row.payment_pence)}</td>
-                <td className="py-1.5 pr-4 text-right font-mono text-[var(--color-success)]">{formatCurrency(row.principal_paid_pence)}</td>
-                <td className="py-1.5 text-right font-mono text-[var(--color-text)]">{formatCurrency(row.closing_balance_pence)}</td>
+                <td className="py-1.5 pr-4 text-[var(--color-text-muted)] text-center">{row.month}</td>
+                <td className="py-1.5 pr-4 text-[var(--color-text-muted)] text-center">{formatYearMonth(row.date)}</td>
+                <td className="py-1.5 pr-4 font-mono text-[var(--color-text)] text-center">{formatCurrency(row.opening_balance_pence)}</td>
+                <td className="py-1.5 pr-4 font-mono text-[var(--color-danger)] text-center">{formatCurrency(row.interest_charge_pence)}</td>
+                <td className="py-1.5 pr-4 font-mono text-[var(--color-warning)] text-center">{formatCurrency(row.payment_pence)}</td>
+                <td className="py-1.5 pr-4 font-mono text-[var(--color-success)] text-center">{formatCurrency(row.principal_paid_pence)}</td>
+                <td className="py-1.5 font-mono text-[var(--color-text)] text-center">{formatCurrency(row.closing_balance_pence)}</td>
               </tr>
             ))}
           </tbody>
@@ -187,8 +187,8 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                       className="border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-2)] cursor-pointer"
                       onClick={() => toggleExpand(debt.id)}
                     >
-                      <td className="px-5 py-3 font-medium text-[var(--color-text)]">
-                        <div className="flex items-center gap-2">
+                      <td className="px-5 py-3 font-medium text-[var(--color-text)] text-center">
+                        <div className="flex items-center justify-center gap-2">
                           <svg
                             className={`w-4 h-4 text-[var(--color-text-muted)] transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
                             fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
@@ -210,27 +210,27 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                           <p className="text-xs text-[var(--color-text-muted)] ml-6 mt-0.5">{debt.notes}</p>
                         )}
                       </td>
-                      <td className="px-5 py-3 text-right font-mono font-semibold text-[var(--color-danger)]">
+                      <td className="px-5 py-3 font-mono font-semibold text-[var(--color-danger)] text-center">
                         {formatCurrency(debt.balance_pence)}
                       </td>
-                      <td className="px-5 py-3 text-right">
+                      <td className="px-5 py-3 text-center">
                         {debt.interest_rate > 0 ? (
                           <Badge variant="danger">{formatPercent(debt.interest_rate)}</Badge>
                         ) : (
                           <Badge variant="success">0%</Badge>
                         )}
                       </td>
-                      <td className="px-5 py-3 text-right font-mono text-[var(--color-warning)]">
+                      <td className="px-5 py-3 font-mono text-[var(--color-warning)] text-center">
                         {formatCurrency(debt.minimum_payment_pence)}
                       </td>
-                      <td className="px-5 py-3 text-right font-mono text-[var(--color-text-muted)]">
+                      <td className="px-5 py-3 font-mono text-[var(--color-text-muted)] text-center">
                         {debt.overpayment_pence > 0 ? formatCurrency(debt.overpayment_pence) : '—'}
                       </td>
-                      <td className="px-5 py-3 text-right font-mono font-semibold text-[var(--color-warning)]">
+                      <td className="px-5 py-3 font-mono font-semibold text-[var(--color-warning)] text-center">
                         {formatCurrency(Math.round((debt.minimum_payment_pence + debt.overpayment_pence) * debt.split_ratio))}
                       </td>
-                      <td className="px-5 py-3" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center gap-1 justify-end">
+                      <td className="px-5 py-3 text-center" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-1 justify-center">
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(debt)}>
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -275,10 +275,10 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                                 <tbody>
                                   {debt.deal_periods.map((period) => (
                                     <tr key={period.id} className="border-t border-[var(--color-border)]">
-                                      <td className="px-2 py-1 text-[var(--color-text)]">{period.label || '—'}</td>
-                                      <td className="text-right px-2 py-1 font-mono text-[var(--color-text)]">{formatPercent(period.interest_rate)}</td>
-                                      <td className="px-2 py-1 font-mono text-[var(--color-text-muted)] text-xs">{period.start_date}</td>
-                                      <td className="px-2 py-1 font-mono text-[var(--color-text-muted)] text-xs">{period.end_date ? period.end_date : 'ongoing'}</td>
+                                      <td className="px-2 py-1 text-[var(--color-text)] text-center">{period.label || '—'}</td>
+                                      <td className="px-2 py-1 font-mono text-[var(--color-text)] text-center">{formatPercent(period.interest_rate)}</td>
+                                      <td className="px-2 py-1 font-mono text-[var(--color-text-muted)] text-xs text-center">{period.start_date}</td>
+                                      <td className="px-2 py-1 font-mono text-[var(--color-text-muted)] text-xs text-center">{period.end_date ? period.end_date : 'ongoing'}</td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -296,13 +296,13 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
               {/* Totals row */}
               {debts.length > 0 && (
                 <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-surface-2)]">
-                  <td className="px-5 py-3 font-semibold text-[var(--color-text)]">Total ({debts.length})</td>
-                  <td className="px-5 py-3 text-right font-mono font-bold text-[var(--color-danger)]">{formatCurrency(totalBalance)}</td>
-                  <td></td>
-                  <td className="px-5 py-3 text-right font-mono text-[var(--color-warning)]">{formatCurrency(debts.reduce((s, d) => s + d.minimum_payment_pence, 0))}</td>
-                  <td className="px-5 py-3 text-right font-mono text-[var(--color-text-muted)]">{formatCurrency(debts.reduce((s, d) => s + d.overpayment_pence, 0))}</td>
-                  <td className="px-5 py-3 text-right font-mono font-bold text-[var(--color-warning)]">{formatCurrency(totalPayments)}</td>
-                  <td></td>
+                  <td className="px-5 py-3 font-semibold text-[var(--color-text)] text-center">Total ({debts.length})</td>
+                  <td className="px-5 py-3 font-mono font-bold text-[var(--color-danger)] text-center">{formatCurrency(totalBalance)}</td>
+                  <td className="text-center"></td>
+                  <td className="px-5 py-3 font-mono text-[var(--color-warning)] text-center">{formatCurrency(debts.reduce((s, d) => s + d.minimum_payment_pence, 0))}</td>
+                  <td className="px-5 py-3 font-mono text-[var(--color-text-muted)] text-center">{formatCurrency(debts.reduce((s, d) => s + d.overpayment_pence, 0))}</td>
+                  <td className="px-5 py-3 font-mono font-bold text-[var(--color-warning)] text-center">{formatCurrency(totalPayments)}</td>
+                  <td className="text-center"></td>
                 </tr>
               )}
             </tbody>

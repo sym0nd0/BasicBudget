@@ -115,14 +115,14 @@ export function AdminUsersPage({ onMenuClick }: AdminUsersPageProps) {
                   const locked = isLocked(u);
                   return (
                     <tr key={u.id} className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-surface-2)] transition-colors">
-                      <td className="px-5 py-3">
+                      <td className="px-5 py-3 text-center">
                         <p className="font-medium text-[var(--color-text)] truncate max-w-[180px]">{u.display_name || u.email}</p>
                         <p className="text-xs text-[var(--color-text-muted)] truncate max-w-[180px]">{u.email}</p>
                         {!u.email_verified && (
                           <span className="text-xs text-[var(--color-warning)]">Unverified</span>
                         )}
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-5 py-3 text-center">
                         {u.system_role === 'admin' ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-primary)]/20 text-[var(--color-primary)]">
                             Admin
@@ -133,14 +133,14 @@ export function AdminUsersPage({ onMenuClick }: AdminUsersPageProps) {
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-5 py-3 text-center">
                         {locked ? (
                           <span className="text-xs text-[var(--color-danger)] font-medium">Locked</span>
                         ) : (
                           <span className="text-xs text-[var(--color-success)] font-medium">Active</span>
                         )}
                       </td>
-                      <td className="px-5 py-3 text-[var(--color-text-muted)]">
+                      <td className="px-5 py-3 text-[var(--color-text-muted)] text-center">
                         {u.has_totp ? (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--color-success-light)] text-[var(--color-success)]">Enabled</span>
                         ) : u.has_oidc ? (
@@ -149,11 +149,11 @@ export function AdminUsersPage({ onMenuClick }: AdminUsersPageProps) {
                           <span className="text-xs text-[var(--color-text-muted)]">Disabled</span>
                         )}
                       </td>
-                      <td className="px-5 py-3 text-xs text-[var(--color-text-muted)]">
+                      <td className="px-5 py-3 text-xs text-[var(--color-text-muted)] text-center">
                         {formatDate(u.created_at)}
                       </td>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="px-5 py-3 text-center">
+                        <div className="flex items-center justify-center gap-2">
                           {/* Role toggle */}
                           {!isSelf && (
                             <button

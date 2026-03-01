@@ -171,8 +171,8 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                   key={expense.id}
                   className="border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-2)]"
                 >
-                  <td className="px-5 py-3 font-medium text-[var(--color-text)]">
-                    <div className="flex items-center gap-2">
+                  <td className="px-5 py-3 font-medium text-[var(--color-text)] text-center">
+                    <div className="flex items-center justify-center gap-2">
                       {expense.name}
                       {expense.is_household && (
                         <Badge variant="primary" className="text-[10px]">½</Badge>
@@ -182,31 +182,31 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                       )}
                     </div>
                   </td>
-                  <td className="px-5 py-3 text-right font-mono text-[var(--color-text-muted)]">
+                  <td className="px-5 py-3 font-mono text-[var(--color-text-muted)] text-center">
                     {formatCurrency(expense.amount_pence)}
                   </td>
-                  <td className="px-5 py-3 text-right font-mono font-semibold text-[var(--color-danger)]">
+                  <td className="px-5 py-3 font-mono font-semibold text-[var(--color-danger)] text-center">
                     {formatCurrency(Math.round(expense.amount_pence * expense.split_ratio))}
                   </td>
                   <td className="px-5 py-3 text-center">
                     <Badge variant="default">{formatOrdinal(expense.posting_day)}</Badge>
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-5 py-3 text-center">
                     <Badge variant="default">{expense.category}</Badge>
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-5 py-3 text-center">
                     <Badge variant={typeVariant(expense.type)}>
                       {expense.type}
                     </Badge>
                   </td>
-                  <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs">
+                  <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs text-center">
                     {accountName(expense.account_id)}
                   </td>
-                  <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs max-w-[140px] truncate">
+                  <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs max-w-[140px] truncate text-center">
                     {expense.notes ?? '—'}
                   </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-1 justify-end">
+                  <td className="px-5 py-3 text-center">
+                    <div className="flex items-center gap-1 justify-center">
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(expense)}>
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -225,16 +225,16 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
               {/* Totals row */}
               {filtered.length > 0 && (
                 <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-surface-2)]">
-                  <td className="px-5 py-3 font-semibold text-[var(--color-text)]">
+                  <td className="px-5 py-3 font-semibold text-[var(--color-text)] text-center">
                     Total ({filtered.length})
                   </td>
-                  <td className="px-5 py-3 text-right font-mono text-[var(--color-text-muted)]">
+                  <td className="px-5 py-3 font-mono text-[var(--color-text-muted)] text-center">
                     {formatCurrency(filtered.reduce((s, e) => s + e.amount_pence, 0))}
                   </td>
-                  <td className="px-5 py-3 text-right font-mono font-bold text-[var(--color-danger)]">
+                  <td className="px-5 py-3 font-mono font-bold text-[var(--color-danger)] text-center">
                     {formatCurrency(totalEffective)}
                   </td>
-                  <td colSpan={6}></td>
+                  <td colSpan={6} className="text-center"></td>
                 </tr>
               )}
             </tbody>
