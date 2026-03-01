@@ -231,3 +231,17 @@ Every branch pushed to origin must have a corresponding Pull Request opened imme
 **If ANY item is not met, do not push. Fix the issue first.**
 
 **ESPECIALLY: If you are on master, STOP. Create a new branch immediately. Do not push to master.**
+
+### 5. Releasing a new version — mandatory steps (in order)
+
+Every release **must** include updating `package.json` to the new version number **before** tagging. The sidebar reads the version directly from `package.json` at runtime — if it is not updated, the wrong version will be displayed.
+
+**Release checklist (run in order, no skipping):**
+
+1. **Bump `package.json`** — update `"version"` to the new semver (e.g. `"2.12.0"`) on the feature/fix branch, as part of the same PR
+2. **Merge PR to master**
+3. **Pull master** — `git checkout master && git pull`
+4. **Tag** — `git tag vX.Y.Z && git push origin vX.Y.Z`
+5. **Create & publish release** — `gh release create vX.Y.Z --title "vX.Y.Z" --notes "..."` then `gh release edit vX.Y.Z --draft=false --latest`
+
+**`package.json` version must always match the git tag.** Never tag without bumping `package.json` first.
