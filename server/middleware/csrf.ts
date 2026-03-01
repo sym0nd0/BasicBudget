@@ -1,16 +1,17 @@
 import { doubleCsrf } from 'csrf-csrf';
 import { config } from '../config.js';
 
-const { doubleCsrfProtection, generateToken } = doubleCsrf({
+const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
   getSecret: () => config.SESSION_SECRET,
+  getSessionIdentifier: (req) => req.sessionID ?? '',
   cookieName: 'bb.csrf',
   cookieOptions: {
     httpOnly: true,
     secure: config.NODE_ENV === 'production',
     sameSite: 'lax',
   },
-  getTokenFromRequest: (req) => req.headers['x-csrf-token'] as string | undefined,
+  getCsrfTokenFromRequest: (req) => req.headers['x-csrf-token'] as string | undefined,
   ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
 });
 
-export { doubleCsrfProtection, generateToken };
+export { doubleCsrfProtection, generateCsrfToken };
