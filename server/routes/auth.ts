@@ -11,7 +11,7 @@ import { deviceFingerprint, isNewDevice, recordDevice } from '../auth/device.js'
 import { sendLoginAlert } from '../services/email.js';
 import { requireAuth } from '../middleware/auth.js';
 import { loginLimiter, passwordResetLimiter } from '../middleware/rate-limit.js';
-import { generateToken } from '../middleware/csrf.js';
+import { generateCsrfToken } from '../middleware/csrf.js';
 import type { User, AuthStatusResponse } from '../../shared/types.js';
 
 const router = Router();
@@ -334,7 +334,7 @@ router.get('/status', (req: Request, res: Response) => {
 
 // GET /api/auth/csrf-token — public (needed before login/register)
 router.get('/csrf-token', (req: Request, res: Response) => {
-  const token = generateToken(req, res);
+  const token = generateCsrfToken(req, res);
   res.json({ token });
 });
 

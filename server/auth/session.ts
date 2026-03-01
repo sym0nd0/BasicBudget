@@ -29,7 +29,7 @@ export const sessionMiddleware = session({
   secret: config.SESSION_SECRET,
   store,
   resave: false,
-  saveUninitialized: false,
+  saveUninitialized: true,
   rolling: true,
   cookie: {
     httpOnly: true,
