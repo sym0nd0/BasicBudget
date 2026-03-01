@@ -13,6 +13,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { loginLimiter, passwordResetLimiter } from '../middleware/rate-limit.js';
 import { generateCsrfToken } from '../middleware/csrf.js';
 import type { User, AuthStatusResponse } from '../../shared/types.js';
+import { getSetting } from '../services/settings.js';
 
 const router = Router();
 
@@ -77,14 +78,19 @@ router.post('/register', async (req: Request, res: Response) => {
     return;
   }
 
+  // First registered user becomes admin; also used to bypass registration guard
+  const countRow = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
+  const isFirstUser = countRow.count === 0;
+
+  if (!isFirstUser && !invite_token && getSetting('registration.disabled') === 'true') {
+    res.status(403).json({ message: 'Registration is currently disabled.' });
+    return;
+  }
+
   const userId = randomUUID();
   const householdId = randomUUID();
   const hash = await hashPassword(password);
   const name = display_name?.trim() || email.split('@')[0];
-
-  // First registered user becomes admin
-  const countRow = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
-  const isFirstUser = countRow.count === 0;
 
   // If valid invite_token is provided, join that household instead of creating new one
   let targetHouseholdId: string | null = null;
@@ -330,6 +336,13 @@ router.get('/status', (req: Request, res: Response) => {
     householdRole: req.session.householdRole,
   };
   res.json(resp);
+});
+
+// GET /api/auth/registration-status — public
+router.get('/registration-status', (_req: Request, res: Response) => {
+  const count = (db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number }).count;
+  const disabled = count > 0 && getSetting('registration.disabled') === 'true';
+  res.json({ disabled });
 });
 
 // GET /api/auth/csrf-token — public (needed before login/register)

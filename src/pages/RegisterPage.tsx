@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { api } from '../api/client';
 
 export function RegisterPage() {
   const { register } = useAuth();
@@ -14,8 +15,17 @@ export function RegisterPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [regDisabled, setRegDisabled] = useState(false);
+  const [statusChecked, setStatusChecked] = useState(false);
 
   const inviteToken = searchParams.get('token') ?? undefined;
+
+  useEffect(() => {
+    api.getRegistrationStatus()
+      .then(s => setRegDisabled(s.disabled))
+      .catch(() => {})
+      .finally(() => setStatusChecked(true));
+  }, []);
 
   // Pre-fill email from query param if present (for invite flow)
   useEffect(() => {
@@ -40,6 +50,8 @@ export function RegisterPage() {
     }
   };
 
+  const showDisabled = statusChecked && regDisabled && !inviteToken;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg)] px-4">
       <div className="w-full max-w-sm">
@@ -48,6 +60,15 @@ export function RegisterPage() {
           <h1 className="text-2xl font-bold text-[var(--color-text)]">Create your account</h1>
         </div>
 
+        {showDisabled ? (
+          <div className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-[var(--color-border)] text-center space-y-3">
+            <p className="text-sm text-[var(--color-text)]">Registration is currently disabled.</p>
+            <p className="text-sm text-[var(--color-text-muted)]">Contact your administrator to receive an invite.</p>
+            <Link to="/login" className="text-sm text-[var(--color-primary)] hover:underline font-medium">
+              Sign in instead
+            </Link>
+          </div>
+        ) : (
         <form onSubmit={handleSubmit} className="bg-[var(--color-surface)] rounded-2xl p-6 shadow-sm border border-[var(--color-border)] flex flex-col gap-4">
           {error && (
             <div className="text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">
@@ -88,6 +109,7 @@ export function RegisterPage() {
             {loading ? 'Creating account…' : 'Create account'}
           </Button>
         </form>
+        )}
 
         <p className="text-center mt-4 text-sm text-[var(--color-text-muted)]">
           Already have an account?{' '}

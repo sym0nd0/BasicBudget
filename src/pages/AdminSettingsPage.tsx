@@ -48,6 +48,13 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
   const [oidcMsg, setOidcMsg] = useState('');
   const [oidcError, setOidcError] = useState('');
 
+  // ── Registration ──
+  const [regDisabled, setRegDisabled] = useState(false);
+  const [regLoading, setRegLoading] = useState(true);
+  const [regSaving, setRegSaving] = useState(false);
+  const [regMsg, setRegMsg] = useState('');
+  const [regError, setRegError] = useState('');
+
   // ── Logging ──
   const [logLevel, setLogLevel] = useState<LoggingConfig['level']>('info');
   const [logLoading, setLogLoading] = useState(true);
@@ -72,6 +79,11 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
       .then(cfg => setLogLevel(cfg.level))
       .catch(() => {})
       .finally(() => setLogLoading(false));
+
+    api.getRegistrationConfig()
+      .then(cfg => setRegDisabled(cfg.disabled))
+      .catch(() => {})
+      .finally(() => setRegLoading(false));
   }, []);
 
   const saveSMTP = async () => {
@@ -138,6 +150,20 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
       setCatsMsg('Categories reset to defaults.');
     } catch (e) {
       setCatsError(e instanceof Error ? e.message : 'Failed to reset');
+    }
+  };
+
+  const saveRegistration = async () => {
+    setRegSaving(true);
+    setRegMsg('');
+    setRegError('');
+    try {
+      const r = await api.updateRegistrationConfig({ disabled: regDisabled });
+      setRegMsg(r.message);
+    } catch (e) {
+      setRegError(e instanceof Error ? e.message : 'Failed to save.');
+    } finally {
+      setRegSaving(false);
     }
   };
 
@@ -211,6 +237,36 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
                 </Button>
                 <Button variant="secondary" onClick={resetCats}>
                   Reset to Defaults
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* Registration Card */}
+        <Card>
+          <CardHeader title="Registration" subtitle="Control whether new users can sign up publicly." />
+          {regLoading ? (
+            <p className="text-sm text-[var(--color-text-muted)] mt-3">Loading…</p>
+          ) : (
+            <div className="mt-4 space-y-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={regDisabled}
+                  onChange={e => setRegDisabled(e.target.checked)}
+                  className="w-4 h-4 accent-[var(--color-primary)]"
+                />
+                <span className="text-sm text-[var(--color-text)]">Disable public registration (invite-only mode)</span>
+              </label>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                When enabled, new accounts can only be created via household invites or directly by admins. The first user on a fresh instance can always register.
+              </p>
+              {regMsg && <p className="text-sm text-[var(--color-success)]">{regMsg}</p>}
+              {regError && <p className="text-sm text-[var(--color-danger)]">{regError}</p>}
+              <div className="flex gap-3 pt-1">
+                <Button onClick={saveRegistration} disabled={regSaving}>
+                  {regSaving ? 'Saving…' : 'Save'}
                 </Button>
               </div>
             </div>

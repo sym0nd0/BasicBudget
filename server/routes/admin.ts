@@ -364,4 +364,25 @@ router.put('/settings/logging', (req: Request, res: Response) => {
   res.json({ message: `Log level set to ${level}` });
 });
 
+// ─── Registration settings ────────────────────────────────────────────────────
+
+const registrationSchema = z.object({ disabled: z.boolean() });
+
+// GET /api/admin/settings/registration
+router.get('/settings/registration', (_req: Request, res: Response) => {
+  const disabled = getSetting('registration.disabled') === 'true';
+  res.json({ disabled });
+});
+
+// PUT /api/admin/settings/registration
+router.put('/settings/registration', (req: Request, res: Response) => {
+  const result = registrationSchema.safeParse(req.body);
+  if (!result.success) { res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' }); return; }
+  const { disabled } = result.data;
+  setSetting('registration.disabled', String(disabled));
+  auditLog(req.userId!, 'admin_registration_toggled', { disabled }, req.ip, req.get('user-agent'));
+  logger.info('Registration toggle changed by admin', { disabled, admin_id: req.userId });
+  res.json({ message: `Registration ${disabled ? 'disabled' : 'enabled'}.` });
+});
+
 export default router;
