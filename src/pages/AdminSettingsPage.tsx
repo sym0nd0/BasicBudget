@@ -3,7 +3,7 @@ import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { api } from '../api/client';
-import type { SmtpConfig, OidcConfig } from '../types';
+import type { SmtpConfig, OidcConfig, LoggingConfig } from '../types';
 import { EXPENSE_CATEGORIES } from '../types';
 
 interface AdminSettingsPageProps {
@@ -48,6 +48,13 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
   const [oidcMsg, setOidcMsg] = useState('');
   const [oidcError, setOidcError] = useState('');
 
+  // ── Logging ──
+  const [logLevel, setLogLevel] = useState<LoggingConfig['level']>('info');
+  const [logLoading, setLogLoading] = useState(true);
+  const [logSaving, setLogSaving] = useState(false);
+  const [logMsg, setLogMsg] = useState('');
+  const [logError, setLogError] = useState('');
+
   useEffect(() => {
     api.getSmtpConfig().then(cfg => {
       if (cfg) setSmtp(cfg);
@@ -60,6 +67,11 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
     api.getAdminCategories().then(c => {
       if (c) setCats(c);
     }).catch(() => {}).finally(() => setCatsLoading(false));
+
+    api.getLoggingConfig()
+      .then(cfg => setLogLevel(cfg.level))
+      .catch(() => {})
+      .finally(() => setLogLoading(false));
   }, []);
 
   const saveSMTP = async () => {
@@ -129,6 +141,20 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
     }
   };
 
+  const saveLogging = async () => {
+    setLogSaving(true);
+    setLogMsg('');
+    setLogError('');
+    try {
+      const r = await api.updateLoggingConfig({ level: logLevel });
+      setLogMsg(r.message);
+    } catch (e) {
+      setLogError(e instanceof Error ? e.message : 'Failed to save logging settings');
+    } finally {
+      setLogSaving(false);
+    }
+  };
+
   const smtpConfigured = !!smtp.host;
   const oidcConfigured = !!(oidc.issuer_url && oidc.client_id);
 
@@ -185,6 +211,36 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
                 </Button>
                 <Button variant="secondary" onClick={resetCats}>
                   Reset to Defaults
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* Logging Card */}
+        <Card>
+          <CardHeader title="Logging" subtitle="Set the minimum log level written to standard output." />
+          {logLoading ? (
+            <p className="text-sm text-[var(--color-text-muted)] mt-3">Loading…</p>
+          ) : (
+            <div className="mt-4 space-y-4">
+              <LabeledField label="Log level">
+                <select
+                  className={inputClass}
+                  value={logLevel}
+                  onChange={e => setLogLevel(e.target.value as LoggingConfig['level'])}
+                >
+                  <option value="debug">debug — all messages including verbose diagnostics</option>
+                  <option value="info">info — normal operation (default)</option>
+                  <option value="warn">warn — warnings and errors only</option>
+                  <option value="error">error — errors only</option>
+                </select>
+              </LabeledField>
+              {logMsg && <p className="text-sm text-[var(--color-success)]">{logMsg}</p>}
+              {logError && <p className="text-sm text-[var(--color-danger)]">{logError}</p>}
+              <div className="flex gap-3 pt-1">
+                <Button onClick={saveLogging} disabled={logSaving}>
+                  {logSaving ? 'Saving…' : 'Save Log Level'}
                 </Button>
               </div>
             </div>

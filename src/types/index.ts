@@ -29,6 +29,7 @@ export type {
   AdminUser,
   SmtpConfig,
   OidcConfig,
+  LoggingConfig,
   AuditLogEntry,
   PaginatedResponse,
   VersionInfo,

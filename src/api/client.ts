@@ -15,6 +15,7 @@ import type {
   AdminUser,
   SmtpConfig,
   OidcConfig,
+  LoggingConfig,
   AuditLogEntry,
   PaginatedResponse,
   VersionInfo,
@@ -278,6 +279,14 @@ export const api = {
     }),
   resetAdminCategories: () =>
     request<{ message: string; categories: string[] }>('/admin/settings/categories', { method: 'DELETE' }),
+
+  getLoggingConfig: () =>
+    request<LoggingConfig>('/admin/settings/logging'),
+  updateLoggingConfig: (cfg: LoggingConfig) =>
+    request<{ message: string }>('/admin/settings/logging', {
+      method: 'PUT',
+      body: JSON.stringify(cfg),
+    }),
 
   // ── Version ──
   getVersion: () => request<VersionInfo>('/version'),

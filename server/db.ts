@@ -26,6 +26,16 @@ const schema = fs.readFileSync(
 );
 db.exec(schema);
 
+// DB logging helper (local to avoid circular imports with logger.ts)
+function dbLog(message: string): void {
+  process.stdout.write(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level: 'info',
+    message,
+    meta: { source: 'db-migration' },
+  }) + '\n');
+}
+
 // Migrate SMTP/OIDC settings from environment variables to DB (one-time, for existing deployments)
 (function migrateEnvToSettings() {
   const migrations = [
@@ -55,7 +65,7 @@ db.exec(schema);
   for (const { key, env } of migrations) {
     if (env) upsert.run(key, env);
   }
-  console.log('[DB] Migrated SMTP/OIDC settings from environment variables to database.');
+  dbLog('Migrated SMTP/OIDC settings from environment variables to database.');
 })();
 
 // Migrate incomes/expenses tables to support 'fortnightly' recurrence_type
@@ -94,7 +104,7 @@ db.exec(schema);
       db.prepare('INSERT INTO incomes SELECT * FROM _incomes_old').run();
       db.prepare('DROP TABLE _incomes_old').run();
     })();
-    console.log('[DB] Migrated incomes table to support fortnightly recurrence.');
+    dbLog('Migrated incomes table to support fortnightly recurrence.');
   }
 
   if (needsMigration(expenseTableInfo)) {
@@ -125,7 +135,7 @@ db.exec(schema);
       db.prepare('INSERT INTO expenses SELECT * FROM _expenses_old').run();
       db.prepare('DROP TABLE _expenses_old').run();
     })();
-    console.log('[DB] Migrated expenses table to support fortnightly recurrence.');
+    dbLog('Migrated expenses table to support fortnightly recurrence.');
   }
 })();
 

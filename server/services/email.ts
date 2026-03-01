@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config.js';
 import { getSmtpConfig } from './settings.js';
+import { logger } from './logger.js';
 
 function escapeHtml(str: string): string {
   return str
@@ -28,8 +29,8 @@ async function sendMail(to: string, subject: string, html: string): Promise<void
   const smtp = getSmtpConfig();
   const transport = createTransport();
   if (!transport) {
-    // Log email to console when SMTP is not configured
-    console.log(`[EMAIL] To: ${to}\nSubject: ${subject}\n${html}`);
+    // Log email when SMTP is not configured
+    logger.info('Email (no SMTP configured — logging to output)', { to, subject });
     return;
   }
   await transport.sendMail({
