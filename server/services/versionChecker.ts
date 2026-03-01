@@ -1,7 +1,8 @@
-import { createRequire } from 'module';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
-const require = createRequire(import.meta.url);
-const { version: CURRENT_VERSION } = require('../../../package.json') as { version: string };
+const pkg = JSON.parse(readFileSync(resolve('package.json'), 'utf-8')) as { version: string };
+const CURRENT_VERSION = pkg.version;
 
 export interface VersionInfo {
   current: string;
@@ -25,7 +26,7 @@ export async function refreshVersionCheck(): Promise<void> {
   // Skip re-fetch if cache is less than 24 hours old
   if (cache.checked_at) {
     const age = Date.now() - new Date(cache.checked_at).getTime();
-    if (age < 24 * 60 * 60 * 1000) return;
+    if (age < 60 * 60 * 1000) return;  // 1 hour
   }
 
   try {
