@@ -24,12 +24,6 @@ export function getVersionInfo(): VersionInfo {
 }
 
 export async function refreshVersionCheck(): Promise<void> {
-  // Skip re-fetch if cache is less than 1 hour old
-  if (cache.checked_at) {
-    const age = Date.now() - new Date(cache.checked_at).getTime();
-    if (age < 60 * 60 * 1000) return;  // 1 hour
-  }
-
   try {
     const res = await fetch('https://api.github.com/repos/sym0nd0/BasicBudget/releases/latest', {
       headers: { 'User-Agent': `BasicBudget/${CURRENT_VERSION}` },
