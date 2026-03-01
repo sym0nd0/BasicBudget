@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { useAuth } from '../../context/AuthContext';
+import { VERSION } from '../../constants/version';
 
 const adminNavItems = [
   {
@@ -200,6 +201,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
           )}
           <div className="flex items-center gap-2">
+            <a
+              href={`https://github.com/sym0nd0/BasicBudget/releases/tag/v${VERSION}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Release notes"
+              className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors text-xs font-medium"
+            >
+              v{VERSION}
+            </a>
             <div className="flex-1">
               <ThemeToggle />
             </div>

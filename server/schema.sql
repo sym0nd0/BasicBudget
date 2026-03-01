@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     user_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name         TEXT NOT NULL,
     sort_order   INTEGER DEFAULT 0,
+    is_joint     INTEGER DEFAULT 0,
     created_at   TEXT DEFAULT (datetime('now')),
     UNIQUE(name, household_id)
 );
