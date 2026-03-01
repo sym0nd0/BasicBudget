@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@types/ua-parser-js": "^0.7.39",
-    "argon2": "^0.43.0",
+    "argon2": "^0.44.0",
     "better-sqlite3": "^12.6.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
