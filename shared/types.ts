@@ -296,6 +296,10 @@ export interface OidcConfig {
   client_secret: string;
 }
 
+export interface LoggingConfig {
+  level: 'debug' | 'info' | 'warn' | 'error';
+}
+
 export interface AuditLogEntry {
   id: string;
   user_id: string | null;

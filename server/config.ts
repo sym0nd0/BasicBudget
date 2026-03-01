@@ -31,10 +31,13 @@ function buildEnv() {
 
   const result = envSchema.safeParse(process.env);
   if (!result.success) {
-    console.error('Invalid environment configuration:');
-    for (const issue of result.error.issues) {
-      console.error(`  ${issue.path.join('.')}: ${issue.message}`);
-    }
+    const messages = result.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`);
+    process.stderr.write(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'error',
+      message: 'Invalid environment configuration:',
+      meta: { issues: messages },
+    }) + '\n');
     process.exit(1);
   }
   return result.data;

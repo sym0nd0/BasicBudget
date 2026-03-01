@@ -14,6 +14,8 @@ import {
 import { DEFAULT_EXPENSE_CATEGORIES, getExpenseCategories } from './categories.js';
 import { resetOidcClient } from './oidc.js';
 import { sendTestEmail } from '../services/email.js';
+import { logger } from '../services/logger.js';
+import type { LogLevel } from '../services/logger.js';
 
 const router = Router();
 
@@ -338,6 +340,28 @@ router.delete('/settings/categories', (req: Request, res: Response) => {
   setSetting('expense_categories', JSON.stringify(DEFAULT_EXPENSE_CATEGORIES));
   auditLog(req.userId!, 'admin_categories_reset', {}, req.ip, req.get('user-agent'));
   res.json({ message: 'Categories reset to defaults.', categories: DEFAULT_EXPENSE_CATEGORIES });
+});
+
+// ─── Logging settings ─────────────────────────────────────────────────────────
+
+const VALID_LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
+const loggingSchema = z.object({ level: z.enum(VALID_LOG_LEVELS) });
+
+// GET /api/admin/settings/logging
+router.get('/settings/logging', (_req: Request, res: Response) => {
+  const level = (getSetting('log.level') ?? 'info') as LogLevel;
+  res.json({ level });
+});
+
+// PUT /api/admin/settings/logging
+router.put('/settings/logging', (req: Request, res: Response) => {
+  const result = loggingSchema.safeParse(req.body);
+  if (!result.success) { res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' }); return; }
+  const { level } = result.data;
+  setSetting('log.level', level);
+  auditLog(req.userId!, 'admin_log_level_changed', { level }, req.ip, req.get('user-agent'));
+  logger.info('Log level changed by admin', { level, admin_id: req.userId });
+  res.json({ message: `Log level set to ${level}` });
 });
 
 export default router;

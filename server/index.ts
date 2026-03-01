@@ -28,13 +28,26 @@ import exportRouter from './routes/export.js';
 import adminRouter from './routes/admin.js';
 import categoriesRouter from './routes/categories.js';
 import { checkAndSendDealReminders } from './services/debtNotifications.js';
-import { refreshVersionCheck } from './services/versionChecker.js';
+import { refreshVersionCheck, getVersionInfo } from './services/versionChecker.js';
 import versionRouter from './routes/version.js';
+import { logger } from './services/logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const PORT = parseInt(config.PORT, 10);
+
+// Print ASCII banner + version
+const BANNER = [
+  ' ____            _      ____            _            _      ',
+  '| __ )  __ _ ___(_) ___| __ ) _   _  __| | __ _  ___| |_   ',
+  '|  _ \\ / _` / __| |/ __|  _ \\| | | |/ _` |/ _` |/ _ \\ __|',
+  '| |_) | (_| \\__ \\ | (__| |_) | |_| | (_| | (_| |  __/ |_| ',
+  '|____/ \\__,_|___/_|\\___|____/ \\__,_|\\__,_|\\__, |\\___|\\___|',
+  '                                             |___/           ',
+];
+for (const line of BANNER) logger.info(line);
+logger.info(`v${getVersionInfo().current}  |  ${config.NODE_ENV}`);
 
 // 1. Trust proxy (for rate-limit IP tracking behind reverse proxy)
 app.set('trust proxy', 1);
@@ -105,7 +118,7 @@ if (config.NODE_ENV === 'production') {
 // 11. Global error handler
 app.use((err: Error & { status?: number; code?: string }, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (config.NODE_ENV !== 'production') {
-    console.error(err);
+    logger.error('Unhandled request error', { error: err instanceof Error ? err.message : String(err) });
   }
   // Handle CSRF errors
   if (err.code === 'EBADCSRFTOKEN' || (err as { statusCode?: number }).statusCode === 403) {
@@ -121,21 +134,21 @@ app.use((err: Error & { status?: number; code?: string }, _req: express.Request,
 
 if (config.NODE_ENV !== 'test') {
   // Version check — run immediately at startup, then every hour
-  refreshVersionCheck().catch(console.error);
+  refreshVersionCheck().catch(err => logger.error('Version check failed', { error: String(err) }));
   setInterval(() => {
-    refreshVersionCheck().catch(console.error);
+    refreshVersionCheck().catch(err => logger.error('Version check failed', { error: String(err) }));
   }, 60 * 60 * 1000);
 
   // Deal reminders — 10s delay then every 24h
   setTimeout(() => {
-    checkAndSendDealReminders().catch(console.error);
+    checkAndSendDealReminders().catch(err => logger.error('Deal reminder check failed', { error: String(err) }));
     setInterval(() => {
-      checkAndSendDealReminders().catch(console.error);
+      checkAndSendDealReminders().catch(err => logger.error('Deal reminder check failed', { error: String(err) }));
     }, 24 * 60 * 60 * 1000);
   }, 10_000);
 
   app.listen(PORT, () => {
-    console.log(`BasicBudget server listening on port ${PORT}`);
+    logger.info('Server listening', { port: PORT });
   });
 }
 

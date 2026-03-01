@@ -1,5 +1,6 @@
 import db from '../db.js';
 import { sendDealPeriodReminder } from './email.js';
+import { logger } from './logger.js';
 import type { Debt, DebtDealPeriod } from '../../shared/types.js';
 
 function diffInMonths(from: Date, to: Date): number {
@@ -56,12 +57,12 @@ export async function checkAndSendDealReminders(): Promise<void> {
               'INSERT INTO debt_notifications_sent (id, debt_id, deal_period_id) VALUES (?, ?, ?)'
             ).run(randomUUID(), debt.id, period.id);
           } catch (err) {
-            console.error(`Failed to send deal reminder for debt ${debt.id}:`, err);
+            logger.error('Failed to send deal reminder', { debt_id: debt.id, error: err instanceof Error ? err.message : String(err) });
           }
         }
       }
     }
   } catch (err) {
-    console.error('Error checking deal reminders:', err);
+    logger.error('Error checking deal reminders', { error: err instanceof Error ? err.message : String(err) });
   }
 }
