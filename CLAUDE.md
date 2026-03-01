@@ -212,7 +212,7 @@ Every change — feature, fix, refactor, docs update, configuration change, typo
 
 ### 3. A PR must be created for every branch
 
-Every branch pushed to origin must have a corresponding Pull Request opened immediately after the push. The PR must include:
+Every branch pushed to origin must have a corresponding Pull Request opened immediately after the push. The PR body **must use and fully complete the repository's PR template** (`.github/PULL_REQUEST_TEMPLATE.md`) — fill in every section; do not leave placeholder text or skip sections. The PR must include:
 - A clear title describing the purpose of the change
 - A summary of what changed and why
 - A note on README.md: either what was updated, or an explicit statement that no README update was required and why
