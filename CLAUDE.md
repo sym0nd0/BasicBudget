@@ -245,3 +245,20 @@ Every release **must** include updating `package.json` to the new version number
 5. **Create & publish release** — `gh release create vX.Y.Z --title "vX.Y.Z" --notes "..."` then `gh release edit vX.Y.Z --draft=false --latest`
 
 **`package.json` version must always match the git tag.** Never tag without bumping `package.json` first.
+
+### 6. Release notes — breaking changes
+
+If a release contains any breaking changes, they **must** appear at the very top of the release notes, before any other content, in this format:
+
+```
+## ⚠️ Breaking Changes
+
+### <Short title of the breaking change>
+**What changed:** <What is different from the previous version>
+**Why:** <The reason the breaking change was necessary>
+**Action required:** <Exactly what the user must do before or after updating — e.g. run a migration, update config, wipe a volume. If no action is needed, state "None — the migration runs automatically on first startup.">
+
+---
+```
+
+If there are no breaking changes, omit this section entirely — do not include it with "None" or similar.
