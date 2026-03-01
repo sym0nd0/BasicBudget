@@ -173,22 +173,22 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
                   <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Category</th>
                   <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Amount</th>
                   <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">% of Expenses</th>
-                  <th className="px-5 py-3 w-40 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Share</th>
+                  <th className="text-center px-5 py-3 w-40 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Share</th>
                 </tr>
               </thead>
               <tbody>
                 {summary?.category_breakdown.map(cat => (
                   <tr key={cat.category} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors">
-                    <td className="px-5 py-3 font-medium text-[var(--color-text)]">
+                    <td className="px-5 py-3 font-medium text-[var(--color-text)] text-center">
                       <Badge variant="default">{cat.category}</Badge>
                     </td>
-                    <td className="px-5 py-3 text-right font-mono text-[var(--color-danger)]">
+                    <td className="px-5 py-3 font-mono text-[var(--color-danger)] text-center">
                       {formatCurrency(cat.total_pence)}
                     </td>
-                    <td className="px-5 py-3 text-right text-[var(--color-text-muted)]">
+                    <td className="px-5 py-3 text-[var(--color-text-muted)] text-center">
                       {formatPercent(cat.percentage)}
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-5 py-3 text-center">
                       <div className="w-full bg-[var(--color-surface-2)] rounded-full h-1.5">
                         <div
                           className="h-1.5 rounded-full bg-[var(--color-primary)]"

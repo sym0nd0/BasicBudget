@@ -136,18 +136,18 @@ export function AdminAuditLogPage({ onMenuClick }: AdminAuditLogPageProps) {
                         className="border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-surface-2)] transition-colors cursor-pointer"
                         onClick={() => setExpandedId(prev => prev === entry.id ? null : entry.id)}
                       >
-                        <td className="px-5 py-3 text-xs text-[var(--color-text-muted)] whitespace-nowrap">
+                        <td className="px-5 py-3 text-xs text-[var(--color-text-muted)] whitespace-nowrap text-center">
                           {formatDateTime(entry.created_at)}
                         </td>
-                        <td className="px-5 py-3 text-xs truncate max-w-[140px]">
+                        <td className="px-5 py-3 text-xs truncate max-w-[140px] text-center">
                           {entry.user_email ?? (entry.user_id ? entry.user_id.slice(0, 8) + '…' : '—')}
                         </td>
-                        <td className="px-5 py-3">
+                        <td className="px-5 py-3 text-center">
                           <code className="text-xs bg-[var(--color-surface-2)] px-1.5 py-0.5 rounded text-[var(--color-primary)]">
                             {entry.action}
                           </code>
                         </td>
-                        <td className="px-5 py-3 text-xs text-[var(--color-text-muted)] max-w-[200px] truncate">
+                        <td className="px-5 py-3 text-xs text-[var(--color-text-muted)] max-w-[200px] truncate text-center">
                           {(() => {
                             if (!entry.detail) return '—';
                             try {
@@ -160,13 +160,13 @@ export function AdminAuditLogPage({ onMenuClick }: AdminAuditLogPageProps) {
                             }
                           })()}
                         </td>
-                        <td className="px-5 py-3 text-xs text-[var(--color-text-muted)]">
+                        <td className="px-5 py-3 text-xs text-[var(--color-text-muted)] text-center">
                           {entry.ip_address ?? '—'}
                         </td>
                       </tr>
                       {expandedId === entry.id && entry.detail && (
                         <tr key={`${entry.id}-detail`} className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
-                          <td colSpan={5} className="px-5 py-3">
+                          <td colSpan={5} className="px-5 py-3 text-center">
                             {(() => {
                               try {
                                 const obj = JSON.parse(entry.detail!) as Record<string, unknown>;
