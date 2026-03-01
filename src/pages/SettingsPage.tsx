@@ -61,6 +61,10 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   const [paletteMsg, setPaletteMsg] = useState('');
   const [paletteLoading, setPaletteLoading] = useState(false);
 
+  // Update notifications (admin only)
+  const [notifyLoading, setNotifyLoading] = useState(false);
+  const [notifyMsg, setNotifyMsg] = useState('');
+
   // Household invite
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteMsg, setInviteMsg] = useState('');
@@ -228,6 +232,20 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
     }
   };
 
+  const handleNotifyUpdatesChange = async (checked: boolean) => {
+    setNotifyLoading(true);
+    setNotifyMsg('');
+    try {
+      await api.updateNotifyUpdates(checked);
+      await refreshAuth();
+      setNotifyMsg('Saved.');
+    } catch {
+      setNotifyMsg('Failed to save.');
+    } finally {
+      setNotifyLoading(false);
+    }
+  };
+
   const handleInvite = async () => {
     setInviteMsg('');
     try {
@@ -361,6 +379,26 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
           </div>
           {paletteMsg && <p className="text-xs text-[var(--color-text-muted)] mt-2">{paletteMsg}</p>}
         </div>
+        {user?.system_role === 'admin' && (
+          <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+            <h3 className="text-sm font-semibold text-[var(--color-text)] mb-1">Update Notifications</h3>
+            <p className="text-xs text-[var(--color-text-muted)] mb-3">
+              Show a notification in the sidebar when a newer version of BasicBudget is available.
+            </p>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={user?.notify_updates !== false}
+                onChange={e => handleNotifyUpdatesChange(e.target.checked)}
+                disabled={notifyLoading}
+              />
+              <span className="text-sm text-[var(--color-text)]">
+                Notify me when a new version is available
+              </span>
+            </label>
+            {notifyMsg && <p className="text-xs text-[var(--color-text-muted)] mt-2">{notifyMsg}</p>}
+          </div>
+        )}
       </Card>
 
       {/* Security */}

@@ -52,6 +52,7 @@ function mapUser(row: Record<string, unknown>): User {
     created_at: row.created_at as string,
     has_totp: Boolean(totpRow),
     colour_palette: (row.colour_palette as string | undefined) ?? 'default',
+    notify_updates: row.notify_updates !== undefined ? Boolean(row.notify_updates) : true,
   };
 }
 

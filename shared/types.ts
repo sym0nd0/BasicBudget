@@ -12,6 +12,14 @@ export interface User {
   created_at?: string;
   has_totp?: boolean;
   colour_palette?: string;
+  notify_updates?: boolean;
+}
+
+export interface VersionInfo {
+  current: string;
+  latest: string | null;
+  update_available: boolean;
+  checked_at: string | null;
 }
 
 export interface Household {

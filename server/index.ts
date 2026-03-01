@@ -28,6 +28,8 @@ import exportRouter from './routes/export.js';
 import adminRouter from './routes/admin.js';
 import categoriesRouter from './routes/categories.js';
 import { checkAndSendDealReminders } from './services/debtNotifications.js';
+import { refreshVersionCheck } from './services/versionChecker.js';
+import versionRouter from './routes/version.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -89,6 +91,7 @@ app.use('/api/import', importRouter);
 app.use('/api/export', exportRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/categories', categoriesRouter);
+app.use('/api/version', versionRouter);
 
 // 10. Static + SPA fallback (production)
 if (config.NODE_ENV === 'production') {
@@ -120,8 +123,10 @@ if (config.NODE_ENV !== 'test') {
   // Schedule daily deal period reminder checks (run once on startup after 10s delay, then every 24h)
   setTimeout(() => {
     checkAndSendDealReminders().catch(console.error);
+    refreshVersionCheck().catch(console.error);
     setInterval(() => {
       checkAndSendDealReminders().catch(console.error);
+      refreshVersionCheck().catch(console.error);
     }, 24 * 60 * 60 * 1000);
   }, 10_000);
 

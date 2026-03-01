@@ -157,4 +157,11 @@ try {
   // Column already exists, ignore
 }
 
+// Add notify_updates column to users for version update notifications
+try {
+  db.prepare('ALTER TABLE users ADD COLUMN notify_updates INTEGER DEFAULT 1').run();
+} catch {
+  // Column already exists, ignore
+}
+
 export default db;

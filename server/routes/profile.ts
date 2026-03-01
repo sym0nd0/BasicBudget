@@ -23,6 +23,7 @@ function mapUser(row: Record<string, unknown>): User {
     system_role: row.system_role as 'admin' | 'user',
     created_at: row.created_at as string,
     colour_palette: (row.colour_palette as string | undefined) ?? 'default',
+    notify_updates: row.notify_updates !== undefined ? Boolean(row.notify_updates) : true,
   };
 }
 
@@ -51,6 +52,20 @@ router.put('/palette', (req: Request, res: Response) => {
   if (!result.success) { res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' }); return; }
 
   db.prepare("UPDATE users SET colour_palette = ?, updated_at = datetime('now') WHERE id = ?").run(result.data.colour_palette, req.userId!);
+  const row = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId!) as Record<string, unknown>;
+  res.json(mapUser(row));
+});
+
+// PUT /api/auth/profile/notify-updates
+router.put('/notify-updates', (req: Request, res: Response) => {
+  const schema = z.object({ notify_updates: z.boolean() });
+  const result = schema.safeParse(req.body);
+  if (!result.success) { res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' }); return; }
+
+  db.prepare("UPDATE users SET notify_updates = ?, updated_at = datetime('now') WHERE id = ?").run(
+    result.data.notify_updates ? 1 : 0,
+    req.userId!,
+  );
   const row = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId!) as Record<string, unknown>;
   res.json(mapUser(row));
 });
