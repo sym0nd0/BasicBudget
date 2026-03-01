@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
+interface UseApiOptions {
+  pollInterval?: number;
+}
+
 interface UseApiResult<T> {
   data: T | null;
   loading: boolean;
@@ -10,8 +14,9 @@ interface UseApiResult<T> {
 /**
  * Simple data-fetching hook. Fetches from /api{url} on mount and when
  * url or trigger changes. Call refetch() to manually re-fetch.
+ * Pass pollInterval (ms) to automatically re-fetch at that cadence.
  */
-export function useApi<T>(url: string | null): UseApiResult<T> {
+export function useApi<T>(url: string | null, options?: UseApiOptions): UseApiResult<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
@@ -56,6 +61,12 @@ export function useApi<T>(url: string | null): UseApiResult<T> {
   }, [url, trigger]);
 
   const refetch = useCallback(() => setTrigger(t => t + 1), []);
+
+  useEffect(() => {
+    if (!options?.pollInterval || !url) return;
+    const id = setInterval(refetch, options.pollInterval);
+    return () => clearInterval(id);
+  }, [url, options?.pollInterval, refetch]);
 
   return { data, loading, error, refetch };
 }
