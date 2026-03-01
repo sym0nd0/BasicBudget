@@ -120,13 +120,17 @@ app.use((err: Error & { status?: number; code?: string }, _req: express.Request,
 });
 
 if (config.NODE_ENV !== 'test') {
-  // Schedule daily deal period reminder checks (run once on startup after 10s delay, then every 24h)
+  // Version check — run immediately at startup, then every hour
+  refreshVersionCheck().catch(console.error);
+  setInterval(() => {
+    refreshVersionCheck().catch(console.error);
+  }, 60 * 60 * 1000);
+
+  // Deal reminders — 10s delay then every 24h
   setTimeout(() => {
     checkAndSendDealReminders().catch(console.error);
-    refreshVersionCheck().catch(console.error);
     setInterval(() => {
       checkAndSendDealReminders().catch(console.error);
-      refreshVersionCheck().catch(console.error);
     }, 24 * 60 * 60 * 1000);
   }, 10_000);
 
