@@ -152,18 +152,25 @@ Examples:
 
 ## Critical Rules (non-negotiable)
 
-### Language
+### 1. Language
 **Use UK English exclusively** in all contexts — no exceptions:
 - Spelling: colour, centre, organisation, realise, analyse, favour, honour, etc.
 - Terminology: British English conventions throughout
 - All replies, documentation, comments, and commit messages must use UK English
 
-### Git Workflow
+### 2. Git Workflow — Named Branches Only
 **All work MUST be on named branches — NEVER commit directly to master:**
 - Every change (feature, fix, docs, anything) goes to a descriptive named branch
 - Push the branch to origin
 - Create a PR immediately after pushing
 - Merge via PR only (never direct push to master)
+- This is non-negotiable and applies without exception
+
+### 3. PR Merge Authorisation — WAIT FOR USER APPROVAL
+**NEVER merge a PR without explicit user authorisation:**
+- Create the PR and wait for user feedback/approval
+- Do NOT automatically merge with `gh pr merge` — only merge when user explicitly says "merge it" or similar
+- Merging without user approval bypasses review and control
 - This is non-negotiable and applies without exception
 
 ---
