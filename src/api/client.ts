@@ -17,6 +17,7 @@ import type {
   OidcConfig,
   AuditLogEntry,
   PaginatedResponse,
+  VersionInfo,
 } from '../types';
 
 // ─── CSRF token management ─────────────────────────────────────────────────────
@@ -128,6 +129,8 @@ export const api = {
     request<User>('/auth/profile', { method: 'PUT', body: JSON.stringify({ display_name }) }),
   updatePalette: (palette: string) =>
     request<User>('/auth/profile/palette', { method: 'PUT', body: JSON.stringify({ colour_palette: palette }) }),
+  updateNotifyUpdates: (notify: boolean) =>
+    request<User>('/auth/profile/notify-updates', { method: 'PUT', body: JSON.stringify({ notify_updates: notify }) }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<{ message: string }>('/auth/change-password', {
       method: 'POST',
@@ -275,6 +278,9 @@ export const api = {
     }),
   resetAdminCategories: () =>
     request<{ message: string; categories: string[] }>('/admin/settings/categories', { method: 'DELETE' }),
+
+  // ── Version ──
+  getVersion: () => request<VersionInfo>('/version'),
 
   // ── Admin — Audit log ──
   getAuditLog: (page = 1, limit = 50, filters?: { user_id?: string; action?: string }) => {

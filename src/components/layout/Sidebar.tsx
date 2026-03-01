@@ -1,7 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { useAuth } from '../../context/AuthContext';
-import { VERSION } from '../../constants/version';
+import { useApi } from '../../hooks/useApi';
+import type { VersionInfo } from '../../types';
 
 const adminNavItems = [
   {
@@ -108,6 +109,11 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { data: versionInfo } = useApi<VersionInfo>(user ? '/version' : null);
+  const showUpdateBadge =
+    versionInfo?.update_available &&
+    user?.system_role === 'admin' &&
+    user?.notify_updates !== false;
 
   const handleLogout = async () => {
     await logout();
@@ -214,13 +220,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               </svg>
             </button>
             <a
-              href={`https://github.com/sym0nd0/BasicBudget/releases/tag/v${VERSION}`}
+              href={versionInfo?.current ? `https://github.com/sym0nd0/BasicBudget/releases/tag/v${versionInfo.current}` : 'https://github.com/sym0nd0/BasicBudget/releases'}
               target="_blank"
               rel="noopener noreferrer"
-              title="Release notes"
-              className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors text-xs font-medium"
+              title={showUpdateBadge ? `v${versionInfo!.latest} available — click for release notes` : 'Release notes'}
+              className="relative p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors text-xs font-medium"
             >
-              v{VERSION}
+              v{versionInfo?.current ?? '…'}
+              {showUpdateBadge && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[var(--color-warning)] animate-pulse" />
+              )}
             </a>
             <a
               href="https://github.com/sym0nd0/BasicBudget"

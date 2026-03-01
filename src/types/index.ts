@@ -31,6 +31,7 @@ export type {
   OidcConfig,
   AuditLogEntry,
   PaginatedResponse,
+  VersionInfo,
 } from '../../shared/types';
 
 export { EXPENSE_CATEGORIES } from '../../shared/types';
