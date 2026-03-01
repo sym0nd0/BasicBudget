@@ -140,7 +140,7 @@ if (config.NODE_ENV !== 'test') {
   refreshVersionCheck().catch(err => logger.error('Version check failed', { error: String(err) }));
   setInterval(() => {
     refreshVersionCheck().catch(err => logger.error('Version check failed', { error: String(err) }));
-  }, 60 * 60 * 1000);
+  }, 30 * 60 * 1000);
 
   // Deal reminders — 10s delay then every 24h
   setTimeout(() => {
