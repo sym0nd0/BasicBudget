@@ -116,13 +116,13 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-2)] group">
-                <SortableHeader label="Name" sortKey="name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} className="text-left" />
-                <SortableHeader label="Contributor" sortKey="contributor_name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} className="text-left" />
-                <SortableHeader label="Amount/mo" sortKey="amount_pence" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} className="text-right" />
-                <SortableHeader label="Day" sortKey="posting_day" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} className="text-center" />
-                <SortableHeader label="Type" sortKey="recurrence_type" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} className="text-left" />
-                <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Notes</th>
-                <th className="px-5 py-3 w-24"></th>
+                <SortableHeader label="Name" sortKey="name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} />
+                <SortableHeader label="Contributor" sortKey="contributor_name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} />
+                <SortableHeader label="Amount/mo" sortKey="amount_pence" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} />
+                <SortableHeader label="Day" sortKey="posting_day" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} />
+                <SortableHeader label="Type" sortKey="recurrence_type" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} />
+                <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Notes</th>
+                <th className="text-center px-5 py-3 w-24"></th>
               </tr>
             </thead>
             <tbody>

@@ -34,13 +34,13 @@ function RepaymentPanel({ debtId }: { debtId: string }) {
         <table className="w-full text-xs">
           <thead className="sticky top-0 bg-[var(--color-surface-2)]">
             <tr>
-              <th className="text-left py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">#</th>
-              <th className="text-left py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Date</th>
-              <th className="text-right py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Opening</th>
-              <th className="text-right py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Interest</th>
-              <th className="text-right py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Payment</th>
-              <th className="text-right py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Principal</th>
-              <th className="text-right py-1.5 font-semibold text-[var(--color-text-muted)]">Closing</th>
+              <th className="text-center py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">#</th>
+              <th className="text-center py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Date</th>
+              <th className="text-center py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Opening</th>
+              <th className="text-center py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Interest</th>
+              <th className="text-center py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Payment</th>
+              <th className="text-center py-1.5 pr-4 font-semibold text-[var(--color-text-muted)]">Principal</th>
+              <th className="text-center py-1.5 font-semibold text-[var(--color-text-muted)]">Closing</th>
             </tr>
           </thead>
           <tbody>
@@ -161,13 +161,13 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-2)] group">
-                <SortableHeader label="Name" sortKey="name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Debt)} className="text-left" />
-                <SortableHeader label="Balance" sortKey="balance_pence" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Debt)} className="text-right" />
-                <SortableHeader label="APR" sortKey="interest_rate" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Debt)} className="text-right" />
-                <SortableHeader label="Min Payment" sortKey="minimum_payment_pence" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Debt)} className="text-right" />
-                <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Overpayment</th>
-                <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Your Share</th>
-                <th className="px-5 py-3 w-24"></th>
+                <SortableHeader label="Name" sortKey="name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Debt)} />
+                <SortableHeader label="Balance" sortKey="balance_pence" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Debt)} />
+                <SortableHeader label="APR" sortKey="interest_rate" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Debt)} />
+                <SortableHeader label="Min Payment" sortKey="minimum_payment_pence" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Debt)} />
+                <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Overpayment</th>
+                <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Your Share</th>
+                <th className="text-center px-5 py-3 w-24"></th>
               </tr>
             </thead>
             <tbody>
@@ -266,10 +266,10 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                               <table className="w-full text-xs">
                                 <thead>
                                   <tr className="bg-[var(--color-surface)]">
-                                    <th className="text-left px-2 py-1 text-[var(--color-text-muted)]">Period</th>
-                                    <th className="text-right px-2 py-1 text-[var(--color-text-muted)]">Rate</th>
-                                    <th className="text-left px-2 py-1 text-[var(--color-text-muted)]">From</th>
-                                    <th className="text-left px-2 py-1 text-[var(--color-text-muted)]">Until</th>
+                                    <th className="text-center px-2 py-1 text-[var(--color-text-muted)]">Period</th>
+                                    <th className="text-center px-2 py-1 text-[var(--color-text-muted)]">Rate</th>
+                                    <th className="text-center px-2 py-1 text-[var(--color-text-muted)]">From</th>
+                                    <th className="text-center px-2 py-1 text-[var(--color-text-muted)]">Until</th>
                                   </tr>
                                 </thead>
                                 <tbody>

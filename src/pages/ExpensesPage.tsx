@@ -147,15 +147,15 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-2)] group">
-                <SortableHeader label="Name" sortKey="name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} className="text-left" />
-                <SortableHeader label="Full Amount" sortKey="amount_pence" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} className="text-right" />
-                <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Your Share</th>
-                <SortableHeader label="Day" sortKey="posting_day" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} className="text-center" />
-                <SortableHeader label="Category" sortKey="category" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} className="text-left" />
-                <SortableHeader label="Type" sortKey="type" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} className="text-left" />
-                <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Account</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Notes</th>
-                <th className="px-5 py-3 w-24"></th>
+                <SortableHeader label="Name" sortKey="name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} />
+                <SortableHeader label="Full Amount" sortKey="amount_pence" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} />
+                <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Your Share</th>
+                <SortableHeader label="Day" sortKey="posting_day" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} />
+                <SortableHeader label="Category" sortKey="category" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} />
+                <SortableHeader label="Type" sortKey="type" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} />
+                <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Account</th>
+                <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Notes</th>
+                <th className="text-center px-5 py-3 w-24"></th>
               </tr>
             </thead>
             <tbody>

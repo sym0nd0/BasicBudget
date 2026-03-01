@@ -170,9 +170,9 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-2)]">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Category</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Amount</th>
-                  <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">% of Expenses</th>
+                  <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Category</th>
+                  <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Amount</th>
+                  <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">% of Expenses</th>
                   <th className="px-5 py-3 w-40 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Share</th>
                 </tr>
               </thead>

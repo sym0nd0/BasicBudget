@@ -20,7 +20,7 @@ export function SortableHeader({
   return (
     <th
       onClick={() => onSort(sortKey)}
-      className={`cursor-pointer select-none hover:bg-[var(--color-surface-2)] transition-colors px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide ${className}`}
+      className={`cursor-pointer select-none hover:bg-[var(--color-surface-2)] transition-colors px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide text-center ${className}`}
     >
       <div className="flex items-center gap-2">
         <span>{label}</span>

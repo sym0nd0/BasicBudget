@@ -121,11 +121,11 @@ export function AdminAuditLogPage({ onMenuClick }: AdminAuditLogPageProps) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--color-border)] text-xs uppercase tracking-wider text-[var(--color-text-muted)]">
-                    <th className="text-left px-5 py-3">Time</th>
-                    <th className="text-left px-5 py-3">User</th>
-                    <th className="text-left px-5 py-3">Action</th>
-                    <th className="text-left px-5 py-3">Detail</th>
-                    <th className="text-left px-5 py-3">IP</th>
+                    <th className="text-center px-5 py-3">Time</th>
+                    <th className="text-center px-5 py-3">User</th>
+                    <th className="text-center px-5 py-3">Action</th>
+                    <th className="text-center px-5 py-3">Detail</th>
+                    <th className="text-center px-5 py-3">IP</th>
                   </tr>
                 </thead>
                 <tbody>

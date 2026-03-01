@@ -101,12 +101,12 @@ export function AdminUsersPage({ onMenuClick }: AdminUsersPageProps) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] text-xs uppercase tracking-wider text-[var(--color-text-muted)]">
-                  <th className="text-left px-5 py-3">User</th>
-                  <th className="text-left px-5 py-3">Role</th>
-                  <th className="text-left px-5 py-3">Status</th>
-                  <th className="text-left px-5 py-3">2FA</th>
-                  <th className="text-left px-5 py-3">Joined</th>
-                  <th className="text-right px-5 py-3">Actions</th>
+                  <th className="text-center px-5 py-3">User</th>
+                  <th className="text-center px-5 py-3">Role</th>
+                  <th className="text-center px-5 py-3">Status</th>
+                  <th className="text-center px-5 py-3">2FA</th>
+                  <th className="text-center px-5 py-3">Joined</th>
+                  <th className="text-center px-5 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
