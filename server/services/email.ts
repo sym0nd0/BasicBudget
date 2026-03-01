@@ -2,6 +2,15 @@ import nodemailer from 'nodemailer';
 import { config } from '../config.js';
 import { getSmtpConfig } from './settings.js';
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function createTransport() {
   const smtp = getSmtpConfig();
   if (!smtp) return null;
@@ -61,8 +70,8 @@ export async function sendHouseholdInvite(
   const url = `${config.APP_URL}/accept-invite?token=${token}`;
   await sendMail(
     to,
-    `${inviterName} invited you to join ${householdName} on BasicBudget`,
-    `<p>${inviterName} has invited you to join their household <strong>${householdName}</strong> on BasicBudget.</p>
+    `${escapeHtml(inviterName)} invited you to join ${escapeHtml(householdName)} on BasicBudget`,
+    `<p>${escapeHtml(inviterName)} has invited you to join their household <strong>${escapeHtml(householdName)}</strong> on BasicBudget.</p>
      <p><a href="${url}">Accept invitation</a> (expires in 7 days)</p>`,
   );
 }
@@ -82,8 +91,8 @@ export async function sendLoginAlert(to: string, ip: string | undefined, userAge
     'New login detected on BasicBudget',
     `<p>A new login was detected on your account from a device we haven't seen before.</p>
      <ul>
-       <li>IP address: ${ip ?? 'unknown'}</li>
-       <li>Device: ${userAgent ?? 'unknown'}</li>
+       <li>IP address: ${escapeHtml(ip ?? 'unknown')}</li>
+       <li>Device: ${escapeHtml(userAgent ?? 'unknown')}</li>
      </ul>
      <p>If this was you, no action is needed. If it wasn't you, change your password immediately.</p>`,
   );
@@ -119,8 +128,8 @@ export async function sendDealPeriodReminder(
 
   await sendMail(
     to,
-    `Deal period expiring: ${debtName}`,
-    `<p>Your deal period <strong>"${periodLabel}"</strong> on <strong>${debtName}</strong> ${timeText} — on <strong>${formattedDate}</strong>.</p>
+    `Deal period expiring: ${escapeHtml(debtName)}`,
+    `<p>Your deal period <strong>"${escapeHtml(periodLabel)}"</strong> on <strong>${escapeHtml(debtName)}</strong> ${timeText} — on <strong>${formattedDate}</strong>.</p>
      <p>Log in to your BasicBudget account to review your options and plan for any rate changes or payment adjustments.</p>`,
   );
 }
