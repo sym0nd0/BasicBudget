@@ -52,7 +52,8 @@ A multi-user personal budgeting and debt management application built with React
 - The **first registered user** is automatically promoted to system admin
 - Admin-only panel accessible from the sidebar under the "Admin" section
 - **User management**: list all users, promote/demote roles, lock/unlock accounts, delete users
-- **System settings**: configure SMTP (email), OIDC (SSO), and structured logging at runtime via the UI — no restart required; manage expense categories (add, remove, reorder, reset to defaults)
+- **System settings**: configure SMTP (email), OIDC (SSO), structured logging, and registration at runtime via the UI — no restart required; manage expense categories (add, remove, reorder, reset to defaults)
+  - **Registration**: toggle public sign-up on or off; when disabled, new accounts can only be created via household invites or directly by admins (the first user on a fresh instance can always register)
   - **Logging**: set minimum log level (debug, info, warn, error) to control verbosity of server output; output is JSON-formatted for container and log aggregation compatibility
 - **Audit log**: paginated, filterable log of all authentication and admin actions
 - All admin actions are written to the audit log

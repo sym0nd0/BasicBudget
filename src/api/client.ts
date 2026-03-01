@@ -16,6 +16,7 @@ import type {
   SmtpConfig,
   OidcConfig,
   LoggingConfig,
+  RegistrationConfig,
   AuditLogEntry,
   PaginatedResponse,
   VersionInfo,
@@ -287,6 +288,16 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(cfg),
     }),
+
+  getRegistrationConfig: () =>
+    request<RegistrationConfig>('/admin/settings/registration'),
+  updateRegistrationConfig: (cfg: RegistrationConfig) =>
+    request<{ message: string }>('/admin/settings/registration', {
+      method: 'PUT',
+      body: JSON.stringify(cfg),
+    }),
+  getRegistrationStatus: () =>
+    request<{ disabled: boolean }>('/auth/registration-status'),
 
   // ── Version ──
   getVersion: () => request<VersionInfo>('/version'),

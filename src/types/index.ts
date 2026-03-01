@@ -30,6 +30,7 @@ export type {
   SmtpConfig,
   OidcConfig,
   LoggingConfig,
+  RegistrationConfig,
   AuditLogEntry,
   PaginatedResponse,
   VersionInfo,
