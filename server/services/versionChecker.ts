@@ -1,7 +1,7 @@
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
-const { version: CURRENT_VERSION } = require('../../package.json') as { version: string };
+const { version: CURRENT_VERSION } = require('../../../package.json') as { version: string };
 
 export interface VersionInfo {
   current: string;
