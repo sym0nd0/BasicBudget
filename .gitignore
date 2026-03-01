@@ -5,3 +5,8 @@ data/
 .claude/
 *.local
 .env
+coverage/
+*.tgz
+.DS_Store
+Thumbs.db
+*.log
