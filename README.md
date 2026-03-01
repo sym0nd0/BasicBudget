@@ -564,7 +564,7 @@ BasicBudget/
 
 ## License
 
-This project is provided as-is for personal use. No licence is currently applied. If you fork or distribute this project, please add an appropriate open-source licence.
+This project is licensed under the [MIT Licence](LICENSE).
 
 ---
 
