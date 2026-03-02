@@ -4,3 +4,9 @@ dist
 .claude
 *.md
 .dockerignore
+.env
+.env.*
+data/
+dist-server/
+coverage/
+tests/
