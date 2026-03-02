@@ -11,6 +11,9 @@ import {
   decryptSecret,
   verifyTotp,
   generateQrDataUrl,
+  isTotpTokenUsed,
+  markTotpTokenUsed,
+  cleanUpUsedTokens,
 } from '../auth/totp.js';
 import { generateRecoveryCodes, hashRecoveryCode, verifyRecoveryCode } from '../auth/recovery-codes.js';
 import { createToken, validateAndConsumeToken } from '../auth/tokens.js';
@@ -81,6 +84,17 @@ router.post('/verify-setup', requireAuth, otpLimiter, async (req: Request, res: 
     return;
   }
 
+  // Check for replay attack
+  const period = Math.floor(Date.now() / 1000 / 30);
+  if (isTotpTokenUsed(req.userId!, result.data.token, period)) {
+    res.status(401).json({ message: 'Invalid or expired code' });
+    return;
+  }
+
+  // Mark token as used
+  markTotpTokenUsed(req.userId!, result.data.token, period);
+  cleanUpUsedTokens();
+
   // Mark verified and generate recovery codes
   db.prepare('UPDATE totp_secrets SET verified = 1 WHERE user_id = ?').run(req.userId!);
   db.prepare('DELETE FROM recovery_codes WHERE user_id = ?').run(req.userId!);
@@ -114,6 +128,17 @@ router.post('/verify', otpLimiter, async (req: Request, res: Response) => {
     res.status(401).json({ message: 'Invalid OTP code' });
     return;
   }
+
+  // Check for replay attack
+  const period = Math.floor(Date.now() / 1000 / 30);
+  if (isTotpTokenUsed(req.session.userId, result.data.token, period)) {
+    res.status(401).json({ message: 'Invalid or expired code' });
+    return;
+  }
+
+  // Mark token as used
+  markTotpTokenUsed(req.session.userId, result.data.token, period);
+  cleanUpUsedTokens();
 
   req.session.totpPending = false;
   req.session.lastActivity = Date.now();

@@ -10,7 +10,7 @@ import { auditLog } from '../services/audit.js';
 import { deviceFingerprint, isNewDevice, recordDevice } from '../auth/device.js';
 import { sendLoginAlert } from '../services/email.js';
 import { requireAuth } from '../middleware/auth.js';
-import { loginLimiter, passwordResetLimiter } from '../middleware/rate-limit.js';
+import { loginLimiter, passwordResetLimiter, registrationLimiter } from '../middleware/rate-limit.js';
 import { generateCsrfToken } from '../middleware/csrf.js';
 import type { User, AuthStatusResponse } from '../../shared/types.js';
 import { getSetting } from '../services/settings.js';
@@ -58,7 +58,7 @@ function mapUser(row: Record<string, unknown>): User {
 }
 
 // POST /api/auth/register
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', registrationLimiter, async (req: Request, res: Response) => {
   const result = registerSchema.safeParse(req.body);
   if (!result.success) {
     res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });

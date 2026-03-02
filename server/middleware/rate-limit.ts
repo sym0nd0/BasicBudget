@@ -40,6 +40,14 @@ export const totpResetLimiter = rateLimit({
   message: { message: 'Too many 2FA reset requests. Please try again in 24 hours.' },
 });
 
+export const registrationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many registration attempts from this IP. Please try again later.' },
+});
+
 export const generalApiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,

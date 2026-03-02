@@ -33,7 +33,7 @@ export function makeTestUser(suffix = ''): TestUser {
   const ts = Date.now() + suffix;
   return {
     email: `test${ts}@example.com`,
-    password: `TestPass1${ts}`,
+    password: `TestPass1!${ts}`,
     displayName: `Test User ${ts}`,
   };
 }

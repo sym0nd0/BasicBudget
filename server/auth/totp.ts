@@ -2,6 +2,7 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import { TOTP, Secret } from 'otpauth';
 import QRCode from 'qrcode';
 import { config } from '../config.js';
+import db from '../db.js';
 
 export interface EncryptedSecret {
   encrypted_secret: string; // hex
@@ -57,4 +58,23 @@ export function verifyTotp(base32Secret: string, token: string): boolean {
 
 export async function generateQrDataUrl(otpauthUrl: string): Promise<string> {
   return QRCode.toDataURL(otpauthUrl);
+}
+
+export function isTotpTokenUsed(userId: string, token: string, period: number): boolean {
+  const row = db.prepare(
+    'SELECT 1 FROM totp_used_tokens WHERE user_id = ? AND token = ? AND period = ?'
+  ).get(userId, token, period);
+  return !!row;
+}
+
+export function markTotpTokenUsed(userId: string, token: string, period: number): void {
+  db.prepare(`
+    INSERT OR IGNORE INTO totp_used_tokens (user_id, token, period, used_at)
+    VALUES (?, ?, ?, CAST(strftime('%s','now') AS INTEGER))
+  `).run(userId, token, period);
+}
+
+export function cleanUpUsedTokens(): void {
+  const twoMinutesAgo = Math.floor(Date.now() / 1000) - 120;
+  db.prepare('DELETE FROM totp_used_tokens WHERE used_at < ?').run(twoMinutesAgo);
 }

@@ -101,7 +101,7 @@ export function RegisterPage() {
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            placeholder="Min 8 chars, upper, lower, digit"
+            placeholder="Min 8 chars, upper, lower, digit, special char"
             required
             autoComplete="new-password"
           />

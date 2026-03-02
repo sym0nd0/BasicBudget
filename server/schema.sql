@@ -62,6 +62,14 @@ CREATE TABLE IF NOT EXISTS recovery_codes (
     created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS totp_used_tokens (
+    user_id   INTEGER NOT NULL,
+    token     TEXT    NOT NULL,
+    period    INTEGER NOT NULL,
+    used_at   INTEGER NOT NULL DEFAULT (CAST(strftime('%s','now') AS INTEGER)),
+    PRIMARY KEY (user_id, token, period)
+);
+
 CREATE TABLE IF NOT EXISTS reset_tokens (
     id          TEXT PRIMARY KEY,
     user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
