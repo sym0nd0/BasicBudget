@@ -7,7 +7,7 @@ import cookieParser from 'cookie-parser';
 import { config } from './config.js';
 import { sessionMiddleware } from './auth/session.js';
 import { doubleCsrfProtection } from './middleware/csrf.js';
-import { generalApiLimiter } from './middleware/rate-limit.js';
+import { generalApiLimiter, staticLimiter } from './middleware/rate-limit.js';
 
 import authRouter from './routes/auth.js';
 import totpRouter from './routes/totp.js';
@@ -117,8 +117,7 @@ app.use('/api', (_req, res) => {
 if (config.NODE_ENV === 'production') {
   const publicDir = path.join(__dirname, '..', '..', 'public');
   app.use(express.static(publicDir));
-  // codeql[js/missing-rate-limiting] This route serves static index.html only; API routes are rate-limited via generalApiLimiter
-  app.get('*', (_req, res) => {
+  app.get('*', staticLimiter, (_req, res) => {
     res.sendFile(path.join(publicDir, 'index.html'));
   });
 }
