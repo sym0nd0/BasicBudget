@@ -1,7 +1,7 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 COPY . .
 RUN npm run build:frontend && npm run build:server
 
@@ -10,7 +10,7 @@ WORKDIR /app
 # su-exec is kept at runtime (needed by entrypoint); build tools are removed after npm ci
 RUN apk add --no-cache python3 make g++ su-exec
 COPY --from=build /app/package*.json ./
-RUN npm ci --omit=dev && apk del python3 make g++
+RUN npm ci --omit=dev --legacy-peer-deps && apk del python3 make g++
 COPY --from=build /app/dist-server ./dist-server
 COPY --from=build /app/server/schema.sql ./server/schema.sql
 COPY --from=build /app/dist ./public
