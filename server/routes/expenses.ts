@@ -6,6 +6,8 @@ import { filterActiveInMonth, currentYearMonth, type RecurringItem } from '../ut
 import { isMonthLocked } from './months.js';
 import { requireAuth } from '../middleware/auth.js';
 import type { Expense } from '../../shared/types.js';
+import { logger } from '../services/logger.js';
+import { expenseSchema, monthParam } from '../validation/schemas.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -21,6 +23,11 @@ function mapExpense(row: Record<string, unknown>): Expense {
 // GET /api/expenses?month=&category=
 router.get('/', (req: Request, res: Response) => {
   const month = (req.query.month as string) ?? currentYearMonth();
+  const monthResult = monthParam.safeParse(month);
+  if (!monthResult.success) {
+    res.status(400).json({ message: 'Invalid month format' });
+    return;
+  }
   const category = req.query.category as string | undefined;
 
   const all = category
@@ -32,28 +39,17 @@ router.get('/', (req: Request, res: Response) => {
 
 // POST /api/expenses
 router.post('/', (req: Request, res: Response) => {
-  const body = req.body as Partial<Expense>;
-  if (!body.name?.trim()) {
-    res.status(400).json({ message: 'name is required' });
+  const result = expenseSchema.safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json({ message: 'Validation error' });
     return;
   }
-  if (typeof body.amount_pence !== 'number' || body.amount_pence < 0) {
-    res.status(400).json({ message: 'amount_pence must be a non-negative integer' });
-    return;
-  }
-  const expenseType = body.type ?? 'fixed';
-  if (!['fixed', 'variable'].includes(expenseType)) {
-    res.status(400).json({ message: "type must be 'fixed' or 'variable'" });
-    return;
-  }
-  const recurrenceType = body.recurrence_type ?? 'monthly';
-  if (!['monthly', 'weekly', 'yearly', 'fortnightly'].includes(recurrenceType)) {
-    res.status(400).json({ message: "recurrence_type must be 'monthly', 'weekly', 'yearly', or 'fortnightly'" });
-    return;
-  }
+  const body = result.data;
   const id = randomUUID();
   const isHousehold = body.is_household ? 1 : 0;
   const splitRatio = body.split_ratio ?? (isHousehold ? 0.5 : 1.0);
+  const expenseType = body.type ?? 'fixed';
+  const recurrenceType = body.recurrence_type ?? 'monthly';
   try {
     db.prepare(`
       INSERT INTO expenses
@@ -80,7 +76,8 @@ router.post('/', (req: Request, res: Response) => {
       body.notes ?? null,
     );
   } catch (err) {
-    res.status(400).json({ message: (err as Error).message });
+    logger.error('Failed to save expense', { error: (err as Error).message });
+    res.status(500).json({ message: 'Failed to save expense' });
     return;
   }
   const row = db.prepare('SELECT * FROM expenses WHERE id = ?').get(id) as Record<string, unknown>;
@@ -90,7 +87,12 @@ router.post('/', (req: Request, res: Response) => {
 // PUT /api/expenses/:id
 router.put('/:id', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
-  const body = req.body as Partial<Expense>;
+  const result = expenseSchema.partial().safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json({ message: 'Validation error' });
+    return;
+  }
+  const body = result.data;
   const existing = db.prepare('SELECT * FROM expenses WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!existing) {
     res.status(404).json({ message: 'Expense not found' });
@@ -107,14 +109,6 @@ router.put('/:id', (req: Request, res: Response) => {
       res.status(409).json({ message: `Month ${ym} is locked` });
       return;
     }
-  }
-  if (body.type !== undefined && !['fixed', 'variable'].includes(body.type)) {
-    res.status(400).json({ message: "type must be 'fixed' or 'variable'" });
-    return;
-  }
-  if (body.recurrence_type !== undefined && !['monthly', 'weekly', 'yearly', 'fortnightly'].includes(body.recurrence_type)) {
-    res.status(400).json({ message: "recurrence_type must be 'monthly', 'weekly', 'yearly', or 'fortnightly'" });
-    return;
   }
   const isHousehold = body.is_household !== undefined
     ? (body.is_household ? 1 : 0)
@@ -148,7 +142,8 @@ router.put('/:id', (req: Request, res: Response) => {
       id,
     );
   } catch (err) {
-    res.status(400).json({ message: (err as Error).message });
+    logger.error('Failed to save expense', { error: (err as Error).message });
+    res.status(500).json({ message: 'Failed to save expense' });
     return;
   }
   const row = db.prepare('SELECT * FROM expenses WHERE id = ?').get(id) as Record<string, unknown>;
@@ -178,7 +173,8 @@ router.delete('/:id', (req: Request, res: Response) => {
   try {
     db.prepare('DELETE FROM expenses WHERE id = ?').run(id);
   } catch (err) {
-    res.status(400).json({ message: (err as Error).message });
+    logger.error('Failed to delete expense', { error: (err as Error).message });
+    res.status(500).json({ message: 'Failed to delete expense' });
     return;
   }
   res.status(204).send();

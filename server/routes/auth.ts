@@ -15,6 +15,13 @@ import { generateCsrfToken } from '../middleware/csrf.js';
 import type { User, AuthStatusResponse } from '../../shared/types.js';
 import { getSetting } from '../services/settings.js';
 
+// Augment session type to include CSRF flag
+declare module 'express-session' {
+  interface SessionData {
+    _csrfInitialized?: boolean;
+  }
+}
+
 const router = Router();
 
 // Pre-computed Argon2id hash for timing normalisation (prevents user enumeration)
@@ -361,7 +368,7 @@ router.get('/csrf-token', (req: Request, res: Response) => {
   const hasExistingData = Object.keys(req.session).some(k => k !== 'cookie');
   if (!hasExistingData) {
     // Mark as CSRF-initialized to trigger session save
-    (req.session as any)._csrfInitialized = true;
+    req.session._csrfInitialized = true;
   }
   const token = generateCsrfToken(req, res);
   res.json({ token });

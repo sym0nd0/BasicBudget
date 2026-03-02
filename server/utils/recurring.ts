@@ -160,3 +160,14 @@ export function currentYearMonth(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
+
+/**
+ * Convert a debt record to a RecurringItem by synthesising amount_pence from minimum_payment_pence + overpayment_pence.
+ * Debts don't have a single amount field; this helper maps them for use with filterActiveInMonth.
+ */
+export function mapDebtToRecurringItem(debt: Record<string, unknown>): RecurringItem {
+  return {
+    ...debt,
+    amount_pence: (debt.minimum_payment_pence as number) + (debt.overpayment_pence as number),
+  } as unknown as RecurringItem;
+}

@@ -108,7 +108,12 @@ app.use('/api/admin', adminRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/version', versionRouter);
 
-// 10. Static + SPA fallback (production)
+// 10. API 404 handler
+app.use('/api', (_req, res) => {
+  res.status(404).json({ message: 'Not found' });
+});
+
+// 11. Static + SPA fallback (production)
 if (config.NODE_ENV === 'production') {
   const publicDir = path.join(__dirname, '..', '..', 'public');
   app.use(express.static(publicDir));
@@ -118,7 +123,7 @@ if (config.NODE_ENV === 'production') {
   });
 }
 
-// 11. Global error handler
+// 12. Global error handler
 app.use((err: Error & { status?: number; code?: string }, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (config.NODE_ENV !== 'production') {
     logger.error('Unhandled request error', { error: err instanceof Error ? err.message : String(err) });

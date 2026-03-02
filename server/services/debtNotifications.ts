@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import db from '../db.js';
 import { sendDealPeriodReminder } from './email.js';
 import { logger } from './logger.js';
@@ -52,7 +53,6 @@ export async function checkAndSendDealReminders(): Promise<void> {
             );
 
             // Mark as sent
-            const { randomUUID } = await import('node:crypto');
             db.prepare(
               'INSERT INTO debt_notifications_sent (id, debt_id, deal_period_id) VALUES (?, ?, ?)'
             ).run(randomUUID(), debt.id, period.id);

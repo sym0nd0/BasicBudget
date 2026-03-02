@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import db from '../db.js';
-import { filterActiveInMonth, currentYearMonth, type RecurringItem } from '../utils/recurring.js';
+import { filterActiveInMonth, currentYearMonth, mapDebtToRecurringItem, type RecurringItem } from '../utils/recurring.js';
 import { requireAuth } from '../middleware/auth.js';
 import type { BudgetSummary, CategoryBreakdown } from '../../shared/types.js';
 
@@ -26,10 +26,7 @@ router.get('/', (req: Request, res: Response) => {
     0,
   );
 
-  const debtItems = allDebts.map(d => ({
-    ...d,
-    amount_pence: (d.minimum_payment_pence as number) + (d.overpayment_pence as number),
-  })) as unknown as RecurringItem[];
+  const debtItems = allDebts.map(mapDebtToRecurringItem);
   const activeDebts = filterActiveInMonth(debtItems, month);
   const totalDebtPaymentsPence = activeDebts.reduce(
     (s, d) => s + Math.round((d.effective_pence ?? 0) * ((d.split_ratio as number) ?? 1)),

@@ -7,7 +7,7 @@ import { requireAuth, requireOwner } from '../middleware/auth.js';
 import { inviteLimiter } from '../middleware/rate-limit.js';
 import { createToken, validateAndConsumeToken } from '../auth/tokens.js';
 import { sendHouseholdInvite } from '../services/email.js';
-import { filterActiveInMonth, currentYearMonth, type RecurringItem } from '../utils/recurring.js';
+import { filterActiveInMonth, currentYearMonth, mapDebtToRecurringItem, type RecurringItem } from '../utils/recurring.js';
 import type { HouseholdOverview, CategoryBreakdown } from '../../shared/types.js';
 
 const router = Router();
@@ -157,10 +157,7 @@ router.get('/summary', (req: Request, res: Response) => {
   const totalExpensesPence = activeExpenses.reduce((s, e) => s + (e.effective_pence ?? 0), 0);
   const sharedExpensesPence = activeExpenses.filter(e => Boolean(e.is_household)).reduce((s, e) => s + (e.effective_pence ?? 0), 0);
   const soleExpensesPence = activeExpenses.filter(e => !e.is_household).reduce((s, e) => s + (e.effective_pence ?? 0), 0);
-  const allDebtItems = allDebts.map(d => ({
-    ...d,
-    amount_pence: (d.minimum_payment_pence as number) + (d.overpayment_pence as number),
-  })) as unknown as RecurringItem[];
+  const allDebtItems = allDebts.map(mapDebtToRecurringItem);
   const activeDebtItems = filterActiveInMonth(allDebtItems, month);
   const householdDebts = activeDebtItems.filter(d => Boolean(d.is_household));
   const debtPaymentsPence = householdDebts.reduce((s, d) => s + (d.effective_pence ?? 0), 0);

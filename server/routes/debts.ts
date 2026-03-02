@@ -5,6 +5,8 @@ import { randomUUID } from 'node:crypto';
 import { isMonthLocked } from './months.js';
 import { requireAuth } from '../middleware/auth.js';
 import type { Debt, DebtDealPeriod, RepaymentRow, DebtPayoffSummary } from '../../shared/types.js';
+import { logger } from '../services/logger.js';
+import { debtSchema } from '../validation/schemas.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -30,26 +32,19 @@ router.get('/', (req: Request, res: Response) => {
 
 // POST /api/debts
 router.post('/', (req: Request, res: Response) => {
-  const body = req.body as Partial<Debt>;
-  if (!body.name?.trim()) {
-    res.status(400).json({ message: 'name is required' });
+  const result = debtSchema.safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json({ message: 'Validation error' });
     return;
   }
-  if (typeof body.balance_pence !== 'number' || body.balance_pence < 0) {
-    res.status(400).json({ message: 'balance_pence must be a non-negative integer' });
-    return;
-  }
-  const recurrenceType = body.recurrence_type ?? 'monthly';
-  if (!['monthly', 'weekly', 'yearly'].includes(recurrenceType)) {
-    res.status(400).json({ message: "recurrence_type must be 'monthly', 'weekly', or 'yearly'" });
-    return;
-  }
+  const body = result.data;
   const isHousehold = Boolean(body.is_household);
   const splitRatio = isHousehold ? 0.5 : 1.0;
   const id = randomUUID();
   const dealPeriods = (body.deal_periods ?? []) as Omit<DebtDealPeriod, 'id' | 'debt_id' | 'created_at'>[];
   const reminderMonths = body.reminder_months ?? 0;
   const nameValue = body.name.trim();
+  const recurrenceType = body.recurrence_type ?? 'monthly';
 
   // Validate deal periods don't extend past debt end date
   if (body.end_date) {
@@ -106,7 +101,8 @@ router.post('/', (req: Request, res: Response) => {
       }
     })();
   } catch (err) {
-    res.status(400).json({ message: (err as Error).message });
+    logger.error('Failed to save debt', { error: (err as Error).message });
+    res.status(500).json({ message: 'Failed to save debt' });
     return;
   }
   const row = db.prepare('SELECT * FROM debts WHERE id = ?').get(id) as Record<string, unknown>;
@@ -116,7 +112,12 @@ router.post('/', (req: Request, res: Response) => {
 // PUT /api/debts/:id
 router.put('/:id', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
-  const body = req.body as Partial<Debt>;
+  const result = debtSchema.partial().safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json({ message: 'Validation error' });
+    return;
+  }
+  const body = result.data;
   const existing = db.prepare('SELECT * FROM debts WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!existing) {
     res.status(404).json({ message: 'Debt not found' });
@@ -133,10 +134,6 @@ router.put('/:id', (req: Request, res: Response) => {
       res.status(409).json({ message: `Month ${ym} is locked` });
       return;
     }
-  }
-  if (body.recurrence_type !== undefined && !['monthly', 'weekly', 'yearly'].includes(body.recurrence_type)) {
-    res.status(400).json({ message: "recurrence_type must be 'monthly', 'weekly', or 'yearly'" });
-    return;
   }
   const updIsHousehold = body.is_household !== undefined ? Boolean(body.is_household) : Boolean(existing.is_household);
   const updSplitRatio = updIsHousehold ? 0.5 : 1.0;
@@ -201,7 +198,8 @@ router.put('/:id', (req: Request, res: Response) => {
       }
     })();
   } catch (err) {
-    res.status(400).json({ message: (err as Error).message });
+    logger.error('Failed to save debt', { error: (err as Error).message });
+    res.status(500).json({ message: 'Failed to save debt' });
     return;
   }
   const row = db.prepare('SELECT * FROM debts WHERE id = ?').get(id) as Record<string, unknown>;

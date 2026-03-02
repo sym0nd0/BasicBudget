@@ -21,11 +21,16 @@ db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
 // Apply schema
-const schema = fs.readFileSync(
-  path.join(process.cwd(), 'server', 'schema.sql'),
-  'utf8',
-);
-db.exec(schema);
+try {
+  const schema = fs.readFileSync(
+    path.join(process.cwd(), 'server', 'schema.sql'),
+    'utf8',
+  );
+  db.exec(schema);
+} catch (err) {
+  process.stderr.write(`Failed to load schema.sql: ${err}\n`);
+  process.exit(1);
+}
 
 // DB logging helper (local to avoid circular imports with logger.ts)
 function dbLog(message: string): void {
