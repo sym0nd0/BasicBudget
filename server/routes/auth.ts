@@ -17,6 +17,13 @@ import { getSetting } from '../services/settings.js';
 
 const router = Router();
 
+// Pre-computed Argon2id hash for timing normalisation (prevents user enumeration)
+let dummyHash: string | null = null;
+async function getDummyHash(): Promise<string> {
+  if (!dummyHash) dummyHash = await hashPassword('dummy_timing_normalisation');
+  return dummyHash;
+}
+
 const registerSchema = z.object({
   email: z.email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
@@ -144,6 +151,8 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
 
   const row = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase().trim()) as Record<string, unknown> | undefined;
   if (!row || !row.password_hash) {
+    // Perform timing-normalisation verification to prevent user enumeration
+    await verifyPassword(await getDummyHash(), password);
     res.status(401).json({ message: 'Invalid email or password' });
     return;
   }

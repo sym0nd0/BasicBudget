@@ -112,8 +112,8 @@ router.get('/callback', async (req: Request, res: Response) => {
       WHERE o.issuer = ? AND o.subject = ?
     `).get(issuer, sub) as Record<string, unknown> | undefined;
 
-    if (!userRow && email) {
-      // Try to link to existing user by email
+    if (!userRow && email && claims.email_verified === true) {
+      // Try to link to existing user by email (only if email is verified by OIDC provider)
       userRow = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase().trim()) as Record<string, unknown> | undefined;
       if (userRow) {
         db.prepare('INSERT OR IGNORE INTO oidc_accounts (user_id, issuer, subject) VALUES (?, ?, ?)').run(userRow.id, issuer, sub);
