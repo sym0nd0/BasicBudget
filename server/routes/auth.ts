@@ -347,6 +347,13 @@ router.get('/registration-status', (_req: Request, res: Response) => {
 
 // GET /api/auth/csrf-token — public (needed before login/register)
 router.get('/csrf-token', (req: Request, res: Response) => {
+  // With saveUninitialized: false, we must modify the session to ensure it's persisted
+  // This is required for CSRF tokens to bind to a persistent sessionID
+  const hasExistingData = Object.keys(req.session).some(k => k !== 'cookie');
+  if (!hasExistingData) {
+    // Mark as CSRF-initialized to trigger session save
+    (req.session as any)._csrfInitialized = true;
+  }
   const token = generateCsrfToken(req, res);
   res.json({ token });
 });
