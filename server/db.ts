@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
+import { migrateEncryptedSettings } from './services/settings.js';
 
 const DATA_DIR = process.env.DB_PATH
   ? path.dirname(process.env.DB_PATH)
@@ -172,6 +173,13 @@ try {
   db.prepare('ALTER TABLE users ADD COLUMN notify_updates INTEGER DEFAULT 1').run();
 } catch {
   // Column already exists, ignore
+}
+
+// Encrypt existing plaintext SMTP/OIDC secrets at rest
+try {
+  migrateEncryptedSettings();
+} catch {
+  // Migration already applied or no secrets to migrate, ignore
 }
 
 export default db;

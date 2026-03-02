@@ -23,6 +23,24 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     res.status(401).json({ message: 'Two-factor authentication required', totpPending: true });
     return;
   }
+
+  // Absolute session lifetime — 72 hours
+  const SESSION_MAX_AGE_MS = 72 * 60 * 60 * 1000;
+  if (req.session.createdAt && Date.now() - req.session.createdAt > SESSION_MAX_AGE_MS) {
+    req.session.destroy(() => {});
+    res.status(401).json({ message: 'Session expired. Please log in again.' });
+    return;
+  }
+
+  // Inactivity timeout — 2 hours
+  const SESSION_IDLE_MS = 2 * 60 * 60 * 1000;
+  if (req.session.lastActivity && Date.now() - req.session.lastActivity > SESSION_IDLE_MS) {
+    req.session.destroy(() => {});
+    res.status(401).json({ message: 'Session expired due to inactivity. Please log in again.' });
+    return;
+  }
+  req.session.lastActivity = Date.now();
+
   req.userId = req.session.userId;
   req.householdId = req.session.householdId;
   req.householdRole = req.session.householdRole;
