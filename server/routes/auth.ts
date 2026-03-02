@@ -17,6 +17,13 @@ import { getSetting } from '../services/settings.js';
 
 const router = Router();
 
+// Pre-computed Argon2id hash for timing normalisation (prevents user enumeration)
+let dummyHash: string | null = null;
+async function getDummyHash(): Promise<string> {
+  if (!dummyHash) dummyHash = await hashPassword('dummy_timing_normalisation');
+  return dummyHash;
+}
+
 const registerSchema = z.object({
   email: z.email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
@@ -144,6 +151,8 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
 
   const row = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase().trim()) as Record<string, unknown> | undefined;
   if (!row || !row.password_hash) {
+    // Perform timing-normalisation verification to prevent user enumeration
+    await verifyPassword(await getDummyHash(), password);
     res.status(401).json({ message: 'Invalid email or password' });
     return;
   }
@@ -347,6 +356,13 @@ router.get('/registration-status', (_req: Request, res: Response) => {
 
 // GET /api/auth/csrf-token — public (needed before login/register)
 router.get('/csrf-token', (req: Request, res: Response) => {
+  // With saveUninitialized: false, we must modify the session to ensure it's persisted
+  // This is required for CSRF tokens to bind to a persistent sessionID
+  const hasExistingData = Object.keys(req.session).some(k => k !== 'cookie');
+  if (!hasExistingData) {
+    // Mark as CSRF-initialized to trigger session save
+    (req.session as any)._csrfInitialized = true;
+  }
   const token = generateCsrfToken(req, res);
   res.json({ token });
 });

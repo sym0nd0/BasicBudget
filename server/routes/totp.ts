@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { otpLimiter, totpResetLimiter } from '../middleware/rate-limit.js';
+import { otpLimiter, totpResetLimiter, sensitiveActionLimiter } from '../middleware/rate-limit.js';
 import {
   generateTotpSecret,
   encryptSecret,
@@ -196,7 +196,7 @@ router.post('/verify-recovery', otpLimiter, async (req: Request, res: Response) 
 });
 
 // POST /api/auth/totp/disable  (requireAuth)
-router.post('/disable', requireAuth, async (req: Request, res: Response) => {
+router.post('/disable', requireAuth, sensitiveActionLimiter, async (req: Request, res: Response) => {
   const { password, token, code } = req.body as { password?: string; token?: string; code?: string };
   if (!password) { res.status(400).json({ message: 'Password is required' }); return; }
 
@@ -253,7 +253,7 @@ router.post('/request-reset', requireAuth, totpResetLimiter, async (req: Request
 });
 
 // POST /api/auth/totp/confirm-reset
-router.post('/confirm-reset', async (req: Request, res: Response) => {
+router.post('/confirm-reset', sensitiveActionLimiter, async (req: Request, res: Response) => {
   const { token, password } = req.body as { token?: string; password?: string };
   if (!token || !password) { res.status(400).json({ message: 'Token and password are required' }); return; }
 

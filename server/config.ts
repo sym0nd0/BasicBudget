@@ -13,7 +13,11 @@ const envSchema = z.object({
   // TOTP encryption — 64 hex chars = 32 bytes for AES-256-GCM
   TOTP_ENCRYPTION_KEY: z
     .string()
-    .regex(/^[0-9a-fA-F]{64}$/, 'TOTP_ENCRYPTION_KEY must be exactly 64 hex characters'),
+    .regex(/^[0-9a-fA-F]{64}$/, 'TOTP_ENCRYPTION_KEY must be exactly 64 hex characters')
+    .refine(
+      (val) => process.env.NODE_ENV === 'test' || !/^(.)\1+$/.test(val),
+      'TOTP_ENCRYPTION_KEY must not be a repeated character — generate with: openssl rand -hex 32',
+    ),
 
   // Application URLs
   APP_URL: z.url().default('http://localhost:5173'),

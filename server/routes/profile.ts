@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { sensitiveActionLimiter } from '../middleware/rate-limit.js';
 import { hashPassword, verifyPassword, validatePasswordStrength } from '../auth/password.js';
 import { createToken, validateAndConsumeToken } from '../auth/tokens.js';
 import { sendEmailChangeVerification, sendEmailVerification } from '../services/email.js';
@@ -71,7 +72,7 @@ router.put('/notify-updates', (req: Request, res: Response) => {
 });
 
 // POST /api/auth/change-password
-router.post('/change-password', async (req: Request, res: Response) => {
+router.post('/change-password', sensitiveActionLimiter, async (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body as { currentPassword?: string; newPassword?: string };
   if (!currentPassword || !newPassword) { res.status(400).json({ message: 'currentPassword and newPassword are required' }); return; }
 
@@ -97,7 +98,7 @@ router.post('/change-password', async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/change-email
-router.post('/change-email', async (req: Request, res: Response) => {
+router.post('/change-email', sensitiveActionLimiter, async (req: Request, res: Response) => {
   const { email, password, token: totpToken, code: recoveryCode } = req.body as {
     email?: string; password?: string; token?: string; code?: string;
   };

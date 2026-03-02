@@ -1,6 +1,10 @@
 import db from '../db.js';
+import { encryptSecret, decryptSecret } from '../auth/totp.js';
 
 // ─── In-memory cache ──────────────────────────────────────────────────────────
+
+const ENCRYPTED_KEYS = new Set(['smtp.pass', 'oidc.client_secret']);
+const ENC_PREFIX = 'enc:';
 
 const cache = new Map<string, string>();
 let cacheLoaded = false;
@@ -18,16 +22,27 @@ function loadCache(): void {
 
 export function getSetting(key: string): string | null {
   loadCache();
-  return cache.get(key) ?? null;
+  const raw = cache.get(key) ?? null;
+  if (raw && ENCRYPTED_KEYS.has(key) && raw.startsWith(ENC_PREFIX)) {
+    const payload = raw.slice(ENC_PREFIX.length);
+    const [iv, authTag, encrypted] = payload.split(':');
+    return decryptSecret(encrypted, iv, authTag);
+  }
+  return raw;
 }
 
 export function setSetting(key: string, value: string): void {
+  let stored = value;
+  if (ENCRYPTED_KEYS.has(key) && value && value !== '••••••••' && !value.startsWith(ENC_PREFIX)) {
+    const { encrypted_secret, iv, auth_tag } = encryptSecret(value);
+    stored = `${ENC_PREFIX}${iv}:${auth_tag}:${encrypted_secret}`;
+  }
   db.prepare(`
     INSERT INTO system_settings (key, value, updated_at)
     VALUES (?, ?, datetime('now'))
     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')
-  `).run(key, value);
-  cache.set(key, value);
+  `).run(key, stored);
+  cache.set(key, stored);
   cacheLoaded = true;
 }
 
@@ -107,4 +122,15 @@ export function getOidcConfigMasked(): OidcConfigFull | null {
 export function invalidateCache(): void {
   cache.clear();
   cacheLoaded = false;
+}
+
+// ─── Migrations ───────────────────────────────────────────────────────────────
+
+export function migrateEncryptedSettings(): void {
+  for (const key of ENCRYPTED_KEYS) {
+    const row = db.prepare('SELECT value FROM system_settings WHERE key = ?').get(key) as { value: string } | undefined;
+    if (row?.value && !row.value.startsWith(ENC_PREFIX)) {
+      setSetting(key, row.value);
+    }
+  }
 }
