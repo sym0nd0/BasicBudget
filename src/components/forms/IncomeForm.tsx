@@ -54,6 +54,7 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
     const day = parseInt(postingDay);
     if (recurrenceType === 'weekly' || recurrenceType === 'fortnightly') {
       if (isNaN(day) || day < 1 || day > 7) e.postingDay = 'Select a day of the week';
+      if (!startDate) e.startDate = 'Start date is required for weekly/fortnightly items';
     } else {
       if (isNaN(day) || day < 1 || day > 31) e.postingDay = 'Enter a day between 1–31';
     }
@@ -180,10 +181,11 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <Input
-          label="Start Date (optional)"
+          label={recurrenceType === 'weekly' || recurrenceType === 'fortnightly' ? 'Start Date (required)' : 'Start Date (optional)'}
           type="date"
           value={startDate}
           onChange={e => setStartDate(e.target.value)}
+          error={errors.startDate}
         />
         <Input
           label="End Date (optional)"
