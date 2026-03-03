@@ -54,6 +54,10 @@ export function isActiveInMonth(
 
   const parseDate = (d: string | null | undefined): Date | null => {
     if (!d) return null;
+    const parts = d.split('-');
+    if (parts.length === 3) {
+      return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    }
     return new Date(d);
   };
 
