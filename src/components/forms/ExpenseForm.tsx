@@ -36,6 +36,16 @@ export function ExpenseForm({ initial, accounts, onSave, onCancel }: ExpenseForm
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Helper: get next occurrence of a day of week (1=Mon, 7=Sun)
+  const getNextOccurrenceOfDayOfWeek = (targetDow: number): string => {
+    const today = new Date();
+    const todayDow = today.getDay() === 0 ? 7 : today.getDay(); // Convert JS dow to ISO
+    const daysUntil = targetDow >= todayDow ? targetDow - todayDow : 7 - todayDow + targetDow;
+    const nextDate = new Date(today);
+    nextDate.setDate(nextDate.getDate() + daysUntil);
+    return nextDate.toISOString().split('T')[0]; // YYYY-MM-DD
+  };
+
   const validate = () => {
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = 'Name is required';
@@ -100,7 +110,12 @@ export function ExpenseForm({ initial, accounts, onSave, onCancel }: ExpenseForm
           <Select
             label="Day of Week"
             value={postingDay}
-            onChange={e => setPostingDay(e.target.value)}
+            onChange={e => {
+              const newDow = parseInt(e.target.value, 10);
+              setPostingDay(e.target.value);
+              // Auto-adjust start_date to next occurrence of selected day of week
+              setStartDate(getNextOccurrenceOfDayOfWeek(newDow));
+            }}
             options={[
               { value: '1', label: 'Monday' },
               { value: '2', label: 'Tuesday' },
@@ -167,6 +182,10 @@ export function ExpenseForm({ initial, accounts, onSave, onCancel }: ExpenseForm
                 setPostingDay('1'); // Default to Monday
               } else if ((newType === 'monthly' || newType === 'yearly') && parseInt(postingDay) <= 7) {
                 setPostingDay('1'); // Default to 1st of month
+              }
+              // Auto-set start_date to next occurrence of day of week for weekly/fortnightly
+              if (newType === 'weekly' || newType === 'fortnightly') {
+                setStartDate(getNextOccurrenceOfDayOfWeek(1)); // Monday by default
               }
             }
           }}
