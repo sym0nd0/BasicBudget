@@ -21,6 +21,7 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
   const [monthlyContribution, setMonthlyContribution] = useState(
     initial ? penceToPoundsStr(initial.monthly_contribution_pence) : '0',
   );
+  const [isHousehold, setIsHousehold] = useState(Boolean(initial?.is_household) ?? false);
   const [targetDate, setTargetDate] = useState(initial?.target_date ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -49,6 +50,7 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
       target_amount_pence: targetAmount.trim() ? poundsToPence(targetAmount) : 0,
       current_amount_pence: poundsToPence(currentAmount),
       monthly_contribution_pence: poundsToPence(monthlyContribution),
+      is_household: isHousehold ? 1 : 0,
       target_date: targetDate || null,
       notes: notes.trim() || null,
     });
@@ -103,6 +105,15 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
           onChange={e => setTargetDate(e.target.value)}
         />
       </div>
+      <label className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={isHousehold}
+          onChange={e => setIsHousehold(e.target.checked)}
+          className="w-4 h-4"
+        />
+        <span className="text-sm">Joint savings (split equally among household members)</span>
+      </label>
       <Input
         label="Notes (optional)"
         value={notes}

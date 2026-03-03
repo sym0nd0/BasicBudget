@@ -180,6 +180,13 @@ try {
   // Column already exists, ignore
 }
 
+// Add is_household column to savings_goals for joint savings (proportioned equally)
+try {
+  db.prepare('ALTER TABLE savings_goals ADD COLUMN is_household INTEGER DEFAULT 0').run();
+} catch {
+  // Column already exists, ignore
+}
+
 // Encrypt existing plaintext SMTP/OIDC secrets at rest
 try {
   migrateEncryptedSettings();

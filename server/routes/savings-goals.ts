@@ -33,8 +33,8 @@ router.post('/', (req: Request, res: Response) => {
   try {
     db.prepare(`
       INSERT INTO savings_goals
-        (id, household_id, user_id, name, target_amount_pence, current_amount_pence, monthly_contribution_pence, target_date, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, household_id, user_id, name, target_amount_pence, current_amount_pence, monthly_contribution_pence, is_household, target_date, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       req.householdId!,
@@ -43,6 +43,7 @@ router.post('/', (req: Request, res: Response) => {
       body.target_amount_pence ?? 0,
       body.current_amount_pence ?? 0,
       body.monthly_contribution_pence ?? 0,
+      body.is_household ? 1 : 0,
       body.target_date ?? null,
       body.notes ?? null,
     );
@@ -71,7 +72,7 @@ router.put('/:id', (req: Request, res: Response) => {
     db.prepare(`
       UPDATE savings_goals SET
         name = ?, target_amount_pence = ?, current_amount_pence = ?,
-        monthly_contribution_pence = ?, target_date = ?, notes = ?,
+        monthly_contribution_pence = ?, is_household = ?, target_date = ?, notes = ?,
         updated_at = datetime('now')
       WHERE id = ?
     `).run(
@@ -79,6 +80,7 @@ router.put('/:id', (req: Request, res: Response) => {
       body.target_amount_pence ?? existing.target_amount_pence,
       body.current_amount_pence ?? existing.current_amount_pence,
       body.monthly_contribution_pence ?? existing.monthly_contribution_pence,
+      body.is_household !== undefined ? (body.is_household ? 1 : 0) : existing.is_household,
       body.target_date !== undefined ? body.target_date : existing.target_date,
       body.notes !== undefined ? body.notes : existing.notes,
       id,

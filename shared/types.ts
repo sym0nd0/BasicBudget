@@ -196,6 +196,7 @@ export interface SavingsGoal {
   target_amount_pence: number;
   current_amount_pence: number;
   monthly_contribution_pence: number;
+  is_household: number; // 0 = personal, 1 = joint (split equally among all household members)
   target_date?: string | null;
   notes?: string | null;
   created_at?: string;
@@ -244,6 +245,7 @@ export interface BudgetSummary {
   total_income_pence: number;
   total_expenses_pence: number;
   total_debt_payments_pence: number;
+  total_savings_pence: number;
   disposable_income_pence: number;
   category_breakdown: CategoryBreakdown[];
 }
@@ -256,6 +258,7 @@ export interface HouseholdOverview {
   shared_expenses_pence: number;
   sole_expenses_pence: number;
   debt_payments_pence: number;
+  household_savings_pence: number;
   disposable_income_pence: number;
   debt_to_income_ratio: number;
   total_debt_balance_pence: number;

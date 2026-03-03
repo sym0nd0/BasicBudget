@@ -8,7 +8,7 @@ import { inviteLimiter } from '../middleware/rate-limit.js';
 import { createToken, validateAndConsumeToken } from '../auth/tokens.js';
 import { sendHouseholdInvite } from '../services/email.js';
 import { filterActiveInMonth, currentYearMonth, mapDebtToRecurringItem, type RecurringItem } from '../utils/recurring.js';
-import type { HouseholdOverview, CategoryBreakdown } from '../../shared/types.js';
+import type { HouseholdOverview, CategoryBreakdown, SavingsGoal } from '../../shared/types.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -163,6 +163,10 @@ router.get('/summary', (req: Request, res: Response) => {
   const debtPaymentsPence = householdDebts.reduce((s, d) => s + (d.effective_pence ?? 0), 0);
   const totalDebtBalancePence = allDebts.filter(d => Boolean(d.is_household)).reduce((s, d) => s + (d.balance_pence as number), 0);
 
+  // Get all household savings (only joint savings for household overview)
+  const allSavings = db.prepare('SELECT monthly_contribution_pence, is_household FROM savings_goals WHERE household_id = ? AND is_household = 1').all(req.householdId!) as SavingsGoal[];
+  const householdSavingsPence = allSavings.reduce((s, g) => s + (g.monthly_contribution_pence ?? 0), 0);
+
   const categoryMap = new Map<string, number>();
   for (const e of activeExpenses) {
     const cat = (e.category as string) ?? 'Other';
@@ -182,7 +186,8 @@ router.get('/summary', (req: Request, res: Response) => {
     shared_expenses_pence: sharedExpensesPence,
     sole_expenses_pence: soleExpensesPence,
     debt_payments_pence: debtPaymentsPence,
-    disposable_income_pence: totalIncomePence - totalExpensesPence - debtPaymentsPence,
+    household_savings_pence: householdSavingsPence,
+    disposable_income_pence: totalIncomePence - totalExpensesPence - debtPaymentsPence - householdSavingsPence,
     debt_to_income_ratio: totalIncomePence > 0 ? Math.round((debtPaymentsPence / totalIncomePence) * 1000) / 10 : 0,
     total_debt_balance_pence: totalDebtBalancePence,
     category_breakdown: categoryBreakdown,

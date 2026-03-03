@@ -3,7 +3,7 @@ import type { Request, Response } from 'express';
 import db from '../db.js';
 import { filterActiveInMonth, currentYearMonth, mapDebtToRecurringItem, type RecurringItem } from '../utils/recurring.js';
 import { requireAuth } from '../middleware/auth.js';
-import type { BudgetSummary, CategoryBreakdown } from '../../shared/types.js';
+import type { BudgetSummary, CategoryBreakdown, SavingsGoal } from '../../shared/types.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -33,7 +33,23 @@ router.get('/', (req: Request, res: Response) => {
     0,
   );
 
-  const disposableIncomePence = totalIncomePence - totalExpensesPence - totalDebtPaymentsPence;
+  // Get all savings goals and count household members
+  const allSavings = db.prepare('SELECT monthly_contribution_pence, is_household FROM savings_goals WHERE household_id = ?').all(req.householdId!) as SavingsGoal[];
+  const householdMembers = db.prepare('SELECT COUNT(*) as count FROM household_members WHERE household_id = ?').get(req.householdId!) as { count: number };
+  const memberCount = householdMembers.count || 1;
+
+  // Calculate savings contributions (split joint savings equally among all members)
+  let totalSavingsPence = 0;
+  for (const savings of allSavings) {
+    const contribution = savings.monthly_contribution_pence ?? 0;
+    if (savings.is_household) {
+      totalSavingsPence += Math.ceil(contribution / memberCount);
+    } else {
+      totalSavingsPence += contribution;
+    }
+  }
+
+  const disposableIncomePence = totalIncomePence - totalExpensesPence - totalDebtPaymentsPence - totalSavingsPence;
 
   const categoryMap = new Map<string, number>();
   for (const e of activeExpenses) {
@@ -54,6 +70,7 @@ router.get('/', (req: Request, res: Response) => {
     total_income_pence: totalIncomePence,
     total_expenses_pence: totalExpensesPence,
     total_debt_payments_pence: totalDebtPaymentsPence,
+    total_savings_pence: totalSavingsPence,
     disposable_income_pence: disposableIncomePence,
     category_breakdown: categoryBreakdown,
   };
