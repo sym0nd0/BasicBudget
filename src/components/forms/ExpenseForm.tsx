@@ -42,7 +42,11 @@ export function ExpenseForm({ initial, accounts, onSave, onCancel }: ExpenseForm
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt <= 0) e.amount = 'Enter a valid amount';
     const day = parseInt(postingDay);
-    if (isNaN(day) || day < 1 || day > 31) e.postingDay = 'Enter a day between 1–31';
+    if (recurrenceType === 'weekly' || recurrenceType === 'fortnightly') {
+      if (isNaN(day) || day < 1 || day > 7) e.postingDay = 'Select a day of the week';
+    } else {
+      if (isNaN(day) || day < 1 || day > 31) e.postingDay = 'Enter a day between 1–31';
+    }
     return e;
   };
 
@@ -91,15 +95,33 @@ export function ExpenseForm({ initial, accounts, onSave, onCancel }: ExpenseForm
           prefix="£"
           error={errors.amount}
         />
-        <Input
-          label="Posting Day"
-          type="number"
-          min="1"
-          max="31"
-          value={postingDay}
-          onChange={e => setPostingDay(e.target.value)}
-          error={errors.postingDay}
-        />
+        {(recurrenceType === 'weekly' || recurrenceType === 'fortnightly') ? (
+          <Select
+            label="Day of Week"
+            value={postingDay}
+            onChange={e => setPostingDay(e.target.value)}
+            options={[
+              { value: '1', label: 'Monday' },
+              { value: '2', label: 'Tuesday' },
+              { value: '3', label: 'Wednesday' },
+              { value: '4', label: 'Thursday' },
+              { value: '5', label: 'Friday' },
+              { value: '6', label: 'Saturday' },
+              { value: '7', label: 'Sunday' },
+            ]}
+            error={errors.postingDay}
+          />
+        ) : (
+          <Input
+            label="Posting Day"
+            type="number"
+            min="1"
+            max="31"
+            value={postingDay}
+            onChange={e => setPostingDay(e.target.value)}
+            error={errors.postingDay}
+          />
+        )}
       </div>
       <div className="grid grid-cols-2 gap-3">
         <Select
@@ -137,7 +159,14 @@ export function ExpenseForm({ initial, accounts, onSave, onCancel }: ExpenseForm
               setIsRecurring(false);
             } else {
               setIsRecurring(true);
-              setRecurrenceType(v as 'monthly' | 'weekly' | 'yearly' | 'fortnightly');
+              const newType = v as 'monthly' | 'weekly' | 'yearly' | 'fortnightly';
+              setRecurrenceType(newType);
+              // Reset posting_day to valid default when switching to/from weekly/fortnightly
+              if ((newType === 'weekly' || newType === 'fortnightly') && parseInt(postingDay) > 7) {
+                setPostingDay('1'); // Default to Monday
+              } else if ((newType === 'monthly' || newType === 'yearly') && parseInt(postingDay) <= 7) {
+                setPostingDay('1'); // Default to 1st of month
+              }
             }
           }}
           options={[
