@@ -35,6 +35,16 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Helper: get next occurrence of a day of week (1=Mon, 7=Sun)
+  const getNextOccurrenceOfDayOfWeek = (targetDow: number): string => {
+    const today = new Date();
+    const todayDow = today.getDay() === 0 ? 7 : today.getDay(); // Convert JS dow to ISO
+    const daysUntil = targetDow >= todayDow ? targetDow - todayDow : 7 - todayDow + targetDow;
+    const nextDate = new Date(today);
+    nextDate.setDate(nextDate.getDate() + daysUntil);
+    return nextDate.toISOString().split('T')[0]; // YYYY-MM-DD
+  };
+
   useEffect(() => {
     api.getHouseholdDetails().then((data) => {
       const raw = (data as { members?: HouseholdMember[] }).members ?? [];
@@ -106,7 +116,12 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
           <Select
             label="Day of Week"
             value={postingDay}
-            onChange={e => setPostingDay(e.target.value)}
+            onChange={e => {
+              const newDow = parseInt(e.target.value, 10);
+              setPostingDay(e.target.value);
+              // Auto-adjust start_date to next occurrence of selected day of week
+              setStartDate(getNextOccurrenceOfDayOfWeek(newDow));
+            }}
             options={[
               { value: '1', label: 'Monday' },
               { value: '2', label: 'Tuesday' },
@@ -167,6 +182,10 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
                 setPostingDay('1'); // Default to Monday
               } else if ((newType === 'monthly' || newType === 'yearly') && parseInt(postingDay) <= 7) {
                 setPostingDay('28'); // Default to 28th of month
+              }
+              // Auto-set start_date to next occurrence of day of week for weekly/fortnightly
+              if (newType === 'weekly' || newType === 'fortnightly') {
+                setStartDate(getNextOccurrenceOfDayOfWeek(1)); // Monday by default
               }
             }
           }}
