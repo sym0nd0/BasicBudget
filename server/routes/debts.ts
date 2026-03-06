@@ -281,10 +281,13 @@ export function computeRepayments(debt: Debt): DebtPayoffSummary {
   const now = new Date();
   const startYear = now.getFullYear();
   const startMonth = now.getMonth();
+  const todayDay = now.getDate();
+  const postingDay = debt.posting_day ?? 1;
+  const monthOffset = todayDay <= postingDay ? 0 : 1;
 
   while (currentBalance > 0 && month < MAX_MONTHS) {
     month++;
-    const paymentDate = new Date(startYear, startMonth + month, 1);
+    const paymentDate = new Date(startYear, startMonth + monthOffset + month - 1, 1);
     const paymentDateStr = paymentDate.toISOString().slice(0, 10);
 
     // Stop if we've reached the debt's end date
