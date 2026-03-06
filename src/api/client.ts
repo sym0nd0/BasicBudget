@@ -158,6 +158,10 @@ export const api = {
     request<Record<string, unknown>>('/household', { method: 'PUT', body: JSON.stringify({ name }) }),
   inviteMember: (email: string) =>
     request<{ message: string }>('/household/invite', { method: 'POST', body: JSON.stringify({ email }) }),
+  updateMemberRole: (userId: string, role: 'owner' | 'member') =>
+    request<{ message: string }>(`/household/members/${userId}/role`, { method: 'PUT', body: JSON.stringify({ role }) }),
+  removeMember: (userId: string) =>
+    request<void>(`/household/members/${userId}`, { method: 'DELETE' }),
 
   // ── Incomes ──
   getIncomes: (month?: string) =>
