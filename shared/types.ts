@@ -133,6 +133,7 @@ export interface Expense {
   amount_pence: number;
   posting_day: number;
   account_id?: string | null;
+  /** type: purely informational label; does not affect calculations or filtering */
   type: 'fixed' | 'variable';
   category: string;
   is_household: boolean;
