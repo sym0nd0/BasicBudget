@@ -226,6 +226,7 @@ Every branch pushed to origin must have a corresponding Pull Request opened imme
 - [ ] The current branch has a descriptive name following the naming convention above
 - [ ] A PR will be created immediately after pushing
 - [ ] TypeScript checks pass: `tsc -b --noEmit` and `tsc --project tsconfig.server.json --noEmit`
+- [ ] `package.json` version is bumped to the correct semver for this change (PATCH/MINOR/MAJOR)
 - [ ] Tests pass: `npm test`
 
 **If ANY item is not met, do not push. Fix the issue first.**
