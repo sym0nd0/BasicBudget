@@ -81,6 +81,7 @@ router.post('/', (req: Request, res: Response) => {
     return;
   }
   const row = db.prepare('SELECT * FROM expenses WHERE id = ?').get(id) as Record<string, unknown>;
+  logger.info('Expense created', { id, userId: req.userId, name: body.name.trim() });
   res.status(201).json(mapExpense(row));
 });
 
@@ -147,6 +148,7 @@ router.put('/:id', (req: Request, res: Response) => {
     return;
   }
   const row = db.prepare('SELECT * FROM expenses WHERE id = ?').get(id) as Record<string, unknown>;
+  logger.info('Expense updated', { id, userId: req.userId });
   res.json(mapExpense(row));
 });
 
@@ -177,6 +179,7 @@ router.delete('/:id', (req: Request, res: Response) => {
     res.status(500).json({ message: 'Failed to delete expense' });
     return;
   }
+  logger.info('Expense deleted', { id, userId: req.userId });
   res.status(204).send();
 });
 

@@ -130,7 +130,7 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
         placeholder="e.g. Tesco Credit Card"
         error={errors.name}
       />
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-[2fr_1fr] gap-3">
         <Input
           label="Current Balance"
           type="number"

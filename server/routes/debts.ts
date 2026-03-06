@@ -106,6 +106,7 @@ router.post('/', (req: Request, res: Response) => {
     return;
   }
   const row = db.prepare('SELECT * FROM debts WHERE id = ?').get(id) as Record<string, unknown>;
+  logger.info('Debt created', { id, userId: req.userId, name: nameValue });
   res.status(201).json(enrichDebtWithPeriods(mapDebt(row)));
 });
 
@@ -203,6 +204,7 @@ router.put('/:id', (req: Request, res: Response) => {
     return;
   }
   const row = db.prepare('SELECT * FROM debts WHERE id = ?').get(id) as Record<string, unknown>;
+  logger.info('Debt updated', { id, userId: req.userId });
   res.json(enrichDebtWithPeriods(mapDebt(row)));
 });
 
@@ -232,6 +234,7 @@ router.delete('/:id', (req: Request, res: Response) => {
     res.status(400).json({ message: (err as Error).message });
     return;
   }
+  logger.info('Debt deleted', { id, userId: req.userId });
   res.status(204).send();
 });
 
