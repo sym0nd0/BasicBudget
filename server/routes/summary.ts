@@ -2,8 +2,9 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import db from '../db.js';
 import { filterActiveInMonth, currentYearMonth, mapDebtToRecurringItem, type RecurringItem } from '../utils/recurring.js';
+import { filterVisible } from '../utils/visibility.js';
 import { requireAuth } from '../middleware/auth.js';
-import type { BudgetSummary, CategoryBreakdown, SavingsGoal } from '../../shared/types.js';
+import type { BudgetSummary, CategoryBreakdown } from '../../shared/types.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -12,9 +13,13 @@ router.use(requireAuth);
 router.get('/', (req: Request, res: Response) => {
   const month = (req.query.month as string) ?? currentYearMonth();
 
-  const allIncomes = db.prepare('SELECT * FROM incomes WHERE household_id = ?').all(req.householdId!) as RecurringItem[];
-  const allExpenses = db.prepare('SELECT * FROM expenses WHERE household_id = ?').all(req.householdId!) as RecurringItem[];
-  const allDebts = db.prepare('SELECT * FROM debts WHERE household_id = ?').all(req.householdId!) as Record<string, unknown>[];
+  const rawIncomes = db.prepare('SELECT * FROM incomes WHERE household_id = ?').all(req.householdId!) as Record<string, unknown>[];
+  const rawExpenses = db.prepare('SELECT * FROM expenses WHERE household_id = ?').all(req.householdId!) as Record<string, unknown>[];
+  const rawDebts = db.prepare('SELECT * FROM debts WHERE household_id = ?').all(req.householdId!) as Record<string, unknown>[];
+
+  const allIncomes = filterVisible(rawIncomes, req.userId!) as unknown as RecurringItem[];
+  const allExpenses = filterVisible(rawExpenses, req.userId!) as unknown as RecurringItem[];
+  const allDebtRows = filterVisible(rawDebts, req.userId!);
 
   const activeIncomes = filterActiveInMonth(allIncomes, month);
   const activeExpenses = filterActiveInMonth(allExpenses, month);
@@ -26,23 +31,24 @@ router.get('/', (req: Request, res: Response) => {
     0,
   );
 
-  const debtItems = allDebts.map(mapDebtToRecurringItem);
+  const debtItems = allDebtRows.map(mapDebtToRecurringItem);
   const activeDebts = filterActiveInMonth(debtItems, month);
   const totalDebtPaymentsPence = activeDebts.reduce(
     (s, d) => s + Math.round((d.effective_pence ?? 0) * ((d.split_ratio as number) ?? 1)),
     0,
   );
 
-  // Get all savings goals and count household members
-  const allSavings = db.prepare('SELECT monthly_contribution_pence, is_household FROM savings_goals WHERE household_id = ?').all(req.householdId!) as SavingsGoal[];
+  // Get visible savings goals and count household members
+  const rawSavings = db.prepare('SELECT * FROM savings_goals WHERE household_id = ?').all(req.householdId!) as Record<string, unknown>[];
+  const allSavings = filterVisible(rawSavings, req.userId!);
   const householdMembers = db.prepare('SELECT COUNT(*) as count FROM household_members WHERE household_id = ?').get(req.householdId!) as { count: number };
   const memberCount = householdMembers.count || 1;
 
   // Calculate savings contributions (split joint savings equally among all members)
   let totalSavingsPence = 0;
   for (const savings of allSavings) {
-    const contribution = savings.monthly_contribution_pence ?? 0;
-    if (savings.is_household) {
+    const contribution = (savings.monthly_contribution_pence as number) ?? 0;
+    if (Boolean(savings.is_household)) {
       totalSavingsPence += Math.ceil(contribution / memberCount);
     } else {
       totalSavingsPence += contribution;
