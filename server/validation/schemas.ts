@@ -12,6 +12,7 @@ export const expenseSchema = z.object({
   amount_pence: z.number().int().min(0),
   posting_day: z.number().int().min(1).max(31).optional(),
   account_id: z.string().max(36).nullable().optional(),
+  contributor_user_id: z.string().max(36).nullable().optional(),
   type: z.enum(['fixed', 'variable']).optional(),
   category: z.string().max(100).optional(),
   is_household: z.boolean().optional(),
@@ -29,7 +30,8 @@ export const incomeSchema = z.object({
   name: z.string().min(1).max(200),
   amount_pence: z.number().int().min(0),
   posting_day: z.number().int().min(1).max(31).optional(),
-  contributor_name: z.string().max(200).nullable().optional(),
+  contributor_user_id: z.string().max(36).nullable().optional(),
+  is_household: z.boolean().optional(),
   gross_or_net: z.enum(['gross', 'net']).optional(),
   is_recurring: z.boolean().optional(),
   recurrence_type: z.enum(['monthly', 'weekly', 'yearly', 'fortnightly']).optional(),
@@ -50,6 +52,7 @@ const dealPeriodSchema = z.object({
 export const debtSchema = z.object({
   name: z.string().min(1).max(200),
   balance_pence: z.number().int().min(0),
+  contributor_user_id: z.string().max(36).nullable().optional(),
   interest_rate: z.number().min(0).max(100).optional(),
   minimum_payment_pence: z.number().int().min(0).optional(),
   overpayment_pence: z.number().int().min(0).optional(),
@@ -69,6 +72,8 @@ export const debtSchema = z.object({
 
 export const savingsGoalSchema = z.object({
   name: z.string().min(1).max(200),
+  contributor_user_id: z.string().max(36).nullable().optional(),
+  is_household: z.boolean().optional(),
   target_amount_pence: z.number().int().min(0).optional(),
   current_amount_pence: z.number().int().min(0).optional(),
   monthly_contribution_pence: z.number().int().min(0).optional(),

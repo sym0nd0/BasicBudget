@@ -24,7 +24,7 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
   const [name, setName] = useState(initial?.name ?? '');
   const [amount, setAmount] = useState(initial ? penceToPoundsStr(initial.amount_pence) : '');
   const [postingDay, setPostingDay] = useState(String(initial?.posting_day ?? '28'));
-  const [contributorName, setContributorName] = useState(initial?.contributor_name ?? '');
+  const [contributorUserId, setContributorUserId] = useState(initial?.contributor_user_id ?? '');
   const [grossOrNet, setGrossOrNet] = useState<'gross' | 'net'>(initial?.gross_or_net ?? 'net');
   const [isRecurring, setIsRecurring] = useState(initial?.is_recurring ?? true);
   const [recurrenceType, setRecurrenceType] = useState<'monthly' | 'weekly' | 'yearly' | 'fortnightly'>(
@@ -82,7 +82,7 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
       name: name.trim(),
       amount_pence: poundsToPence(amount),
       posting_day: parseInt(postingDay),
-      contributor_name: contributorName.trim() || null,
+      contributor_user_id: contributorUserId || null,
       gross_or_net: grossOrNet,
       is_recurring: isRecurring,
       recurrence_type: recurrenceType,
@@ -148,11 +148,11 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
       <div className="grid grid-cols-2 gap-3">
         <Select
           label="Contributor (optional)"
-          value={contributorName}
-          onChange={e => setContributorName(e.target.value)}
+          value={contributorUserId}
+          onChange={e => setContributorUserId(e.target.value)}
           options={[
             { value: '', label: '— None —' },
-            ...members.map(m => ({ value: m.display_name || m.email, label: m.display_name || m.email })),
+            ...members.map(m => ({ value: m.user_id, label: m.display_name || m.email })),
           ]}
         />
         <Select

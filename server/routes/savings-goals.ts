@@ -3,7 +3,9 @@ import type { Request, Response } from 'express';
 import db from '../db.js';
 import { randomUUID } from 'node:crypto';
 import { requireAuth } from '../middleware/auth.js';
+import { filterVisible, canModify } from '../utils/visibility.js';
 import type { SavingsGoal } from '../../shared/types.js';
+import { savingsGoalSchema } from '../validation/schemas.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -15,12 +17,18 @@ function mapGoal(row: Record<string, unknown>): SavingsGoal {
 // GET /api/savings-goals
 router.get('/', (req: Request, res: Response) => {
   const rows = db.prepare('SELECT * FROM savings_goals WHERE household_id = ? ORDER BY created_at').all(req.householdId!) as Record<string, unknown>[];
-  res.json(rows.map(mapGoal));
+  const visible = filterVisible(rows, req.userId!);
+  res.json(visible.map(mapGoal));
 });
 
 // POST /api/savings-goals
 router.post('/', (req: Request, res: Response) => {
-  const body = req.body as Partial<SavingsGoal>;
+  const result = savingsGoalSchema.safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json({ message: 'Validation error' });
+    return;
+  }
+  const body = result.data;
   if (!body.name?.trim()) {
     res.status(400).json({ message: 'name is required' });
     return;
@@ -29,22 +37,24 @@ router.post('/', (req: Request, res: Response) => {
     res.status(400).json({ message: 'target_amount_pence must be a non-negative integer' });
     return;
   }
+  const rawBody = req.body as Partial<SavingsGoal>;
   const id = randomUUID();
   try {
     db.prepare(`
       INSERT INTO savings_goals
-        (id, household_id, user_id, name, target_amount_pence, current_amount_pence, monthly_contribution_pence, is_household, target_date, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, household_id, user_id, contributor_user_id, name, target_amount_pence, current_amount_pence, monthly_contribution_pence, is_household, target_date, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       req.householdId!,
       req.userId!,
+      body.contributor_user_id ?? null,
       body.name.trim(),
       body.target_amount_pence ?? 0,
-      body.current_amount_pence ?? 0,
-      body.monthly_contribution_pence ?? 0,
-      body.is_household ? 1 : 0,
-      body.target_date ?? null,
+      rawBody.current_amount_pence ?? 0,
+      rawBody.monthly_contribution_pence ?? 0,
+      rawBody.is_household ? 1 : 0,
+      rawBody.target_date ?? null,
       body.notes ?? null,
     );
   } catch (err) {
@@ -64,19 +74,20 @@ router.put('/:id', (req: Request, res: Response) => {
     res.status(404).json({ message: 'Savings goal not found' });
     return;
   }
-  if (req.householdRole === 'member' && existing.user_id !== req.userId) {
+  if (!canModify(existing, req.userId!)) {
     res.status(403).json({ message: 'You can only edit your own entries' });
     return;
   }
   try {
     db.prepare(`
       UPDATE savings_goals SET
-        name = ?, target_amount_pence = ?, current_amount_pence = ?,
+        name = ?, contributor_user_id = ?, target_amount_pence = ?, current_amount_pence = ?,
         monthly_contribution_pence = ?, is_household = ?, target_date = ?, notes = ?,
         updated_at = datetime('now')
       WHERE id = ?
     `).run(
       body.name?.trim() ?? existing.name,
+      body.contributor_user_id !== undefined ? body.contributor_user_id : existing.contributor_user_id,
       body.target_amount_pence ?? existing.target_amount_pence,
       body.current_amount_pence ?? existing.current_amount_pence,
       body.monthly_contribution_pence ?? existing.monthly_contribution_pence,
@@ -96,13 +107,12 @@ router.put('/:id', (req: Request, res: Response) => {
 // DELETE /api/savings-goals/:id
 router.delete('/:id', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
-  const existing = db.prepare('SELECT * FROM savings_goals WHERE id = ? AND household_id = ?').get(id, req.householdId!);
+  const existing = db.prepare('SELECT * FROM savings_goals WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!existing) {
     res.status(404).json({ message: 'Savings goal not found' });
     return;
   }
-  const existingRow = existing as Record<string, unknown>;
-  if (req.householdRole === 'member' && existingRow.user_id !== req.userId) {
+  if (!canModify(existing, req.userId!)) {
     res.status(403).json({ message: 'You can only delete your own entries' });
     return;
   }

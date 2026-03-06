@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import db from '../db.js';
 import { randomUUID } from 'node:crypto';
 import { filterActiveInMonth, currentYearMonth, type RecurringItem } from '../utils/recurring.js';
+import { filterVisible, canModify } from '../utils/visibility.js';
 import { isMonthLocked } from './months.js';
 import { requireAuth } from '../middleware/auth.js';
 import type { Income } from '../../shared/types.js';
@@ -14,8 +15,9 @@ router.use(requireAuth);
 
 function mapIncome(row: Record<string, unknown>): Income {
   return {
-    ...(row as Omit<Income, 'is_recurring'>),
+    ...(row as Omit<Income, 'is_recurring' | 'is_household'>),
     is_recurring: Boolean(row.is_recurring),
+    is_household: Boolean(row.is_household),
   };
 }
 
@@ -29,7 +31,8 @@ router.get('/', (req: Request, res: Response) => {
   }
   const all = db.prepare('SELECT * FROM incomes WHERE household_id = ? ORDER BY created_at').all(req.householdId!) as RecurringItem[];
   const active = filterActiveInMonth(all, month);
-  res.json(active.map(r => mapIncome(r as Record<string, unknown>)));
+  const visible = filterVisible(active as Record<string, unknown>[], req.userId!);
+  res.json(visible.map(r => mapIncome(r)));
 });
 
 // POST /api/incomes
@@ -43,12 +46,13 @@ router.post('/', (req: Request, res: Response) => {
   const id = randomUUID();
   const grossOrNet = body.gross_or_net ?? 'net';
   const recurrenceType = body.recurrence_type ?? 'monthly';
+  const isHousehold = body.is_household ? 1 : 0;
   try {
     db.prepare(`
       INSERT INTO incomes
-        (id, household_id, user_id, name, amount_pence, posting_day, contributor_name, gross_or_net,
+        (id, household_id, user_id, name, amount_pence, posting_day, contributor_user_id, is_household, gross_or_net,
          is_recurring, recurrence_type, start_date, end_date, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       req.householdId!,
@@ -56,7 +60,8 @@ router.post('/', (req: Request, res: Response) => {
       body.name.trim(),
       body.amount_pence,
       body.posting_day ?? 28,
-      body.contributor_name ?? null,
+      body.contributor_user_id ?? null,
+      isHousehold,
       grossOrNet,
       body.is_recurring ? 1 : 0,
       recurrenceType,
@@ -87,8 +92,7 @@ router.put('/:id', (req: Request, res: Response) => {
     res.status(404).json({ message: 'Income not found' });
     return;
   }
-  // Ownership check for members
-  if (req.householdRole === 'member' && existing.user_id !== req.userId) {
+  if (!canModify(existing, req.userId!)) {
     res.status(403).json({ message: 'You can only edit your own entries' });
     return;
   }
@@ -100,10 +104,13 @@ router.put('/:id', (req: Request, res: Response) => {
       return;
     }
   }
+  const isHousehold = body.is_household !== undefined
+    ? (body.is_household ? 1 : 0)
+    : existing.is_household;
   try {
     db.prepare(`
       UPDATE incomes SET
-        name = ?, amount_pence = ?, posting_day = ?, contributor_name = ?,
+        name = ?, amount_pence = ?, posting_day = ?, contributor_user_id = ?, is_household = ?,
         gross_or_net = ?, is_recurring = ?, recurrence_type = ?,
         start_date = ?, end_date = ?, notes = ?,
         updated_at = datetime('now')
@@ -112,7 +119,8 @@ router.put('/:id', (req: Request, res: Response) => {
       body.name?.trim() ?? existing.name,
       body.amount_pence ?? existing.amount_pence,
       body.posting_day ?? existing.posting_day,
-      body.contributor_name !== undefined ? body.contributor_name : existing.contributor_name,
+      body.contributor_user_id !== undefined ? body.contributor_user_id : existing.contributor_user_id,
+      isHousehold,
       body.gross_or_net ?? existing.gross_or_net,
       body.is_recurring !== undefined ? (body.is_recurring ? 1 : 0) : existing.is_recurring,
       body.recurrence_type ?? existing.recurrence_type,
@@ -138,7 +146,7 @@ router.delete('/:id', (req: Request, res: Response) => {
     res.status(404).json({ message: 'Income not found' });
     return;
   }
-  if (req.householdRole === 'member' && existing.user_id !== req.userId) {
+  if (!canModify(existing, req.userId!)) {
     res.status(403).json({ message: 'You can only delete your own entries' });
     return;
   }

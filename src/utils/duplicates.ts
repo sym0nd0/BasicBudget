@@ -18,7 +18,7 @@ export function findDuplicateIncome(items: Income[], data: Omit<Income, 'id' | '
     eq(i.name, data.name) &&
     eq(i.amount_pence, data.amount_pence) &&
     eq(i.posting_day, data.posting_day) &&
-    eq(i.contributor_name, data.contributor_name) &&
+    eq(i.contributor_user_id, data.contributor_user_id) &&
     eq(i.gross_or_net, data.gross_or_net) &&
     eq(i.is_recurring, data.is_recurring) &&
     eq(i.recurrence_type, data.recurrence_type) &&

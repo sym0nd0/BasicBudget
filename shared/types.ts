@@ -96,7 +96,8 @@ export interface Income {
   name: string;
   amount_pence: number;
   posting_day: number;
-  contributor_name?: string | null;
+  contributor_user_id?: string | null;
+  is_household?: boolean;
   gross_or_net: 'gross' | 'net';
   is_recurring: boolean;
   recurrence_type: 'monthly' | 'weekly' | 'yearly' | 'fortnightly';
@@ -129,6 +130,7 @@ export interface Expense {
   id: string;
   household_id?: string;
   user_id?: string;
+  contributor_user_id?: string | null;
   name: string;
   amount_pence: number;
   posting_day: number;
@@ -166,6 +168,7 @@ export interface Debt {
   id: string;
   household_id?: string;
   user_id?: string;
+  contributor_user_id?: string | null;
   name: string;
   balance_pence: number;
   interest_rate: number;
@@ -192,6 +195,7 @@ export interface SavingsGoal {
   id: string;
   household_id?: string;
   user_id?: string;
+  contributor_user_id?: string | null;
   name: string;
   target_amount_pence: number;
   current_amount_pence: number;

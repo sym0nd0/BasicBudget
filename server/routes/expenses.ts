@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import db from '../db.js';
 import { randomUUID } from 'node:crypto';
 import { filterActiveInMonth, currentYearMonth, type RecurringItem } from '../utils/recurring.js';
+import { filterVisible, canModify } from '../utils/visibility.js';
 import { isMonthLocked } from './months.js';
 import { requireAuth } from '../middleware/auth.js';
 import type { Expense } from '../../shared/types.js';
@@ -34,7 +35,8 @@ router.get('/', (req: Request, res: Response) => {
     ? db.prepare('SELECT * FROM expenses WHERE household_id = ? AND category = ? ORDER BY created_at').all(req.householdId!, category) as RecurringItem[]
     : db.prepare('SELECT * FROM expenses WHERE household_id = ? ORDER BY created_at').all(req.householdId!) as RecurringItem[];
   const active = filterActiveInMonth(all, month);
-  res.json(active.map(r => mapExpense(r as Record<string, unknown>)));
+  const visible = filterVisible(active as Record<string, unknown>[], req.userId!);
+  res.json(visible.map(r => mapExpense(r)));
 });
 
 // POST /api/expenses
@@ -53,14 +55,15 @@ router.post('/', (req: Request, res: Response) => {
   try {
     db.prepare(`
       INSERT INTO expenses
-        (id, household_id, user_id, name, amount_pence, posting_day, account_id, type, category,
+        (id, household_id, user_id, contributor_user_id, name, amount_pence, posting_day, account_id, type, category,
          is_household, split_ratio, is_recurring, recurrence_type,
          start_date, end_date, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       req.householdId!,
       req.userId!,
+      body.contributor_user_id ?? null,
       body.name.trim(),
       body.amount_pence,
       body.posting_day ?? 1,
@@ -98,7 +101,7 @@ router.put('/:id', (req: Request, res: Response) => {
     res.status(404).json({ message: 'Expense not found' });
     return;
   }
-  if (req.householdRole === 'member' && existing.user_id !== req.userId) {
+  if (!canModify(existing, req.userId!)) {
     res.status(403).json({ message: 'You can only edit your own entries' });
     return;
   }
@@ -119,7 +122,7 @@ router.put('/:id', (req: Request, res: Response) => {
   try {
     db.prepare(`
       UPDATE expenses SET
-        name = ?, amount_pence = ?, posting_day = ?, account_id = ?,
+        name = ?, amount_pence = ?, posting_day = ?, contributor_user_id = ?, account_id = ?,
         type = ?, category = ?, is_household = ?, split_ratio = ?,
         is_recurring = ?, recurrence_type = ?,
         start_date = ?, end_date = ?, notes = ?,
@@ -129,6 +132,7 @@ router.put('/:id', (req: Request, res: Response) => {
       body.name?.trim() ?? existing.name,
       body.amount_pence ?? existing.amount_pence,
       body.posting_day ?? existing.posting_day,
+      body.contributor_user_id !== undefined ? body.contributor_user_id : existing.contributor_user_id,
       body.account_id !== undefined ? body.account_id : existing.account_id,
       body.type ?? existing.type,
       body.category ?? existing.category,
@@ -158,7 +162,7 @@ router.delete('/:id', (req: Request, res: Response) => {
     res.status(404).json({ message: 'Expense not found' });
     return;
   }
-  if (req.householdRole === 'member' && existing.user_id !== req.userId) {
+  if (!canModify(existing, req.userId!)) {
     res.status(403).json({ message: 'You can only delete your own entries' });
     return;
   }

@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import db from '../db.js';
 import { randomUUID } from 'node:crypto';
 import { isMonthLocked } from './months.js';
+import { filterVisible, canModify } from '../utils/visibility.js';
 import { requireAuth } from '../middleware/auth.js';
 import type { Debt, DebtDealPeriod, RepaymentRow, DebtPayoffSummary } from '../../shared/types.js';
 import { logger } from '../services/logger.js';
@@ -27,7 +28,8 @@ function enrichDebtWithPeriods(debt: Debt): Debt {
 // GET /api/debts
 router.get('/', (req: Request, res: Response) => {
   const rows = db.prepare('SELECT * FROM debts WHERE household_id = ? ORDER BY created_at').all(req.householdId!) as Record<string, unknown>[];
-  res.json(rows.map(mapDebt).map(enrichDebtWithPeriods));
+  const visible = filterVisible(rows, req.userId!);
+  res.json(visible.map(mapDebt).map(enrichDebtWithPeriods));
 });
 
 // POST /api/debts
@@ -64,14 +66,15 @@ router.post('/', (req: Request, res: Response) => {
     db.transaction(() => {
       db.prepare(`
         INSERT INTO debts
-          (id, household_id, user_id, name, balance_pence, interest_rate, minimum_payment_pence,
+          (id, household_id, user_id, contributor_user_id, name, balance_pence, interest_rate, minimum_payment_pence,
            overpayment_pence, compounding_frequency, is_recurring, recurrence_type,
            posting_day, start_date, end_date, is_household, split_ratio, notes, reminder_months)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         id,
         req.householdId!,
         req.userId!,
+        body.contributor_user_id ?? null,
         nameValue,
         body.balance_pence,
         body.interest_rate ?? 0,
@@ -123,7 +126,7 @@ router.put('/:id', (req: Request, res: Response) => {
     res.status(404).json({ message: 'Debt not found' });
     return;
   }
-  if (req.householdRole === 'member' && existing.user_id !== req.userId) {
+  if (!canModify(existing, req.userId!)) {
     res.status(403).json({ message: 'You can only edit your own entries' });
     return;
   }
@@ -159,7 +162,7 @@ router.put('/:id', (req: Request, res: Response) => {
     db.transaction(() => {
       db.prepare(`
         UPDATE debts SET
-          name = ?, balance_pence = ?, interest_rate = ?,
+          name = ?, contributor_user_id = ?, balance_pence = ?, interest_rate = ?,
           minimum_payment_pence = ?, overpayment_pence = ?,
           compounding_frequency = ?, is_recurring = ?, recurrence_type = ?,
           posting_day = ?, start_date = ?, end_date = ?,
@@ -168,6 +171,7 @@ router.put('/:id', (req: Request, res: Response) => {
         WHERE id = ?
       `).run(
         body.name?.trim() ?? existing.name,
+        body.contributor_user_id !== undefined ? body.contributor_user_id : existing.contributor_user_id,
         body.balance_pence ?? existing.balance_pence,
         body.interest_rate ?? existing.interest_rate,
         body.minimum_payment_pence ?? existing.minimum_payment_pence,
@@ -214,7 +218,7 @@ router.delete('/:id', (req: Request, res: Response) => {
     res.status(404).json({ message: 'Debt not found' });
     return;
   }
-  if (req.householdRole === 'member' && existing.user_id !== req.userId) {
+  if (!canModify(existing, req.userId!)) {
     res.status(403).json({ message: 'You can only delete your own entries' });
     return;
   }

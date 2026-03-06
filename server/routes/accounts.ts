@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import db from '../db.js';
 import { randomUUID } from 'node:crypto';
 import { requireAuth } from '../middleware/auth.js';
+import { canModify } from '../utils/visibility.js';
 import type { Account } from '../../shared/types.js';
 
 const router = Router();
@@ -55,7 +56,7 @@ router.put('/:id', (req: Request, res: Response) => {
     res.status(404).json({ message: 'Account not found' });
     return;
   }
-  if (req.householdRole === 'member' && existing.user_id !== req.userId) {
+  if (!canModify(existing, req.userId!)) {
     res.status(403).json({ message: 'You can only edit your own entries' });
     return;
   }
