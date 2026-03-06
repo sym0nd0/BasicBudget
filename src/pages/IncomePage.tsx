@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useBudget } from '../context/BudgetContext';
 import { useFilter } from '../context/FilterContext';
+import { api } from '../api/client';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -18,6 +19,8 @@ interface IncomePageProps {
   onMenuClick: () => void;
 }
 
+interface HouseholdMember { user_id: string; display_name: string; email: string }
+
 export function IncomePage({ onMenuClick }: IncomePageProps) {
   const { incomes, addIncome, updateIncome, deleteIncome } = useBudget();
   useFilter();
@@ -25,6 +28,19 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Income | undefined>();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [members, setMembers] = useState<HouseholdMember[]>([]);
+
+  useEffect(() => {
+    api.getHouseholdDetails().then((data) => {
+      setMembers((data as { members?: HouseholdMember[] }).members ?? []);
+    }).catch(() => {});
+  }, []);
+
+  const getMemberName = (userId: string | null | undefined) => {
+    if (!userId) return '—';
+    const m = members.find(m => m.user_id === userId);
+    return m ? (m.display_name || m.email) : '—';
+  };
 
   const total = incomes.reduce((sum, i) => sum + i.amount_pence, 0);
 
@@ -117,7 +133,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
             <thead>
               <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-2)] group">
                 <SortableHeader label="Name" sortKey="name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} />
-                <SortableHeader label="Contributor" sortKey="contributor_name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} />
+                <SortableHeader label="Contributor" sortKey="contributor_user_id" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} />
                 <SortableHeader label="Amount/mo" sortKey="amount_pence" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} />
                 <SortableHeader label="Day" sortKey="posting_day" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} />
                 <SortableHeader label="Type" sortKey="recurrence_type" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Income)} />
@@ -149,7 +165,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
                     </div>
                   </td>
                   <td className="px-5 py-3 text-[var(--color-text-muted)] text-sm text-center">
-                    {income.contributor_name ?? '—'}
+                    {getMemberName(income.contributor_user_id)}
                   </td>
                   <td className="px-5 py-3 font-mono font-semibold text-[var(--color-success)] text-center">
                     {formatCurrency(income.amount_pence)}

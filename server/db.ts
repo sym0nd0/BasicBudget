@@ -187,6 +187,49 @@ try {
   // Column already exists, ignore
 }
 
+// Add contributor_user_id to financial tables for per-user visibility
+try {
+  db.prepare('ALTER TABLE incomes ADD COLUMN contributor_user_id TEXT REFERENCES users(id)').run();
+} catch {
+  // Column already exists, ignore
+}
+try {
+  db.prepare('ALTER TABLE expenses ADD COLUMN contributor_user_id TEXT REFERENCES users(id)').run();
+} catch {
+  // Column already exists, ignore
+}
+try {
+  db.prepare('ALTER TABLE debts ADD COLUMN contributor_user_id TEXT REFERENCES users(id)').run();
+} catch {
+  // Column already exists, ignore
+}
+try {
+  db.prepare('ALTER TABLE savings_goals ADD COLUMN contributor_user_id TEXT REFERENCES users(id)').run();
+} catch {
+  // Column already exists, ignore
+}
+
+// Add is_household to incomes (expenses/debts/savings_goals already have it)
+try {
+  db.prepare('ALTER TABLE incomes ADD COLUMN is_household INTEGER DEFAULT 0').run();
+} catch {
+  // Column already exists, ignore
+}
+
+// Migrate existing contributor_name values to contributor_user_id where a matching user exists
+try {
+  db.prepare(`
+    UPDATE incomes SET contributor_user_id = (
+      SELECT u.id FROM users u
+      JOIN household_members hm ON hm.user_id = u.id AND hm.household_id = incomes.household_id
+      WHERE LOWER(u.display_name) = LOWER(incomes.contributor_name)
+      LIMIT 1
+    ) WHERE contributor_name IS NOT NULL AND contributor_name != '' AND contributor_user_id IS NULL
+  `).run();
+} catch {
+  // Migration already applied or no matching users, ignore
+}
+
 // Encrypt existing plaintext SMTP/OIDC secrets at rest
 try {
   migrateEncryptedSettings();
