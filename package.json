@@ -25,7 +25,7 @@
     "express-rate-limit": "^8.2.1",
     "express-session": "^1.18.1",
     "helmet": "^8.0.0",
-    "multer": "^2.1.0",
+    "multer": "^2.1.1",
     "nodemailer": "^7.0.13",
     "openid-client": "^6.3.4",
     "otpauth": "^9.3.6",
