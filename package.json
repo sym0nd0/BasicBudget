@@ -1,7 +1,11 @@
 {
   "name": "basicbudget",
   "private": true,
+<<<<<<< HEAD
   "version": "2.14.1",
+=======
+  "version": "2.15.0",
+>>>>>>> 0fe1469 (feat: household member management UI in Settings page)
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"tsx watch server/index.ts\"",

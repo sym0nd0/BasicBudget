@@ -8,7 +8,7 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { CsvImportForm } from '../components/forms/CsvImportForm';
 import { api } from '../api/client';
-import type { Account, TotpSetupResponse, SessionInfo } from '../types';
+import type { Account, TotpSetupResponse, SessionInfo, HouseholdMember } from '../types';
 
 interface SettingsPageProps {
   onMenuClick: () => void;
@@ -64,6 +64,11 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   // Update notifications (admin only)
   const [notifyLoading, setNotifyLoading] = useState(false);
   const [notifyMsg, setNotifyMsg] = useState('');
+
+  // Household members
+  const [members, setMembers] = useState<HouseholdMember[] | null>(null);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [memberMsg, setMemberMsg] = useState('');
 
   // Household invite
   const [inviteEmail, setInviteEmail] = useState('');
@@ -243,6 +248,40 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
       setNotifyMsg('Failed to save.');
     } finally {
       setNotifyLoading(false);
+    }
+  };
+
+  const handleLoadMembers = async () => {
+    setMembersLoading(true);
+    setMemberMsg('');
+    try {
+      const res = await api.getHouseholdDetails() as { members?: HouseholdMember[] };
+      setMembers(res.members ?? []);
+    } catch (err) {
+      setMemberMsg((err as Error).message);
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  const handleRoleChange = async (userId: string, role: 'owner' | 'member') => {
+    setMemberMsg('');
+    try {
+      await api.updateMemberRole(userId, role);
+      await handleLoadMembers();
+    } catch (err) {
+      setMemberMsg((err as Error).message);
+    }
+  };
+
+  const handleRemoveMember = async (userId: string, displayName: string) => {
+    if (!confirm(`Remove ${displayName} from the household?`)) return;
+    setMemberMsg('');
+    try {
+      await api.removeMember(userId);
+      await handleLoadMembers();
+    } catch (err) {
+      setMemberMsg((err as Error).message);
     }
   };
 
@@ -558,6 +597,48 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
       {/* Household management */}
       <Card>
         <CardHeader title="Household" subtitle={`Members of ${household?.name ?? 'your household'}`} />
+
+        {/* Member list */}
+        <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+          {members === null ? (
+            <Button size="sm" variant="secondary" onClick={handleLoadMembers} disabled={membersLoading}>
+              {membersLoading ? 'Loading…' : 'View members'}
+            </Button>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {members.map(m => (
+                <div key={m.user_id} className="flex items-center justify-between gap-3 py-2 border-b border-[var(--color-border)] last:border-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[var(--color-text)] truncate">{m.display_name ?? m.email}</p>
+                    <p className="text-xs text-[var(--color-text-muted)] truncate">{m.email}</p>
+                  </div>
+                  {householdRole === 'owner' ? (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <select
+                        value={m.role}
+                        onChange={e => handleRoleChange(m.user_id, e.target.value as 'owner' | 'member')}
+                        className="text-xs border border-[var(--color-border)] rounded px-2 py-1 bg-[var(--color-surface)] text-[var(--color-text)]"
+                      >
+                        <option value="owner">Owner</option>
+                        <option value="member">Member</option>
+                      </select>
+                      <Button size="sm" variant="ghost"
+                        className="hover:text-[var(--color-danger)]"
+                        onClick={() => handleRemoveMember(m.user_id, m.display_name ?? m.email ?? 'member')}>
+                        Remove
+                      </Button>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-[var(--color-text-muted)] shrink-0 capitalize">{m.role}</span>
+                  )}
+                </div>
+              ))}
+              {memberMsg && <p className="text-xs text-[var(--color-danger)] mt-1">{memberMsg}</p>}
+            </div>
+          )}
+        </div>
+
+        {/* Invite form (owners only) */}
         {householdRole === 'owner' && (
           <div className="mt-4 border-t border-[var(--color-border)] pt-4">
             <h3 className="text-sm font-semibold text-[var(--color-text)] mb-1">Invite Member</h3>
