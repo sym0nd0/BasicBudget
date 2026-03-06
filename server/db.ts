@@ -125,7 +125,6 @@ function dbLog(message: string): void {
           amount_pence    INTEGER NOT NULL,
           posting_day     INTEGER NOT NULL DEFAULT 1,
           account_id      TEXT REFERENCES accounts(id),
-          type            TEXT CHECK(type IN ('fixed','variable')) DEFAULT 'fixed',
           category        TEXT NOT NULL DEFAULT 'Other',
           is_household    INTEGER DEFAULT 0,
           split_ratio     REAL DEFAULT 1.0,
@@ -235,6 +234,14 @@ try {
   migrateEncryptedSettings();
 } catch {
   // Migration already applied or no secrets to migrate, ignore
+}
+
+// Remove the informational-only 'type' column from expenses (SQLite ≥3.35)
+try {
+  db.prepare('ALTER TABLE expenses DROP COLUMN type').run();
+  dbLog('Dropped expenses.type column.');
+} catch {
+  // Column already removed or not supported, ignore
 }
 
 export default db;

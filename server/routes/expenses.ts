@@ -50,15 +50,14 @@ router.post('/', (req: Request, res: Response) => {
   const id = randomUUID();
   const isHousehold = body.is_household ? 1 : 0;
   const splitRatio = body.split_ratio ?? (isHousehold ? 0.5 : 1.0);
-  const expenseType = body.type ?? 'fixed';
   const recurrenceType = body.recurrence_type ?? 'monthly';
   try {
     db.prepare(`
       INSERT INTO expenses
-        (id, household_id, user_id, contributor_user_id, name, amount_pence, posting_day, account_id, type, category,
+        (id, household_id, user_id, contributor_user_id, name, amount_pence, posting_day, account_id, category,
          is_household, split_ratio, is_recurring, recurrence_type,
          start_date, end_date, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       req.householdId!,
@@ -68,7 +67,6 @@ router.post('/', (req: Request, res: Response) => {
       body.amount_pence,
       body.posting_day ?? 1,
       body.account_id ?? null,
-      expenseType,
       body.category ?? 'Other',
       isHousehold,
       splitRatio,
@@ -124,7 +122,7 @@ router.put('/:id', (req: Request, res: Response) => {
     db.prepare(`
       UPDATE expenses SET
         name = ?, amount_pence = ?, posting_day = ?, contributor_user_id = ?, account_id = ?,
-        type = ?, category = ?, is_household = ?, split_ratio = ?,
+        category = ?, is_household = ?, split_ratio = ?,
         is_recurring = ?, recurrence_type = ?,
         start_date = ?, end_date = ?, notes = ?,
         updated_at = datetime('now')
@@ -135,7 +133,6 @@ router.put('/:id', (req: Request, res: Response) => {
       body.posting_day ?? existing.posting_day,
       body.contributor_user_id !== undefined ? body.contributor_user_id : existing.contributor_user_id,
       body.account_id !== undefined ? body.account_id : existing.account_id,
-      body.type ?? existing.type,
       body.category ?? existing.category,
       isHousehold,
       splitRatio,

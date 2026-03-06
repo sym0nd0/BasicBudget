@@ -23,16 +23,14 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
   const { filterCategory } = useFilter();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | undefined>();
-  const [filterType, setFilterType] = useState<string>('all');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const preFiltered = useMemo(() => {
     return expenses.filter(e => {
       if (filterCategory !== 'all' && e.category !== filterCategory) return false;
-      if (filterType !== 'all' && e.type !== filterType) return false;
       return true;
     });
-  }, [expenses, filterCategory, filterType]);
+  }, [expenses, filterCategory]);
 
   const { sorted: filtered, sortKey, sortDir, toggleSort } = useSortableTable<Expense>(preFiltered, 'name');
 
@@ -77,8 +75,6 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
     setModalOpen(true);
   };
 
-  const typeVariant = (type: string) => type === 'fixed' ? 'info' : 'warning';
-
   // Find account name from accounts list
   const accountName = (accountId: string | null | undefined) => {
     if (!accountId) return '—';
@@ -119,22 +115,6 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
         </Card>
       </div>
 
-      {/* Type filter */}
-      <Card className="mb-5">
-        <div className="flex flex-wrap gap-2">
-          {(['all', 'fixed', 'variable'] as const).map(t => (
-            <Button
-              key={t}
-              size="sm"
-              variant={filterType === t ? 'primary' : 'ghost'}
-              onClick={() => setFilterType(t)}
-            >
-              {t === 'all' ? 'All Types' : t.charAt(0).toUpperCase() + t.slice(1)}
-            </Button>
-          ))}
-        </div>
-      </Card>
-
       {/* Table */}
       <Card padding={false}>
         <div className="px-5 pt-5">
@@ -152,7 +132,6 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                 <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Your Share</th>
                 <SortableHeader label="Day" sortKey="posting_day" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} />
                 <SortableHeader label="Category" sortKey="category" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} />
-                <SortableHeader label="Type" sortKey="type" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} />
                 <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Account</th>
                 <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Notes</th>
                 <th className="text-center px-5 py-3 w-24"></th>
@@ -161,7 +140,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
             <tbody>
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-5 py-8 text-center text-[var(--color-text-muted)]">
+                  <td colSpan={8} className="px-5 py-8 text-center text-[var(--color-text-muted)]">
                     No expenses match your filters.
                   </td>
                 </tr>
@@ -193,11 +172,6 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                   </td>
                   <td className="px-5 py-3 text-center">
                     <Badge variant="default">{expense.category}</Badge>
-                  </td>
-                  <td className="px-5 py-3 text-center">
-                    <Badge variant={typeVariant(expense.type)}>
-                      {expense.type}
-                    </Badge>
                   </td>
                   <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs text-center">
                     {accountName(expense.account_id)}

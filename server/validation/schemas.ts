@@ -13,7 +13,6 @@ export const expenseSchema = z.object({
   posting_day: z.number().int().min(1).max(31).optional(),
   account_id: z.string().max(36).nullable().optional(),
   contributor_user_id: z.string().max(36).nullable().optional(),
-  type: z.enum(['fixed', 'variable']).optional(),
   category: z.string().max(100).optional(),
   is_household: z.boolean().optional(),
   split_ratio: z.number().min(0).max(1).optional(),
