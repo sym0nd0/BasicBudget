@@ -3,38 +3,43 @@ import supertest from 'supertest';
 import { getApp, makeTestUser } from '../helpers.js';
 
 let app: Awaited<ReturnType<typeof getApp>>;
-
-beforeAll(async () => {
-  app = await getApp();
-});
+let agentA: ReturnType<typeof supertest.agent>;
+let agentB: ReturnType<typeof supertest.agent>;
 
 async function csrfToken(agent: ReturnType<typeof supertest.agent>): Promise<string> {
   const r = await agent.get('/api/auth/csrf-token');
   return (r.body as { token?: string }).token ?? '';
 }
 
-async function registerAndLogin(suffix: string) {
-  const agent = supertest.agent(app);
-  const user = makeTestUser(suffix);
-  let csrf = await csrfToken(agent);
-  await agent.post('/api/auth/register').set('X-CSRF-Token', csrf).send({ email: user.email, password: user.password });
-  csrf = await csrfToken(agent);
-  await agent.post('/api/auth/login').set('X-CSRF-Token', csrf).send({ email: user.email, password: user.password });
-  return { agent, user };
-}
+beforeAll(async () => {
+  app = await getApp();
 
-async function getHouseholdDetails(agent: ReturnType<typeof supertest.agent>) {
-  const res = await agent.get('/api/household');
-  return res.body as { members?: Array<{ user_id: string }> };
-}
+  // Create two users — each gets their own household (cross-household isolation tests)
+  agentA = supertest.agent(app);
+  agentB = supertest.agent(app);
+
+  const userA = makeTestUser('vis_a');
+  const userB = makeTestUser('vis_b');
+
+  let csrf = await csrfToken(agentA);
+  await agentA.post('/api/auth/register').set('X-CSRF-Token', csrf).send({ email: userA.email, password: userA.password });
+  csrf = await csrfToken(agentA);
+  await agentA.post('/api/auth/login').set('X-CSRF-Token', csrf).send({ email: userA.email, password: userA.password });
+
+  csrf = await csrfToken(agentB);
+  await agentB.post('/api/auth/register').set('X-CSRF-Token', csrf).send({ email: userB.email, password: userB.password });
+  csrf = await csrfToken(agentB);
+  await agentB.post('/api/auth/login').set('X-CSRF-Token', csrf).send({ email: userB.email, password: userB.password });
+});
+
+// ─── Cross-household isolation ───────────────────────────────────────────────
+// Each registered user gets their own household. Entries in one household are
+// never visible to a user in a different household, regardless of visibility
+// settings. These tests verify that isolation holds for all entity types.
 
 describe('Entry visibility and permissions', () => {
-  describe('expenses: user cannot see private entries from others', () => {
-    it('User A private expense → User B cannot see via GET /api/expenses', async () => {
-      const { agent: agentA, user: userA } = await registerAndLogin('vis_exp_a');
-      const { agent: agentB, user: userB } = await registerAndLogin('vis_exp_b');
-
-      // A creates a personal expense
+  describe('expenses: cross-household isolation', () => {
+    it('User A expense is NOT visible to User B in a different household', async () => {
       let csrf = await csrfToken(agentA);
       const createRes = await agentA
         .post('/api/expenses')
@@ -43,7 +48,6 @@ describe('Entry visibility and permissions', () => {
           name: 'A Private Expense',
           amount_pence: 1000,
           posting_day: 1,
-          type: 'fixed',
           category: 'Other',
           is_household: false,
           is_recurring: true,
@@ -51,74 +55,21 @@ describe('Entry visibility and permissions', () => {
         });
       const expenseId = (createRes.body as { id: string }).id;
 
-      // B lists expenses — should NOT see A's
       const getRes = await agentB.get('/api/expenses?month=2025-01');
-      const expenses = (getRes.body as unknown[]) || [];
+      const expenses = Array.isArray(getRes.body) ? (getRes.body as unknown[]) : [];
       const found = expenses.some((e: Record<string, unknown>) => e.id === expenseId);
       expect(found).toBe(false);
     });
 
-    it('User B is contributor → can see, edit, delete the expense', async () => {
-      const { agent: agentA, user: userA } = await registerAndLogin('vis_exp_contrib_a');
-      const { agent: agentB, user: userB } = await registerAndLogin('vis_exp_contrib_b');
-
-      // Get B's user_id from household
-      const householdB = await getHouseholdDetails(agentB);
-      const userBId = householdB.members?.[0]?.user_id || userB.id;
-
-      // A creates expense with B as contributor
+    it('User A household expense is NOT visible to User B in a different household', async () => {
       let csrf = await csrfToken(agentA);
       const createRes = await agentA
         .post('/api/expenses')
         .set('X-CSRF-Token', csrf)
         .send({
-          name: 'Contributed Expense',
-          amount_pence: 2000,
-          posting_day: 1,
-          contributor_user_id: userBId,
-          type: 'fixed',
-          category: 'Other',
-          is_household: false,
-          is_recurring: true,
-          recurrence_type: 'monthly',
-        });
-      const expenseId = (createRes.body as { id: string }).id;
-
-      // B can see it (via GET)
-      let getRes = await agentB.get('/api/expenses?month=2025-01');
-      let found = ((getRes.body as unknown[]) || []).some((e: Record<string, unknown>) => e.id === expenseId);
-      expect(found).toBe(true);
-
-      // B can edit it
-      csrf = await csrfToken(agentB);
-      const editRes = await agentB
-        .put(`/api/expenses/${expenseId}`)
-        .set('X-CSRF-Token', csrf)
-        .send({ name: 'Edited by B' });
-      expect(editRes.status).toBe(200);
-
-      // B can delete it
-      csrf = await csrfToken(agentB);
-      const deleteRes = await agentB
-        .delete(`/api/expenses/${expenseId}`)
-        .set('X-CSRF-Token', csrf);
-      expect(deleteRes.status).toBe(204);
-    });
-
-    it('Household expense → visible to all members, but only creator/contributor can edit', async () => {
-      const { agent: agentA, user: userA } = await registerAndLogin('vis_exp_hh_a');
-      const { agent: agentB, user: userB } = await registerAndLogin('vis_exp_hh_b');
-
-      // A creates a household expense
-      let csrf = await csrfToken(agentA);
-      const createRes = await agentA
-        .post('/api/expenses')
-        .set('X-CSRF-Token', csrf)
-        .send({
-          name: 'Household Expense',
+          name: 'Household Expense Isolation',
           amount_pence: 3000,
           posting_day: 1,
-          type: 'fixed',
           category: 'Other',
           is_household: true,
           split_ratio: 0.5,
@@ -127,40 +78,37 @@ describe('Entry visibility and permissions', () => {
         });
       const expenseId = (createRes.body as { id: string }).id;
 
-      // B can see it
-      let getRes = await agentB.get('/api/expenses?month=2025-01');
-      let found = ((getRes.body as unknown[]) || []).some((e: Record<string, unknown>) => e.id === expenseId);
-      expect(found).toBe(true);
+      const getRes = await agentB.get('/api/expenses?month=2025-01');
+      const expenses = Array.isArray(getRes.body) ? (getRes.body as unknown[]) : [];
+      const found = expenses.some((e: Record<string, unknown>) => e.id === expenseId);
+      expect(found).toBe(false);
+    });
 
-      // B tries to edit it → 403 (not creator/contributor)
+    it('User B cannot edit User A expense by ID (different household → 404)', async () => {
+      let csrf = await csrfToken(agentA);
+      const createRes = await agentA
+        .post('/api/expenses')
+        .set('X-CSRF-Token', csrf)
+        .send({ name: 'A Expense For Edit Test', amount_pence: 1000, posting_day: 1, category: 'Other', is_household: false, is_recurring: true, recurrence_type: 'monthly' });
+      const expenseId = (createRes.body as { id: string }).id;
+
       csrf = await csrfToken(agentB);
       const editRes = await agentB
         .put(`/api/expenses/${expenseId}`)
         .set('X-CSRF-Token', csrf)
         .send({ name: 'Hacked' });
-      expect(editRes.status).toBe(403);
-
-      // A (creator) can still edit it
-      csrf = await csrfToken(agentA);
-      const editRes2 = await agentA
-        .put(`/api/expenses/${expenseId}`)
-        .set('X-CSRF-Token', csrf)
-        .send({ name: 'Edited by A' });
-      expect(editRes2.status).toBe(200);
+      expect(editRes.status).toBe(404);
     });
   });
 
-  describe('incomes: visibility and permissions', () => {
-    it('User A private income → User B cannot see', async () => {
-      const { agent: agentA } = await registerAndLogin('vis_inc_a');
-      const { agent: agentB } = await registerAndLogin('vis_inc_b');
-
+  describe('incomes: cross-household isolation', () => {
+    it('User A income is NOT visible to User B in a different household', async () => {
       let csrf = await csrfToken(agentA);
       const createRes = await agentA
         .post('/api/incomes')
         .set('X-CSRF-Token', csrf)
         .send({
-          name: 'A Salary',
+          name: 'A Salary Isolation',
           amount_pence: 500000,
           posting_day: 28,
           gross_or_net: 'net',
@@ -170,54 +118,36 @@ describe('Entry visibility and permissions', () => {
       const incomeId = (createRes.body as { id: string }).id;
 
       const getRes = await agentB.get('/api/incomes?month=2025-01');
-      const incomes = (getRes.body as unknown[]) || [];
+      const incomes = Array.isArray(getRes.body) ? (getRes.body as unknown[]) : [];
       const found = incomes.some((i: Record<string, unknown>) => i.id === incomeId);
       expect(found).toBe(false);
     });
 
-    it('Household income → visible to all, editable by creator only', async () => {
-      const { agent: agentA } = await registerAndLogin('vis_inc_hh_a');
-      const { agent: agentB } = await registerAndLogin('vis_inc_hh_b');
-
+    it('User B cannot edit User A income (different household → 404)', async () => {
       let csrf = await csrfToken(agentA);
       const createRes = await agentA
         .post('/api/incomes')
         .set('X-CSRF-Token', csrf)
-        .send({
-          name: 'Household Income',
-          amount_pence: 400000,
-          posting_day: 28,
-          is_household: true,
-          gross_or_net: 'net',
-          is_recurring: true,
-          recurrence_type: 'monthly',
-        });
+        .send({ name: 'A Income For Edit Test', amount_pence: 100000, posting_day: 28, gross_or_net: 'net', is_recurring: true, recurrence_type: 'monthly' });
       const incomeId = (createRes.body as { id: string }).id;
-
-      const getRes = await agentB.get('/api/incomes?month=2025-01');
-      const found = ((getRes.body as unknown[]) || []).some((i: Record<string, unknown>) => i.id === incomeId);
-      expect(found).toBe(true);
 
       csrf = await csrfToken(agentB);
       const editRes = await agentB
         .put(`/api/incomes/${incomeId}`)
         .set('X-CSRF-Token', csrf)
         .send({ name: 'Hacked' });
-      expect(editRes.status).toBe(403);
+      expect(editRes.status).toBe(404);
     });
   });
 
-  describe('debts: visibility and permissions', () => {
-    it('User A private debt → User B cannot see', async () => {
-      const { agent: agentA } = await registerAndLogin('vis_debt_a');
-      const { agent: agentB } = await registerAndLogin('vis_debt_b');
-
+  describe('debts: cross-household isolation', () => {
+    it('User A debt is NOT visible to User B in a different household', async () => {
       let csrf = await csrfToken(agentA);
       const createRes = await agentA
         .post('/api/debts')
         .set('X-CSRF-Token', csrf)
         .send({
-          name: 'A Credit Card',
+          name: 'A Credit Card Isolation',
           balance_pence: 50000,
           interest_rate: 19.9,
           minimum_payment_pence: 1000,
@@ -228,23 +158,20 @@ describe('Entry visibility and permissions', () => {
       const debtId = (createRes.body as { id: string }).id;
 
       const getRes = await agentB.get('/api/debts');
-      const debts = (getRes.body as unknown[]) || [];
+      const debts = Array.isArray(getRes.body) ? (getRes.body as unknown[]) : [];
       const found = debts.some((d: Record<string, unknown>) => d.id === debtId);
       expect(found).toBe(false);
     });
   });
 
-  describe('savings goals: visibility and permissions', () => {
-    it('User A private savings goal → User B cannot see', async () => {
-      const { agent: agentA } = await registerAndLogin('vis_sg_a');
-      const { agent: agentB } = await registerAndLogin('vis_sg_b');
-
+  describe('savings goals: cross-household isolation', () => {
+    it('User A savings goal is NOT visible to User B in a different household', async () => {
       let csrf = await csrfToken(agentA);
       const createRes = await agentA
         .post('/api/savings-goals')
         .set('X-CSRF-Token', csrf)
         .send({
-          name: 'A Vacation Fund',
+          name: 'A Vacation Fund Isolation',
           target_amount_pence: 300000,
           current_amount_pence: 50000,
           monthly_contribution_pence: 10000,
@@ -252,84 +179,87 @@ describe('Entry visibility and permissions', () => {
       const goalId = (createRes.body as { id: string }).id;
 
       const getRes = await agentB.get('/api/savings-goals');
-      const goals = (getRes.body as unknown[]) || [];
+      const goals = Array.isArray(getRes.body) ? (getRes.body as unknown[]) : [];
       const found = goals.some((g: Record<string, unknown>) => g.id === goalId);
       expect(found).toBe(false);
     });
   });
 
-  describe('summary and totals include all entries', () => {
-    it('summary totals include entries user cannot see directly', async () => {
-      const { agent: agentA, user: userA } = await registerAndLogin('vis_sum_a');
-      const { agent: agentB, user: userB } = await registerAndLogin('vis_sum_b');
+  // ─── Dashboard summary visibility ─────────────────────────────────────────
+  // Each user's dashboard summary only reflects their own household data.
 
-      // A creates personal + household expenses
+  describe('dashboard summary: per-user visibility', () => {
+    it('User A summary includes their own expense', async () => {
       let csrf = await csrfToken(agentA);
       await agentA
         .post('/api/expenses')
         .set('X-CSRF-Token', csrf)
         .send({
-          name: 'A Personal',
-          amount_pence: 1000,
+          name: 'My Summary Expense',
+          amount_pence: 10000,
           posting_day: 1,
-          type: 'fixed',
           category: 'Other',
           is_household: false,
           is_recurring: true,
           recurrence_type: 'monthly',
         });
 
-      csrf = await csrfToken(agentA);
+      const summaryRes = await agentA.get('/api/summary?month=2025-01');
+      expect(summaryRes.status).toBe(200);
+      const summary = summaryRes.body as { total_expenses_pence?: number };
+      expect(summary.total_expenses_pence).toBeGreaterThan(0);
+    });
+
+    it('User B summary expenses are 0 (B has no expenses)', async () => {
+      // B has not created any expenses — their summary should show 0 for expenses
+      const summaryRes = await agentB.get('/api/summary?month=2025-01');
+      expect(summaryRes.status).toBe(200);
+      const summary = summaryRes.body as { total_expenses_pence?: number };
+      // A's expenses are in a different household so B should see 0
+      expect(summary.total_expenses_pence).toBe(0);
+    });
+
+    it('User A summary includes their income', async () => {
+      let csrf = await csrfToken(agentA);
       await agentA
-        .post('/api/expenses')
+        .post('/api/incomes')
         .set('X-CSRF-Token', csrf)
         .send({
-          name: 'Household',
-          amount_pence: 2000,
-          posting_day: 1,
-          type: 'fixed',
-          category: 'Other',
-          is_household: true,
-          split_ratio: 0.5,
+          name: 'My Summary Salary',
+          amount_pence: 300000,
+          posting_day: 28,
+          gross_or_net: 'net',
           is_recurring: true,
           recurrence_type: 'monthly',
         });
 
-      // B gets summary — should include household totals
-      const summaryRes = await agentB.get('/api/household/summary?month=2025-01');
-      const summary = summaryRes.body as { total_expenses_pence?: number };
-      // Household expense: 2000 * 0.5 = 1000 (B's share)
-      // Summary totals are household-wide, but B's share is calculated in category_breakdown
-      expect(summary.total_expenses_pence).toBeGreaterThan(0);
+      const summaryRes = await agentA.get('/api/summary?month=2025-01');
+      expect(summaryRes.status).toBe(200);
+      const summary = summaryRes.body as { total_income_pence?: number };
+      expect(summary.total_income_pence).toBeGreaterThan(0);
     });
   });
 
   describe('export respects visibility', () => {
     it('User export does not include other users\' private entries', async () => {
-      const { agent: agentA } = await registerAndLogin('vis_exp_a');
-      const { agent: agentB } = await registerAndLogin('vis_exp_b');
-
-      // A creates personal expense
       let csrf = await csrfToken(agentA);
       await agentA
         .post('/api/expenses')
         .set('X-CSRF-Token', csrf)
         .send({
-          name: 'A Only',
+          name: 'A Only Export Unique',
           amount_pence: 5000,
           posting_day: 1,
-          type: 'fixed',
           category: 'Other',
           is_household: false,
           is_recurring: true,
           recurrence_type: 'monthly',
         });
 
-      // B exports
       const exportRes = await agentB.get('/api/export/json');
       const exported = exportRes.body as { expenses?: unknown[] };
       const expenses = (exported.expenses || []) as Record<string, unknown>[];
-      const found = expenses.some(e => (e.name as string)?.includes('A Only'));
+      const found = expenses.some(e => (e.name as string)?.includes('A Only Export Unique'));
       expect(found).toBe(false);
     });
   });

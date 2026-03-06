@@ -4,16 +4,20 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "2.14.1",
 =======
-  "version": "2.15.2",
+  "version": "2.15.3",
 >>>>>>> 0fe1469 (feat: household member management UI in Settings page)
 =======
-  "version": "2.15.2",
+  "version": "2.15.3",
 >>>>>>> ee780d7 (fix: remove expense type field (fixed/variable))
 =======
-  "version": "2.15.2",
+  "version": "2.15.3",
 >>>>>>> 8481d21 (fix: widen deal period Rate % input from w-20 to w-24)
+=======
+  "version": "2.15.3",
+>>>>>>> 87b07a2 (feat: security and integration tests for visibility, members, and IDOR)
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"tsx watch server/index.ts\"",
