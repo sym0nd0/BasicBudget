@@ -33,7 +33,6 @@ export function findDuplicateExpense(items: Expense[], data: Omit<Expense, 'id' 
     eq(e.amount_pence, data.amount_pence) &&
     eq(e.posting_day, data.posting_day) &&
     eq(e.account_id, data.account_id) &&
-    eq(e.type, data.type) &&
     eq(e.category, data.category) &&
     eq(e.is_household, data.is_household) &&
     eq(e.split_ratio, data.split_ratio) &&

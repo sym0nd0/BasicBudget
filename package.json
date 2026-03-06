@@ -2,10 +2,14 @@
   "name": "basicbudget",
   "private": true,
 <<<<<<< HEAD
+<<<<<<< HEAD
   "version": "2.14.1",
 =======
-  "version": "2.15.0",
+  "version": "2.15.1",
 >>>>>>> 0fe1469 (feat: household member management UI in Settings page)
+=======
+  "version": "2.15.1",
+>>>>>>> ee780d7 (fix: remove expense type field (fixed/variable))
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"tsx watch server/index.ts\"",

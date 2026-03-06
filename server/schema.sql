@@ -140,7 +140,6 @@ CREATE TABLE IF NOT EXISTS expenses (
     amount_pence    INTEGER NOT NULL,
     posting_day     INTEGER NOT NULL DEFAULT 1,
     account_id      TEXT REFERENCES accounts(id),
-    type            TEXT CHECK(type IN ('fixed','variable')) DEFAULT 'fixed',
     category        TEXT NOT NULL DEFAULT 'Other',
     is_household    INTEGER DEFAULT 0,
     split_ratio     REAL DEFAULT 1.0,

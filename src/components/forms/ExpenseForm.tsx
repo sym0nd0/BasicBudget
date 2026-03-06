@@ -24,7 +24,6 @@ export function ExpenseForm({ initial, accounts, onSave, onCancel }: ExpenseForm
   const [amount, setAmount] = useState(initial ? penceToPoundsStr(initial.amount_pence) : '');
   const [postingDay, setPostingDay] = useState(String(initial?.posting_day ?? '1'));
   const [accountId, setAccountId] = useState(initial?.account_id ?? '');
-  const [type, setType] = useState<'fixed' | 'variable'>(initial?.type ?? 'fixed');
   const [category, setCategory] = useState<string>(initial?.category ?? 'Other');
   const [isHousehold, setIsHousehold] = useState(initial?.is_household ?? false);
   const [isRecurring, setIsRecurring] = useState(initial?.is_recurring ?? true);
@@ -74,7 +73,6 @@ export function ExpenseForm({ initial, accounts, onSave, onCancel }: ExpenseForm
       amount_pence: poundsToPence(amount),
       posting_day: parseInt(postingDay),
       account_id: accountId || null,
-      type,
       category,
       is_household: isHousehold,
       split_ratio,
@@ -139,26 +137,15 @@ export function ExpenseForm({ initial, accounts, onSave, onCancel }: ExpenseForm
           />
         )}
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Select
-          label="Account"
-          value={accountId}
-          onChange={e => setAccountId(e.target.value)}
-          options={[
-            { value: '', label: 'None' },
-            ...accounts.map(a => ({ value: a.id, label: a.name })),
-          ]}
-        />
-        <Select
-          label="Type"
-          value={type}
-          onChange={e => setType(e.target.value as 'fixed' | 'variable')}
-          options={[
-            { value: 'fixed', label: 'Fixed' },
-            { value: 'variable', label: 'Variable' },
-          ]}
-        />
-      </div>
+      <Select
+        label="Account"
+        value={accountId}
+        onChange={e => setAccountId(e.target.value)}
+        options={[
+          { value: '', label: 'None' },
+          ...accounts.map(a => ({ value: a.id, label: a.name })),
+        ]}
+      />
       <Select
         label="Category"
         value={category}
