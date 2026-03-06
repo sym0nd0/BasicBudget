@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { filterVisible } from '../utils/visibility.js';
+import { logger } from '../services/logger.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -28,6 +29,7 @@ router.get('/json', (req: Request, res: Response) => {
     month_locks,
   };
 
+  logger.info('Data export triggered', { userId: req.userId, householdId: req.householdId });
   res.setHeader('Content-Type', 'application/json');
   res.setHeader(
     'Content-Disposition',

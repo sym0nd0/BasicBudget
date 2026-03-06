@@ -75,6 +75,7 @@ router.post('/', (req: Request, res: Response) => {
     return;
   }
   const row = db.prepare('SELECT * FROM incomes WHERE id = ?').get(id) as Record<string, unknown>;
+  logger.info('Income created', { id, userId: req.userId, name: body.name.trim() });
   res.status(201).json(mapIncome(row));
 });
 
@@ -135,6 +136,7 @@ router.put('/:id', (req: Request, res: Response) => {
     return;
   }
   const row = db.prepare('SELECT * FROM incomes WHERE id = ?').get(id) as Record<string, unknown>;
+  logger.info('Income updated', { id, userId: req.userId });
   res.json(mapIncome(row));
 });
 
@@ -165,6 +167,7 @@ router.delete('/:id', (req: Request, res: Response) => {
     res.status(500).json({ message: 'Failed to delete income' });
     return;
   }
+  logger.info('Income deleted', { id, userId: req.userId });
   res.status(204).send();
 });
 

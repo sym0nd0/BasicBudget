@@ -4,6 +4,7 @@ import db from '../db.js';
 import { randomUUID } from 'node:crypto';
 import { requireAuth } from '../middleware/auth.js';
 import { filterVisible, canModify } from '../utils/visibility.js';
+import { logger } from '../services/logger.js';
 import type { SavingsGoal } from '../../shared/types.js';
 import { savingsGoalSchema } from '../validation/schemas.js';
 
@@ -62,6 +63,7 @@ router.post('/', (req: Request, res: Response) => {
     return;
   }
   const row = db.prepare('SELECT * FROM savings_goals WHERE id = ?').get(id) as Record<string, unknown>;
+  logger.info('Savings goal created', { id, userId: req.userId, name: body.name.trim() });
   res.status(201).json(mapGoal(row));
 });
 
@@ -101,6 +103,7 @@ router.put('/:id', (req: Request, res: Response) => {
     return;
   }
   const row = db.prepare('SELECT * FROM savings_goals WHERE id = ?').get(id) as Record<string, unknown>;
+  logger.info('Savings goal updated', { id, userId: req.userId });
   res.json(mapGoal(row));
 });
 
@@ -122,6 +125,7 @@ router.delete('/:id', (req: Request, res: Response) => {
     res.status(400).json({ message: (err as Error).message });
     return;
   }
+  logger.info('Savings goal deleted', { id, userId: req.userId });
   res.status(204).send();
 });
 

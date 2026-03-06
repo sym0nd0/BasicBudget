@@ -6,6 +6,7 @@ import db from '../db.js';
 import { parseCsv, parseUkDate, poundsStrToPence } from '../utils/csv-parser.js';
 import { EXPENSE_CATEGORIES } from '../../shared/types.js';
 import { requireAuth } from '../middleware/auth.js';
+import { logger } from '../services/logger.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -121,6 +122,7 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
     }
   }
 
+  logger.info('Data import completed', { userId: req.userId, imported: imported.length, skipped, errors: errors.length });
   res.json({
     imported: imported.length, skipped, errors,
     message: `Imported ${imported.length} rows${skipped ? `, skipped ${skipped} duplicate(s)` : ''}${errors.length ? ` with ${errors.length} error(s)` : ''}`,

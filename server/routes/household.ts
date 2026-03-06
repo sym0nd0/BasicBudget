@@ -9,6 +9,7 @@ import { createToken, validateAndConsumeToken } from '../auth/tokens.js';
 import { sendHouseholdInvite } from '../services/email.js';
 import { filterActiveInMonth, currentYearMonth, mapDebtToRecurringItem, type RecurringItem } from '../utils/recurring.js';
 import type { HouseholdOverview, CategoryBreakdown, SavingsGoal } from '../../shared/types.js';
+import { logger } from '../services/logger.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -114,6 +115,7 @@ router.put('/members/:userId/role', requireOwner, (req: Request, res: Response) 
   }
 
   db.prepare('UPDATE household_members SET role = ? WHERE household_id = ? AND user_id = ?').run(result.data.role, req.householdId!, targetUserId);
+  logger.info('Household member role changed', { householdId: req.householdId, targetUserId, newRole: result.data.role, changedBy: req.userId });
   res.json({ message: 'Role updated.' });
 });
 
@@ -139,6 +141,7 @@ router.delete('/members/:userId', (req: Request, res: Response) => {
   }
 
   db.prepare('DELETE FROM household_members WHERE household_id = ? AND user_id = ?').run(req.householdId!, targetUserId);
+  logger.info('Household member removed', { householdId: req.householdId, targetUserId, removedBy: req.userId, isSelf });
   res.status(204).send();
 });
 
