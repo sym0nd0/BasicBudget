@@ -167,11 +167,23 @@ Examples:
 - This is non-negotiable and applies without exception
 
 ### 3. PR Merge Authorisation — WAIT FOR USER APPROVAL
-**NEVER merge a PR without explicit user authorisation:**
-- Create the PR and wait for user feedback/approval
-- Do NOT automatically merge with `gh pr merge` — only merge when user explicitly says "merge it" or similar
-- Merging without user approval bypasses review and control
-- This is non-negotiable and applies without exception
+**🚫 ABSOLUTE RULE: NEVER MERGE A PR WITHOUT EXPLICIT USER AUTHORISATION 🚫**
+
+This is **non-negotiable and applies without exception** — no conditions, no shortcuts, no assumptions.
+
+**Required workflow:**
+1. Create the PR and share the link
+2. **STOP.** Wait for explicit user approval before proceeding
+3. Do NOT automatically run `gh pr merge` — do not merge, tag, or release until user explicitly authorises it
+4. Only merge when user clearly states "merge it", "go ahead", "release this", or similar explicit approval
+5. Do not assume approval from previous tasks or conversations
+
+**Why this is critical:**
+- Merging without approval bypasses your review and control
+- Automated merges can introduce unintended changes to production
+- User authorisation is the gatekeeper — respect it absolutely
+
+**Violation of this rule:** Merging without explicit user authorisation is a critical breach of control and trust and must never occur.
 
 ---
 
