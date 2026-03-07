@@ -269,7 +269,7 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
                     {idx + 1}
                   </div>
                 </div>
-                <div className="w-24">
+                <div className="w-28">
                   <label className="text-xs text-[var(--color-text-muted)]">Rate %</label>
                   <input
                     type="number"
