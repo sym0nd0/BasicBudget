@@ -317,6 +317,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
         title={editing ? 'Edit Debt' : 'Add Debt'}
+        maxWidth="max-w-xl"
       >
         {errorMsg && (
           <p className="mb-3 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">
