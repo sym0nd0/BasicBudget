@@ -269,15 +269,15 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
                     {idx + 1}
                   </div>
                 </div>
-                <div className="w-36">
-                  <Input
-                    label="Rate"
+                <div className="w-24">
+                  <label className="text-xs text-[var(--color-text-muted)]">Rate %</label>
+                  <input
                     type="number"
                     step="0.01"
                     min="0"
                     value={period.interest_rate}
                     onChange={e => updatePeriod(period.key, 'interest_rate', e.target.value)}
-                    suffix="%"
+                    className="w-full text-sm border border-[var(--color-border)] rounded px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text)]"
                   />
                 </div>
                 <div className="flex-1">
