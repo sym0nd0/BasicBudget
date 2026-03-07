@@ -11,6 +11,7 @@ import { FilterBar } from '../components/layout/FilterBar';
 import { Badge } from '../components/ui/Badge';
 import { SortableHeader } from '../components/ui/SortableHeader';
 import { useSortableTable } from '../hooks/useSortableTable';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { formatCurrency, formatOrdinal } from '../utils/formatters';
 import { findDuplicateIncome } from '../utils/duplicates';
 import type { Income } from '../types';
@@ -25,6 +26,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
   const { incomes, addIncome, updateIncome, deleteIncome } = useBudget();
   useFilter();
   const { sorted: sortedIncomes, sortKey, sortDir, toggleSort } = useSortableTable<Income>(incomes, 'name');
+  const { confirm, ConfirmDialogElement } = useConfirmDialog();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Income | undefined>();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
   const handleSave = async (data: Omit<Income, 'id' | 'created_at' | 'updated_at'>) => {
     if (!editing) {
       const dup = findDuplicateIncome(incomes, data);
-      if (dup && !confirm('An income with identical details already exists. Add anyway?')) return;
+      if (dup && !await confirm('Duplicate Income', 'An income with identical details already exists. Add anyway?')) return;
     }
     try {
       if (editing) {
@@ -69,7 +71,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this income entry?')) return;
+    if (!await confirm('Delete Income', 'Delete this income entry?', 'danger')) return;
     try {
       await deleteIncome(id);
     } catch (err) {
@@ -210,6 +212,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
         </div>
       </Card>
 
+      {ConfirmDialogElement}
       <Modal
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}

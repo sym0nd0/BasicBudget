@@ -9,6 +9,7 @@ import { DebtForm } from '../components/forms/DebtForm';
 import { Badge } from '../components/ui/Badge';
 import { SortableHeader } from '../components/ui/SortableHeader';
 import { useSortableTable } from '../hooks/useSortableTable';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { formatCurrency, formatPercent, formatYearMonth } from '../utils/formatters';
 import { findDuplicateDebt } from '../utils/duplicates';
 import type { Debt, RepaymentRow, DebtPayoffSummary } from '../types';
@@ -65,6 +66,7 @@ function RepaymentPanel({ debtId }: { debtId: string }) {
 export function DebtPage({ onMenuClick }: DebtPageProps) {
   const { debts, addDebt, updateDebt, deleteDebt } = useDebt();
   const { sorted: sortedDebts, sortKey, sortDir, toggleSort } = useSortableTable<Debt>(debts, 'name');
+  const { confirm, ConfirmDialogElement } = useConfirmDialog();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Debt | undefined>();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -77,7 +79,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
   const handleSave = async (data: Omit<Debt, 'id' | 'created_at' | 'updated_at'>) => {
     if (!editing) {
       const dup = findDuplicateDebt(debts, data);
-      if (dup && !confirm('A debt with identical details already exists. Add anyway?')) return;
+      if (dup && !await confirm('Duplicate Debt', 'A debt with identical details already exists. Add anyway?')) return;
     }
     try {
       if (editing) {
@@ -99,7 +101,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this debt?')) return;
+    if (!await confirm('Delete Debt', 'Delete this debt?', 'danger')) return;
     try {
       await deleteDebt(id);
     } catch (err) {
@@ -310,6 +312,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
         </div>
       </Card>
 
+      {ConfirmDialogElement}
       <Modal
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}

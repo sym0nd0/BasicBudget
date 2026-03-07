@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -25,6 +26,8 @@ const inputClass =
   'w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent';
 
 export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
+  const { confirm, ConfirmDialogElement } = useConfirmDialog();
+
   // ── SMTP ──
   const [smtp, setSmtp] = useState<SmtpConfig>({ host: '', port: 587, secure: false, user: '', pass: '', from: '' });
   const [smtpLoading, setSmtpLoading] = useState(true);
@@ -143,7 +146,7 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
   };
 
   const resetCats = async () => {
-    if (!confirm('Reset categories to defaults?')) return;
+    if (!await confirm('Reset Categories', 'Reset categories to defaults?', 'danger')) return;
     try {
       const result = await api.resetAdminCategories();
       setCats(result.categories);
@@ -186,6 +189,7 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
 
   return (
     <PageShell title="Admin — System Settings" onMenuClick={onMenuClick}>
+      {ConfirmDialogElement}
       <div className="space-y-5">
 
         {/* Categories Card */}
