@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { useBudget } from '../context/BudgetContext';
 import { useAuth } from '../context/AuthContext';
 import { PageShell } from '../components/layout/PageShell';
@@ -17,6 +18,7 @@ interface SettingsPageProps {
 export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   const { accounts, addAccount, updateAccount, deleteAccount } = useBudget();
   const { user, household, householdRole, refreshAuth } = useAuth();
+  const { confirm, ConfirmDialogElement } = useConfirmDialog();
 
   // Account management
   const [accountModalOpen, setAccountModalOpen] = useState(false);
@@ -102,7 +104,7 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   };
 
   const handleAccountDelete = async (id: string) => {
-    if (!confirm('Delete this account? Expenses using it will be unlinked.')) return;
+    if (!await confirm('Delete Account', 'Delete this account? Expenses using it will be unlinked.', 'danger')) return;
     try { await deleteAccount(id); } catch (err) { alert((err as Error).message); }
   };
 
@@ -275,7 +277,7 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   };
 
   const handleRemoveMember = async (userId: string, displayName: string) => {
-    if (!confirm(`Remove ${displayName} from the household?`)) return;
+    if (!await confirm('Remove Member', `Remove ${displayName} from the household?`, 'danger')) return;
     setMemberMsg('');
     try {
       await api.removeMember(userId);
@@ -660,6 +662,7 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
         )}
       </Card>
 
+      {ConfirmDialogElement}
       {/* Account modal */}
       <Modal
         isOpen={accountModalOpen}

@@ -10,6 +10,7 @@ import { Badge } from '../components/ui/Badge';
 import { FilterBar } from '../components/layout/FilterBar';
 import { SortableHeader } from '../components/ui/SortableHeader';
 import { useSortableTable } from '../hooks/useSortableTable';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { formatCurrency, formatOrdinal } from '../utils/formatters';
 import { findDuplicateExpense } from '../utils/duplicates';
 import type { Expense } from '../types';
@@ -33,6 +34,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
   }, [expenses, filterCategory]);
 
   const { sorted: filtered, sortKey, sortDir, toggleSort } = useSortableTable<Expense>(preFiltered, 'name');
+  const { confirm, ConfirmDialogElement } = useConfirmDialog();
 
   const totalEffective = filtered.reduce((sum, e) => sum + Math.round(e.amount_pence * e.split_ratio), 0);
   const totalAll = expenses.reduce((sum, e) => sum + Math.round(e.amount_pence * e.split_ratio), 0);
@@ -40,7 +42,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
   const handleSave = async (data: Omit<Expense, 'id' | 'created_at' | 'updated_at'>) => {
     if (!editing) {
       const dup = findDuplicateExpense(expenses, data);
-      if (dup && !confirm('An expense with identical details already exists. Add anyway?')) return;
+      if (dup && !await confirm('Duplicate Expense', 'An expense with identical details already exists. Add anyway?')) return;
     }
     try {
       if (editing) {
@@ -62,7 +64,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this expense?')) return;
+    if (!await confirm('Delete Expense', 'Delete this expense?', 'danger')) return;
     try {
       await deleteExpense(id);
     } catch (err) {
@@ -216,6 +218,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
         </div>
       </Card>
 
+      {ConfirmDialogElement}
       <Modal
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}

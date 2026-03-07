@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSavings } from '../context/SavingsContext';
+import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { PageShell } from '../components/layout/PageShell';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -28,6 +29,7 @@ function progressPercent(goal: SavingsGoal): number {
 
 export function SavingsPage({ onMenuClick }: SavingsPageProps) {
   const { goals, addGoal, updateGoal, deleteGoal } = useSavings();
+  const { confirm, ConfirmDialogElement } = useConfirmDialog();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SavingsGoal | undefined>();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
   const handleSave = async (data: Omit<SavingsGoal, 'id' | 'created_at' | 'updated_at'>) => {
     if (!editing) {
       const dup = findDuplicateSavingsGoal(goals, data);
-      if (dup && !confirm('A savings goal with identical details already exists. Add anyway?')) return;
+      if (dup && !await confirm('Duplicate Savings Goal', 'A savings goal with identical details already exists. Add anyway?')) return;
     }
     try {
       if (editing) {
@@ -61,7 +63,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this savings goal?')) return;
+    if (!await confirm('Delete Savings Goal', 'Delete this savings goal?', 'danger')) return;
     try {
       await deleteGoal(id);
     } catch (err) {
@@ -186,6 +188,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
         </div>
       )}
 
+      {ConfirmDialogElement}
       <Modal
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
