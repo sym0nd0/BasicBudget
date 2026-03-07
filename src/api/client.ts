@@ -162,6 +162,10 @@ export const api = {
     request<{ message: string }>(`/household/members/${userId}/role`, { method: 'PUT', body: JSON.stringify({ role }) }),
   removeMember: (userId: string) =>
     request<void>(`/household/members/${userId}`, { method: 'DELETE' }),
+  getHouseholdInvites: () =>
+    request<Array<{ id: string; invitee_email: string; created_at: string; expires_at: string }>>('/household/invites'),
+  rescindInvite: (id: string) =>
+    request<{ message: string }>(`/household/invites/${id}`, { method: 'DELETE' }),
 
   // ── Incomes ──
   getIncomes: (month?: string) =>
