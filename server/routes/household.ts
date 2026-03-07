@@ -66,6 +66,30 @@ router.post('/invite', requireOwner, inviteLimiter, async (req: Request, res: Re
   res.json({ message: 'Invitation sent.' });
 });
 
+// GET /api/household/invites — list active (unused, unexpired) invites for the household
+router.get('/invites', requireOwner, (req: Request, res: Response) => {
+  const rows = db.prepare(
+    `SELECT id, invitee_email, created_at, expires_at
+     FROM reset_tokens
+     WHERE type = 'invite' AND new_email = ? AND used = 0
+       AND expires_at > datetime('now')
+     ORDER BY created_at DESC`,
+  ).all(req.householdId!) as Record<string, unknown>[];
+  res.json(rows);
+});
+
+// DELETE /api/household/invites/:id — rescind an active invite
+router.delete('/invites/:id', requireOwner, (req: Request, res: Response) => {
+  const id = req.params['id'] as string;
+  const result = db.prepare(
+    `DELETE FROM reset_tokens
+     WHERE id = ? AND type = 'invite' AND new_email = ? AND used = 0`,
+  ).run(id, req.householdId!);
+  if (result.changes === 0) { res.status(404).json({ message: 'Invite not found.' }); return; }
+  logger.info('Invite rescinded', { id, householdId: req.householdId, rescindedBy: req.userId });
+  res.json({ message: 'Invite rescinded.' });
+});
+
 // POST /api/household/accept-invite
 router.post('/accept-invite', (req: Request, res: Response) => {
   const { token } = req.body as { token?: string };

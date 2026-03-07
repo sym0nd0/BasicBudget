@@ -76,6 +76,9 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteMsg, setInviteMsg] = useState('');
 
+  // Active invites
+  const [invites, setInvites] = useState<Array<{ id: string; invitee_email: string; created_at: string; expires_at: string }> | null>(null);
+
   // ─── Account management handlers ────────────────────────────────────────────
 
   const handleAccountSave = async () => {
@@ -259,6 +262,7 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
     try {
       const res = await api.getHouseholdDetails() as { members?: HouseholdMember[] };
       setMembers(res.members ?? []);
+      if (householdRole === 'owner') await loadInvites();
     } catch (err) {
       setMemberMsg((err as Error).message);
     } finally {
@@ -287,12 +291,30 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
     }
   };
 
+  const loadInvites = async () => {
+    try {
+      const data = await api.getHouseholdInvites();
+      setInvites(data);
+    } catch { /* silently ignore */ }
+  };
+
   const handleInvite = async () => {
     setInviteMsg('');
     try {
       const r = await api.inviteMember(inviteEmail);
       setInviteMsg(r.message);
       setInviteEmail('');
+      await loadInvites();
+    } catch (err) {
+      setInviteMsg((err as Error).message);
+    }
+  };
+
+  const handleRescindInvite = async (id: string, email: string) => {
+    if (!confirm(`Rescind invite to ${email}?`)) return;
+    try {
+      await api.rescindInvite(id);
+      await loadInvites();
     } catch (err) {
       setInviteMsg((err as Error).message);
     }
@@ -658,6 +680,42 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
               </Button>
             </div>
             {inviteMsg && <p className="text-xs text-[var(--color-text-muted)] mt-1">{inviteMsg}</p>}
+          </div>
+        )}
+
+        {/* Active invites (owners only) */}
+        {householdRole === 'owner' && invites !== null && invites.length > 0 && (
+          <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+            <h3 className="text-sm font-semibold text-[var(--color-text)] mb-3">Active Invites</h3>
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-[var(--color-border)]">
+                  <th className="text-left py-1.5 text-[var(--color-text-muted)] font-semibold">Email</th>
+                  <th className="text-left py-1.5 text-[var(--color-text-muted)] font-semibold">Sent</th>
+                  <th className="text-left py-1.5 text-[var(--color-text-muted)] font-semibold">Expires</th>
+                  <th className="w-20"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {invites.map(inv => (
+                  <tr key={inv.id} className="border-b border-[var(--color-border)] last:border-0">
+                    <td className="py-1.5 text-[var(--color-text)]">{inv.invitee_email}</td>
+                    <td className="py-1.5 text-[var(--color-text-muted)]">
+                      {new Date(inv.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="py-1.5 text-[var(--color-text-muted)]">
+                      {new Date(inv.expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="py-1.5 text-right">
+                      <Button size="sm" variant="ghost" className="hover:text-[var(--color-danger)]"
+                        onClick={() => handleRescindInvite(inv.id, inv.invitee_email)}>
+                        Rescind
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </Card>
