@@ -311,7 +311,7 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   };
 
   const handleRescindInvite = async (id: string, email: string) => {
-    if (!confirm(`Rescind invite to ${email}?`)) return;
+    if (!await confirm('Rescind Invite', `Rescind invite to ${email}?`, 'danger')) return;
     try {
       await api.rescindInvite(id);
       await loadInvites();
