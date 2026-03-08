@@ -1,7 +1,8 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { chromium } from 'playwright';
-import { existsSync, rmSync, mkdirSync } from 'node:fs';
+import { existsSync, rmSync, mkdirSync, cpSync } from 'node:fs';
 import { join } from 'node:path';
+import { randomBytes } from 'node:crypto';
 
 const DEMO_DB_PATH = join(process.cwd(), 'data', 'demo.db');
 const DIST_SERVER = join(process.cwd(), 'dist-server', 'server', 'index.js');
@@ -10,6 +11,10 @@ const API_PORT = 3099;
 const BASE_URL = `http://localhost:${API_PORT}`;
 const DEMO_EMAIL = 'demo@basicbudget.app';
 const DEMO_PASSWORD = 'DemoPass123!';
+
+function generateSecretKey(bytes = 32): string {
+  return randomBytes(bytes).toString('hex');
+}
 
 async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -78,6 +83,12 @@ async function main(): Promise<void> {
     rmSync(DEMO_DB_PATH);
   }
 
+  // Copy built frontend to public/ (server looks for static files there in production mode)
+  const distDir = join(process.cwd(), 'dist');
+  const publicDir = join(process.cwd(), 'public');
+  console.log('Copying frontend assets...');
+  cpSync(distDir, publicDir, { recursive: true, force: true });
+
   // Ensure screenshots directory exists
   mkdirSync(SCREENSHOTS_DIR, { recursive: true });
 
@@ -89,6 +100,10 @@ async function main(): Promise<void> {
       PORT: String(API_PORT),
       DB_PATH: DEMO_DB_PATH,
       NODE_ENV: 'production',
+      SESSION_SECRET: process.env.SESSION_SECRET || generateSecretKey(32),
+      TOTP_ENCRYPTION_KEY: process.env.TOTP_ENCRYPTION_KEY || generateSecretKey(32),
+      APP_URL: BASE_URL,
+      CORS_ORIGIN: BASE_URL,
     },
     stdio: 'pipe',
   });
@@ -108,14 +123,15 @@ async function main(): Promise<void> {
 
   try {
     // Wait for server to be ready
+    console.log('Waiting for server startup...');
     await waitForServer();
 
     // Run demo seed
     console.log('Seeding demo database...');
-    const seedProcess = spawnSync('node', ['--loader', 'tsx', 'scripts/demo-seed.ts'], {
+    const seedProcess = spawnSync('node', ['--import', 'tsx', 'scripts/demo-seed-db.ts'], {
       env: {
         ...process.env,
-        API_URL: BASE_URL,
+        DB_PATH: DEMO_DB_PATH,
       },
       stdio: 'inherit',
     });
@@ -127,19 +143,19 @@ async function main(): Promise<void> {
     // Launch Playwright
     console.log('\nLaunching Playwright...');
     const browser = await chromium.launch({ headless: true });
-    const context = await browser.createBrowserContext();
+    const context = await browser.newContext();
     const page = await context.newPage();
 
     // Set viewport
     await page.setViewportSize({ width: 1440, height: 900 });
 
-    // Log in
+    // Log in via browser UI (handles CSRF cookies transparently)
     console.log('Logging in...');
     await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle' });
-    await page.fill('input[type="email"]', DEMO_EMAIL);
-    await page.fill('input[type="password"]', DEMO_PASSWORD);
+    await page.fill('#email', DEMO_EMAIL);
+    await page.fill('#password', DEMO_PASSWORD);
     await page.click('button[type="submit"]');
-    await page.waitForURL(`${BASE_URL}/`, { timeout: 10000 });
+    await page.waitForURL(`${BASE_URL}/`, { timeout: 15000 });
     console.log('✓ Logged in successfully\n');
 
     // Capture dark theme screenshots
@@ -161,12 +177,25 @@ async function main(): Promise<void> {
     // Clean up
     console.log('\nCleaning up...');
     await browser.close();
-    server.kill();
-    await sleep(500);
 
-    // Delete demo database
-    if (existsSync(DEMO_DB_PATH)) {
-      rmSync(DEMO_DB_PATH);
+    // Kill server and wait for exit before deleting DB (avoids EPERM on Windows)
+    server.kill('SIGTERM');
+    await new Promise<void>((resolve) => {
+      server.on('exit', () => resolve());
+      setTimeout(resolve, 5000); // Fallback timeout
+    });
+
+    // Delete demo database (retry for Windows file-lock delays)
+    for (let i = 0; i < 5; i++) {
+      try {
+        if (existsSync(DEMO_DB_PATH)) rmSync(DEMO_DB_PATH);
+        if (existsSync(DEMO_DB_PATH + '-wal')) rmSync(DEMO_DB_PATH + '-wal');
+        if (existsSync(DEMO_DB_PATH + '-shm')) rmSync(DEMO_DB_PATH + '-shm');
+        break;
+      } catch {
+        if (i === 4) console.warn('Warning: could not delete demo database');
+        await sleep(1000);
+      }
     }
 
     console.log('\n✓ Screenshots generated successfully!\n');
@@ -174,9 +203,16 @@ async function main(): Promise<void> {
     process.exit(0);
   } catch (error) {
     console.error('\n✗ Screenshot generation failed:', error instanceof Error ? error.message : error);
-    server.kill();
+
+    // Kill server and wait before cleanup to avoid EPERM
+    server.kill('SIGTERM');
+    await new Promise<void>((resolve) => {
+      server.on('exit', () => resolve());
+      setTimeout(resolve, 5000);
+    });
+
     if (existsSync(DEMO_DB_PATH)) {
-      rmSync(DEMO_DB_PATH);
+      try { rmSync(DEMO_DB_PATH); } catch { /* ignore */ }
     }
     process.exit(1);
   }
