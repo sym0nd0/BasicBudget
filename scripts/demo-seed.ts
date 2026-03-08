@@ -74,6 +74,9 @@ function makeRequest(
               cookies.set(name.trim(), value.trim());
             }
           }
+          if (method === 'GET' && path.includes('csrf-token')) {
+            console.log(`  Received Set-Cookie headers: ${cookieArray.map(c => c.split(';')[0]).join(', ')}`);
+          }
         }
 
         try {
