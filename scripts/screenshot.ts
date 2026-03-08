@@ -2,6 +2,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { chromium } from 'playwright';
 import { existsSync, rmSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { randomBytes } from 'node:crypto';
 
 const DEMO_DB_PATH = join(process.cwd(), 'data', 'demo.db');
 const DIST_SERVER = join(process.cwd(), 'dist-server', 'server', 'index.js');
@@ -10,6 +11,10 @@ const API_PORT = 3099;
 const BASE_URL = `http://localhost:${API_PORT}`;
 const DEMO_EMAIL = 'demo@basicbudget.app';
 const DEMO_PASSWORD = 'DemoPass123!';
+
+function generateSecretKey(bytes = 32): string {
+  return randomBytes(bytes).toString('hex');
+}
 
 async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -89,6 +94,10 @@ async function main(): Promise<void> {
       PORT: String(API_PORT),
       DB_PATH: DEMO_DB_PATH,
       NODE_ENV: 'production',
+      SESSION_SECRET: process.env.SESSION_SECRET || generateSecretKey(32),
+      TOTP_ENCRYPTION_KEY: process.env.TOTP_ENCRYPTION_KEY || generateSecretKey(32),
+      APP_URL: BASE_URL,
+      CORS_ORIGIN: BASE_URL,
     },
     stdio: 'pipe',
   });
