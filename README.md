@@ -16,11 +16,11 @@ A multi-user personal budgeting and debt management application built with React
 
 | Dashboard | Expenses |
 |---|---|
-| ![Dashboard](docs/screenshots/dashboard-dark.png) | ![Expenses](docs/screenshots/expenses-dark.png) |
+| <img src="docs/screenshots/dashboard-dark.png" alt="Dashboard" width="350"> | <img src="docs/screenshots/expenses-dark.png" alt="Expenses" width="350"> |
 
 | Income | Debts |
 |---|---|
-| ![Income](docs/screenshots/income-dark.png) | ![Debt](docs/screenshots/debt-dark.png) |
+| <img src="docs/screenshots/income-dark.png" alt="Income" width="350"> | <img src="docs/screenshots/debt-dark.png" alt="Debt" width="350"> |
 
 <p align="center">
   <img src="docs/screenshots/savings-dark.png" alt="Savings" width="700">
@@ -30,11 +30,11 @@ A multi-user personal budgeting and debt management application built with React
 
 | Dashboard | Expenses |
 |---|---|
-| ![Dashboard](docs/screenshots/dashboard-light.png) | ![Expenses](docs/screenshots/expenses-light.png) |
+| <img src="docs/screenshots/dashboard-light.png" alt="Dashboard" width="350"> | <img src="docs/screenshots/expenses-light.png" alt="Expenses" width="350"> |
 
 | Income | Debts |
 |---|---|
-| ![Income](docs/screenshots/income-light.png) | ![Debt](docs/screenshots/debt-light.png) |
+| <img src="docs/screenshots/income-light.png" alt="Income" width="350"> | <img src="docs/screenshots/debt-light.png" alt="Debt" width="350"> |
 
 <p align="center">
   <img src="docs/screenshots/savings-light.png" alt="Savings" width="700">
@@ -65,7 +65,7 @@ A multi-user personal budgeting and debt management application built with React
 - Email + password registration and login (Argon2id, 64 MB memory cost)
 - Email verification flow on registration
 - Account lockout after 5 failed login attempts (30-minute lock)
-- TOTP 2FA via authenticator app (QR code setup, 10 single-use recovery codes); status badge in settings; reset 2FA with password + OTP/recovery code; "lost access" delayed-reset flow via email
+- TOTP 2FA via authenticator app (QR code setup, 10 single-use recovery codes); status badge in settings; reset 2FA with password + OTP/recovery code; "lost access" delayed-reset flow via email (callable from settings or after failed login)
 - Generic OpenID Connect (OIDC) single sign-on — any OIDC-compatible provider
 - Session management with device fingerprinting and new-device email alerts
 - Active session list with per-session revocation; sessions display parsed browser and OS instead of raw user-agent string
@@ -74,8 +74,8 @@ A multi-user personal budgeting and debt management application built with React
 
 ### Households & RBAC
 - Every user belongs to a household (created automatically on registration)
-- **Owner** role: read and write all household entries; can customize household name
-- **Member** role: read all entries, write only own entries
+- **Owner** role: read and write all household entries; can customise household name; view and rescind active invites; manage member roles and remove members
+- **Member** role: read all entries, write only own entries; can leave the household at any time
 - Invite members by email (7-day expiring token); invitees who don't have an account are automatically joined to the household upon registration — no separate accept step required; role management by owner
 - All financial data is isolated per household
 
@@ -83,9 +83,10 @@ A multi-user personal budgeting and debt management application built with React
 - The **first registered user** is automatically promoted to system admin
 - Admin-only panel accessible from the sidebar under the "Admin" section
 - **User management**: list all users, promote/demote roles, lock/unlock accounts, delete users
-- **System settings**: configure SMTP (email), OIDC (SSO), structured logging, and registration at runtime via the UI — no restart required; manage expense categories (add, remove, reorder, reset to defaults)
+- **System settings**: configure SMTP (email), OIDC (SSO), structured logging, expense categories, and registration at runtime via the UI — no restart required
   - **Registration**: toggle public sign-up on or off; when disabled, new accounts can only be created via household invites or directly by admins (the first user on a fresh instance can always register)
   - **Logging**: set minimum log level (debug, info, warn, error) to control verbosity of server output; output is JSON-formatted for container and log aggregation compatibility
+  - **Expense categories**: add, remove, reorder, or reset to defaults
 - **Audit log**: paginated, filterable log of all authentication and admin actions
 - All admin actions are written to the audit log
 
@@ -103,9 +104,10 @@ A multi-user personal budgeting and debt management application built with React
 - Sortable table columns (name, amount, day, type)
 
 ### Expense Management
-- Add, edit, and delete monthly expenses
+- Add, edit, and delete expenses
 - Configurable expense categories managed by admin; fixed or variable tag
 - Assign expenses to a named payment account, including joint accounts visible to all household members
+- Assign expenses to specific household members for tracking contributions
 - Mark expenses as household expenses with a configurable split ratio so only your share counts in budget summaries
 - Set recurrence type (including fortnightly) and optional start/end dates
 - Sortable table columns (name, amount, your share, day, category, type)
@@ -122,11 +124,14 @@ A multi-user personal budgeting and debt management application built with React
 ### Savings
 - Create and track savings with optional target amounts and monthly contributions
 - Optional target dates; progress bars shown only when a target is set
+- Mark savings goals as household goals to split the target equally among all household members
+- Assign savings goals to specific household members for individual tracking
 
 ### Settings & Appearance
 - Manage named payment accounts, including joint accounts shared across all household members; month locking to prevent edits on closed months
 - Change password, change email, 2FA setup/disable
-- CSV import and export for bulk data management
+- CSV import (expenses and incomes) and JSON export for bulk data management and backups
+- **Version update notifications** — opt-in sidebar badge notifying admins when a new release is available on GitHub
 - **Colour blindness palettes** — per-user accessibility setting (server-persisted); choose from Default, Deuteranopia (blue/orange), Protanopia (teal/pink), or Tritanopia (green/red); affects status colours and charts
 
 ### Additional
@@ -226,10 +231,12 @@ Compiles the frontend to `dist/` and the server to `dist-server/`. Run with `npm
 |---|---|---|
 | `SESSION_SECRET` | Yes | Min 32-char random string for session signing |
 | `TOTP_ENCRYPTION_KEY` | Yes | 64 hex chars (32 bytes) for AES-256-GCM TOTP secret encryption |
-| `APP_URL` | Yes | Public URL of the app, e.g. `https://budget.example.com` |
-| `CORS_ORIGIN` | No | Allowed CORS origin (defaults to `APP_URL`) |
+| `APP_URL` | No | Public URL of the app (default `http://localhost:5173`); set in production for correct email links |
+| `CORS_ORIGIN` | No | Allowed CORS origin (defaults to `APP_URL` value) |
 | `DB_PATH` | No | Path to SQLite file (default `data/basicbudget.db`) |
-| `PORT` | No | Server port (default `3001`; Docker exposes `8080`) |
+| `PORT` | No | Server port (default `3001`; Docker uses `3000`) |
+| `NODE_ENV` | No | Execution environment: `development`, `production`, or `test` (default `development`) |
+| `COOKIE_SECURE` | No | Override secure cookie flag (`true`/`false`); defaults based on `NODE_ENV` |
 
 > **SMTP and OIDC** are configured through the **Admin Panel** (`/admin/settings`) at runtime — no environment variables or restarts needed. If `SMTP_HOST` / `OIDC_ISSUER_URL` are present in the environment on first startup, they are automatically migrated into the database for backwards compatibility with existing deployments.
 
@@ -237,7 +244,7 @@ Compiles the frontend to `dist/` and the server to `dist-server/`. Run with `npm
 
 ## Docker Deployment
 
-The app is published as a pre-built image to GitHub Container Registry (GHCR) on every push to `master`. The multi-stage Dockerfile produces a minimal Node.js Alpine image; Express serves everything. A non-root user (`appuser`) is used inside the container.
+The app is published as a pre-built image to GitHub Container Registry (GHCR) on every push to `master`. The multi-stage Dockerfile produces a minimal Node.js Alpine image; Express serves everything. A non-root user (`appuser`) is used inside the container with automatic volume ownership correction via `entrypoint.sh`.
 
 ### Pull and run with Docker Compose
 
@@ -258,7 +265,7 @@ APP_URL=https://budget.example.com
 
 SMTP and OIDC are configured through the Admin Panel after first login.
 
-Data is persisted in a named Docker volume (`bb-data`) mounted at `/app/data`.
+Data is persisted in a named Docker volume (`bb-data`) mounted at `/app/data`. The container is configured with `restart: unless-stopped` to automatically recover from failures.
 
 ### Update to the latest image
 
@@ -350,9 +357,11 @@ interface Income {
   amount_pence: number;
   posting_day: number;
   contributor_name?: string | null;
+  contributor_user_id?: string | null;
   gross_or_net: 'gross' | 'net';
   is_recurring: boolean;
-  recurrence_type: 'monthly' | 'weekly' | 'yearly';
+  is_household: boolean;
+  recurrence_type: 'monthly' | 'weekly' | 'fortnightly' | 'yearly';
   start_date?: string | null;
   end_date?: string | null;
   notes?: string | null;
@@ -368,12 +377,13 @@ interface Expense {
   amount_pence: number;
   posting_day: number;
   account_id?: string | null;
+  contributor_user_id?: string | null;
   type: 'fixed' | 'variable';
-  category: ExpenseCategory;
+  category: string;
   is_household: boolean;
   split_ratio: number;        // 0.5 for shared costs, 1.0 for sole costs
   is_recurring: boolean;
-  recurrence_type: 'monthly' | 'weekly' | 'yearly';
+  recurrence_type: 'monthly' | 'weekly' | 'fortnightly' | 'yearly';
   start_date?: string | null;
   end_date?: string | null;
   notes?: string | null;
@@ -391,6 +401,7 @@ interface Debt {
   minimum_payment_pence: number;
   overpayment_pence: number;
   compounding_frequency: string;
+  contributor_user_id?: string | null;
   is_recurring: boolean;
   recurrence_type: string;
   posting_day: number;
@@ -398,7 +409,19 @@ interface Debt {
   end_date?: string | null;
   is_household: boolean;
   split_ratio: number;
+  reminder_months?: number | null;
+  deal_periods?: DebtDealPeriod[];
   notes?: string | null;
+}
+
+interface DebtDealPeriod {
+  id: string;
+  debt_id: string;
+  interest_rate: number;
+  start_month: string;        // YYYY-MM
+  end_month?: string | null;  // YYYY-MM, null = ongoing
+  reminder_months?: number | null;
+  created_at: string;
 }
 ```
 
@@ -411,6 +434,8 @@ interface SavingsGoal {
   target_amount_pence: number;
   current_amount_pence: number;
   monthly_contribution_pence: number;
+  contributor_user_id?: string | null;
+  is_household: boolean;
   target_date?: string | null;
   notes?: string | null;
 }
@@ -428,17 +453,53 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 |---|---|---|
 | GET | `/api/auth/csrf-token` | Get CSRF token (public) |
 | GET | `/api/auth/status` | Get current session / user info |
+| GET | `/api/auth/registration-status` | Check if public registration is enabled |
 | POST | `/api/auth/register` | Create account + household |
 | POST | `/api/auth/login` | Log in |
 | POST | `/api/auth/logout` | Destroy session |
 | POST | `/api/auth/forgot-password` | Request password reset email |
 | POST | `/api/auth/reset-password` | Consume token, set new password |
 | POST | `/api/auth/verify-email` | Consume email verification token |
+
+#### TOTP
+
+| Method | Path | Description |
+|---|---|---|
 | POST | `/api/auth/totp/setup` | Begin TOTP setup (returns QR) |
 | POST | `/api/auth/totp/verify-setup` | Confirm TOTP setup, get recovery codes |
 | POST | `/api/auth/totp/verify` | Submit OTP during login |
 | POST | `/api/auth/totp/verify-recovery` | Submit recovery code during login |
 | POST | `/api/auth/totp/disable` | Disable 2FA |
+| POST | `/api/auth/totp/request-reset` | Request delayed 2FA reset (24-hour wait, email notification) |
+| POST | `/api/auth/totp/confirm-reset` | Confirm 2FA reset with token + password |
+
+#### OIDC
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/auth/oidc/enabled` | Check if OIDC is configured |
+| GET | `/api/auth/oidc/login` | Initiate OIDC login (PKCE) |
+| GET | `/api/auth/oidc/callback` | OIDC callback handler (creates/links user) |
+| POST | `/api/auth/oidc/link` | Link OIDC account to local user |
+| DELETE | `/api/auth/oidc/unlink` | Unlink OIDC account (requires local password) |
+
+#### Profile
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/auth/profile` | Get current user profile |
+| PUT | `/api/auth/profile` | Update display name |
+| PUT | `/api/auth/profile/palette` | Set colour blindness palette |
+| PUT | `/api/auth/profile/notify-updates` | Toggle version update notifications |
+| POST | `/api/auth/change-password` | Change password (requires current password) |
+| POST | `/api/auth/change-email` | Request email change |
+| POST | `/api/auth/confirm-email-change` | Confirm email change via token |
+| POST | `/api/auth/resend-verification` | Resend email verification token |
+
+#### Sessions
+
+| Method | Path | Description |
+|---|---|---|
 | GET | `/api/auth/sessions` | List active sessions |
 | DELETE | `/api/auth/sessions/:sid` | Revoke a session |
 
@@ -448,6 +509,17 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 |---|---|---|
 | GET | `/api/invite/info?token=X` | Peek at invite details (no auth required) |
 | POST | `/api/household/accept-invite` | Accept invite and join household |
+
+### Household
+
+| Method | Path | Description |
+|---|---|---|
+| GET/PUT | `/api/household` | Get household details + members / update household name (owner only) |
+| GET | `/api/household/invites` | List active invites (owner only) |
+| DELETE | `/api/household/invites/:id` | Rescind an invite (owner only) |
+| GET | `/api/household/summary` | Household-level budget overview |
+| PUT | `/api/household/members/:userId/role` | Change member role (owner only) |
+| DELETE | `/api/household/members/:userId` | Remove member (owner or self) |
 
 ### Data
 
@@ -459,15 +531,18 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 | GET/PUT/DELETE | `/api/expenses/:id` | Get / update / delete expense |
 | GET/POST | `/api/debts` | List / create debt |
 | GET/PUT/DELETE | `/api/debts/:id` | Get / update / delete debt |
+| GET | `/api/debts/:id/repayments` | Compute full repayment schedule |
 | GET/POST | `/api/savings-goals` | List / create savings goal |
 | GET/PUT/DELETE | `/api/savings-goals/:id` | Get / update / delete savings goal |
 | GET/POST | `/api/accounts` | List / create account |
 | GET/PUT/DELETE | `/api/accounts/:id` | Get / update / delete account |
+| GET | `/api/categories` | Get expense categories |
 | GET | `/api/summary` | Budget summary with category breakdown |
-| GET/PUT | `/api/household` | Get household details + members / update household name (owner only) |
-| GET/POST | `/api/months` | List locked months / lock a month |
-| POST | `/api/import` | JSON bulk import |
-| GET | `/api/export` | JSON export |
+| GET | `/api/version` | Get current and latest version info |
+| POST | `/api/months/:ym/lock` | Lock a month (prevent edits) |
+| DELETE | `/api/months/:ym/lock` | Unlock a month |
+| POST | `/api/import/csv` | CSV import (expenses or incomes) |
+| GET | `/api/export/json` | JSON export of all user data |
 
 ### Admin (requires `system_role = 'admin'`)
 
@@ -483,6 +558,13 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 | POST | `/api/admin/settings/smtp/test` | Send test email to current admin |
 | GET | `/api/admin/settings/oidc` | Get OIDC config (secret masked) |
 | PUT | `/api/admin/settings/oidc` | Update OIDC settings |
+| GET | `/api/admin/settings/categories` | Get expense categories |
+| PUT | `/api/admin/settings/categories` | Set custom categories |
+| DELETE | `/api/admin/settings/categories` | Reset categories to defaults |
+| GET | `/api/admin/settings/logging` | Get log level |
+| PUT | `/api/admin/settings/logging` | Set log level |
+| GET | `/api/admin/settings/registration` | Get registration status |
+| PUT | `/api/admin/settings/registration` | Enable/disable public registration |
 | GET | `/api/admin/audit-log` | Paginated audit log with filters |
 
 ---
@@ -518,23 +600,30 @@ BasicBudget/
 │   │   ├── oidc.ts                    # OIDC login/callback/link/unlink
 │   │   ├── profile.ts                 # Profile management, change password/email
 │   │   ├── sessions.ts                # List/revoke sessions
-│   │   ├── accounts.ts
-│   │   ├── debts.ts
-│   │   ├── expenses.ts
-│   │   ├── export.ts
-│   │   ├── household.ts
-│   │   ├── import.ts
-│   │   ├── incomes.ts
-│   │   ├── months.ts
-│   │   ├── savings-goals.ts
-│   │   └── summary.ts
+│   │   ├── accounts.ts                # Payment accounts
+│   │   ├── categories.ts              # Expense categories
+│   │   ├── debts.ts                   # Debt management
+│   │   ├── expenses.ts                # Expense management
+│   │   ├── export.ts                  # Data export (JSON)
+│   │   ├── household.ts               # Household management, invites
+│   │   ├── import.ts                  # CSV data import
+│   │   ├── incomes.ts                 # Income management
+│   │   ├── invite.ts                  # Invite info endpoint
+│   │   ├── months.ts                  # Month locking
+│   │   ├── savings-goals.ts           # Savings goal management
+│   │   ├── summary.ts                 # Budget summary
+│   │   └── version.ts                 # Version info
 │   ├── services/
 │   │   ├── audit.ts                   # Audit log writer
+│   │   ├── debtNotifications.ts       # Debt deal period expiry reminders
 │   │   ├── email.ts                   # SMTP transport + email templates
-│   │   └── settings.ts                # DB-backed settings service (SMTP, OIDC)
+│   │   ├── logger.ts                  # Structured JSON logging
+│   │   ├── settings.ts                # DB-backed settings service (SMTP, OIDC)
+│   │   └── versionChecker.ts          # GitHub release version checker
 │   └── utils/
-│       ├── csv-parser.ts
-│       └── recurring.ts               # filterActiveInMonth engine
+│       ├── csv-parser.ts              # CSV import parsing
+│       ├── recurring.ts               # filterActiveInMonth engine
+│       └── visibility.ts              # Entry visibility/ownership rules
 │
 ├── shared/
 │   └── types.ts                       # Shared TypeScript interfaces
@@ -544,52 +633,88 @@ BasicBudget/
 │   ├── api/client.ts                  # Typed API client (CSRF, credentials)
 │   ├── components/
 │   │   ├── auth/ProtectedRoute.tsx    # Route guard (redirects to /login)
-│   │   ├── charts/
-│   │   ├── forms/
-│   │   └── layout/
+│   │   ├── charts/                    # Chart components (recharts wrapper)
+│   │   ├── forms/                     # Reusable form components
+│   │   ├── layout/                    # Layout wrappers (sidebar, header)
+│   │   └── ui/                        # Shared UI primitives
+│   │       ├── Badge.tsx              # Badge component
+│   │       ├── Button.tsx             # Button component
+│   │       ├── Card.tsx               # Card container
+│   │       ├── ConfirmDialog.tsx      # Confirmation dialog
+│   │       ├── Input.tsx              # Text/number input
+│   │       ├── Modal.tsx              # Modal dialog
+│   │       ├── SortableHeader.tsx     # Table column header with sort
+│   │       └── ThemeToggle.tsx        # Dark/light theme switcher
 │   ├── context/
 │   │   ├── AuthContext.tsx            # User/household/role state
-│   │   ├── BudgetContext.tsx
-│   │   ├── DebtContext.tsx
-│   │   ├── FilterContext.tsx
-│   │   ├── SavingsContext.tsx
-│   │   └── ThemeContext.tsx
-│   ├── hooks/useApi.ts
+│   │   ├── BudgetContext.tsx          # Budget data & caching
+│   │   ├── DebtContext.tsx            # Debt data & caching
+│   │   ├── FilterContext.tsx          # Filter state
+│   │   ├── SavingsContext.tsx         # Savings data & caching
+│   │   └── ThemeContext.tsx           # Theme state + palette
+│   ├── hooks/
+│   │   ├── useApi.ts                  # API client hook
+│   │   ├── useConfirmDialog.ts        # Confirmation dialog state
+│   │   ├── useLocalStorage.ts         # localStorage hook
+│   │   └── useSortableTable.ts        # Table sorting state
 │   ├── pages/
+│   │   ├── AcceptInvitePage.tsx       # Invite acceptance (new user)
 │   │   ├── AdminAuditLogPage.tsx      # Admin: audit log viewer
 │   │   ├── AdminSettingsPage.tsx      # Admin: SMTP + OIDC configuration
 │   │   ├── AdminUsersPage.tsx         # Admin: user management
-│   │   ├── LoginPage.tsx
-│   │   ├── RegisterPage.tsx
+│   │   ├── LoginPage.tsx              # Login form
+│   │   ├── RegisterPage.tsx           # Registration form
 │   │   ├── TotpPage.tsx               # 2FA verification
-│   │   ├── ForgotPasswordPage.tsx
-│   │   ├── ResetPasswordPage.tsx
-│   │   ├── VerifyEmailPage.tsx
-│   │   ├── Dashboard.tsx
-│   │   ├── DebtPage.tsx
-│   │   ├── ExpensesPage.tsx
-│   │   ├── HouseholdPage.tsx
-│   │   ├── IncomePage.tsx
-│   │   ├── SavingsPage.tsx
-│   │   └── SettingsPage.tsx
-│   ├── types/index.ts
+│   │   ├── ForgotPasswordPage.tsx     # Password reset request
+│   │   ├── ResetPasswordPage.tsx      # Password reset confirmation
+│   │   ├── VerifyEmailPage.tsx        # Email verification
+│   │   ├── Dashboard.tsx              # Budget dashboard
+│   │   ├── DebtPage.tsx               # Debt management
+│   │   ├── ExpensesPage.tsx           # Expense management
+│   │   ├── HouseholdPage.tsx          # Household settings
+│   │   ├── IncomePage.tsx             # Income management
+│   │   ├── SavingsPage.tsx            # Savings goal management
+│   │   └── SettingsPage.tsx           # User settings
+│   ├── types/index.ts                 # Re-export shared types
 │   └── utils/
-│       ├── duplicates.ts
-│       └── formatters.ts
+│       ├── duplicates.ts              # Duplicate detection
+│       ├── formatters.ts              # Money, date, percent formatting
+│       └── id.ts                      # ID generation utility
 │
 ├── tests/
-│   ├── setup.ts
-│   ├── helpers.ts
-│   ├── unit/                          # password, totp, recovery-codes, tokens, middleware
-│   ├── integration/                   # auth-flow, totp-flow, household, csrf
-│   └── security/                      # injection, idor, rate-limit, session
+│   ├── setup.ts                       # Vitest setup
+│   ├── helpers.ts                     # Test utilities
+│   ├── unit/                          # Unit tests (password, totp, tokens, etc.)
+│   ├── integration/                   # Integration tests (auth, household, etc.)
+│   └── security/                      # Security tests (injection, IDOR, rate-limit)
 │
-├── .env.example
-├── Dockerfile
-├── docker-compose.yml
-├── vitest.config.ts
-├── tsconfig.server.json
-└── package.json
+├── scripts/
+│   ├── demo-seed-db.ts                # Demo database seeding
+│   └── screenshot.ts                  # Screenshot generation script
+│
+├── .github/
+│   ├── workflows/
+│   │   ├── docker-publish.yml         # Docker image build & push (GHCR)
+│   │   └── trufflehog.yml             # Secret scanning
+│   └── PULL_REQUEST_TEMPLATE.md       # PR template
+│
+├── .env.example                       # Environment variables template
+├── CLAUDE.md                          # Claude Code guidance
+├── CODE_OF_CONDUCT.md                 # Community guidelines
+├── CONTRIBUTING.md                    # Contribution guidelines
+├── Dockerfile                         # Multi-stage container image
+├── docker-compose.yml                 # Docker Compose configuration
+├── entrypoint.sh                      # Container entrypoint (fixes volume ownership)
+├── LICENSE                            # MIT License
+├── PLAN.md                            # Project planning document
+├── QA_REPORT.md                       # Quality assurance notes
+├── README.md                          # Project documentation (this file)
+├── SECURITY.md                        # Security policy
+├── package.json                       # Dependencies and scripts
+├── tsconfig.app.json                  # Frontend TypeScript config
+├── tsconfig.node.json                 # Vite config TypeScript
+├── tsconfig.server.json               # Backend TypeScript config
+└── vitest.config.ts                   # Test runner configuration
 ```
 
 ---
