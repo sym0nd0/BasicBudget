@@ -23,6 +23,9 @@ const envSchema = z.object({
   APP_URL: z.url().default('http://localhost:5173'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
 
+  // Cookie security override (overrides NODE_ENV-based default when set)
+  COOKIE_SECURE: z.enum(['true', 'false']).optional(),
+
 });
 
 // In test environment, provide safe defaults for required fields
