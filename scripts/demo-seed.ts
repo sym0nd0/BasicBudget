@@ -74,11 +74,14 @@ async function getCsrfToken(): Promise<void> {
     throw new Error(`Failed to get CSRF token: ${res.status}`);
   }
   demoData.csrf = res.data.token;
-  console.log('✓ CSRF token obtained');
+  console.log(`✓ CSRF token obtained: ${demoData.csrf}`);
+  console.log(`✓ Cookies: ${JSON.stringify(demoData.cookies)}`);
 }
 
 async function registerUser(): Promise<void> {
   console.log('Registering demo user...');
+  console.log(`Sending CSRF token: ${demoData.csrf}`);
+  console.log(`Sending cookies: ${demoData.cookies.join('; ')}`);
   const res = await request('POST', '/api/auth/register', {
     email: DEMO_EMAIL,
     password: DEMO_PASSWORD,
