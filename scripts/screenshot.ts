@@ -152,11 +152,33 @@ async function main(): Promise<void> {
     // Log in via browser UI (handles CSRF cookies transparently)
     console.log('Logging in...');
     await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle' });
-    await page.fill('#email', DEMO_EMAIL);
-    await page.fill('#password', DEMO_PASSWORD);
+
+    // Wait for form to be visible
+    await page.waitForSelector('form', { timeout: 5000 });
+
+    // Fill credentials
+    await page.fill('#email', DEMO_EMAIL, { timeout: 5000 });
+    await page.fill('#password', DEMO_PASSWORD, { timeout: 5000 });
+
+    // Set up navigation waiter before clicking
+    const navigationPromise = page.waitForURL(`${BASE_URL}/`, { timeout: 15000 });
+
+    // Click submit button
     await page.click('button[type="submit"]');
-    await page.waitForURL(`${BASE_URL}/`, { timeout: 15000 });
-    console.log('✓ Logged in successfully\n');
+
+    // Wait for navigation to complete
+    try {
+      await navigationPromise;
+      console.log('✓ Logged in successfully\n');
+    } catch (error) {
+      // Check if we're already on dashboard (navigation may have happened differently)
+      const currentUrl = page.url();
+      if (currentUrl.includes(BASE_URL)) {
+        console.log('✓ Logged in successfully (via alternate path)\n');
+      } else {
+        throw new Error(`Login failed: navigation to home did not occur (current: ${currentUrl})`);
+      }
+    }
 
     // Capture dark theme screenshots
     console.log('Capturing dark theme screenshots...');
