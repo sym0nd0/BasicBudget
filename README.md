@@ -10,21 +10,44 @@ A multi-user personal budgeting and debt management application built with React
 
 > **Disclaimer:** BasicBudget was entirely created using [Claude Code](https://claude.com/claude-code) by Anthropic. As with any AI-generated code, caution should be exercised — use entirely at your own risk. PRs and contributions are welcome; even more so, if someone who knows what they're actually doing forks it and improves it.
 
+## Screenshots
+
+### Dark theme
+
+| Dashboard | Expenses |
+|---|---|
+| ![Dashboard](docs/screenshots/dashboard-dark.png) | ![Expenses](docs/screenshots/expenses-dark.png) |
+
+| Income | Debts |
+|---|---|
+| ![Income](docs/screenshots/income-dark.png) | ![Debt](docs/screenshots/debt-dark.png) |
+
+<p align="center">
+  <img src="docs/screenshots/savings-dark.png" alt="Savings" width="700">
+</p>
+
+### Light theme
+
+| Dashboard | Expenses |
+|---|---|
+| ![Dashboard](docs/screenshots/dashboard-light.png) | ![Expenses](docs/screenshots/expenses-light.png) |
+
 ---
 
 ## Table of Contents
 
-1. [Features](#features)
-2. [Tech Stack](#tech-stack)
-3. [Getting Started](#getting-started)
-4. [Environment Variables](#environment-variables)
-5. [Docker Deployment](#docker-deployment)
-6. [Available Scripts](#available-scripts)
-7. [Architecture](#architecture)
-8. [Data Models](#data-models)
-9. [API Routes](#api-routes)
-10. [Folder Structure](#folder-structure)
-11. [License](#license)
+1. [Screenshots](#screenshots)
+2. [Features](#features)
+3. [Tech Stack](#tech-stack)
+4. [Getting Started](#getting-started)
+5. [Environment Variables](#environment-variables)
+6. [Docker Deployment](#docker-deployment)
+7. [Available Scripts](#available-scripts)
+8. [Architecture](#architecture)
+9. [Data Models](#data-models)
+10. [API Routes](#api-routes)
+11. [Folder Structure](#folder-structure)
+12. [License](#license)
 
 ---
 
