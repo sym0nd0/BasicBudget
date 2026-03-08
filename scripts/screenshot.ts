@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { chromium } from 'playwright';
-import { existsSync, rmSync, mkdirSync } from 'node:fs';
+import { existsSync, rmSync, mkdirSync, cpSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 
@@ -82,6 +82,12 @@ async function main(): Promise<void> {
     console.log('Cleaning up old demo database...');
     rmSync(DEMO_DB_PATH);
   }
+
+  // Copy built frontend to public/ (server looks for static files there in production mode)
+  const distDir = join(process.cwd(), 'dist');
+  const publicDir = join(process.cwd(), 'public');
+  console.log('Copying frontend assets...');
+  cpSync(distDir, publicDir, { recursive: true, force: true });
 
   // Ensure screenshots directory exists
   mkdirSync(SCREENSHOTS_DIR, { recursive: true });
