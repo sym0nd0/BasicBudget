@@ -124,7 +124,6 @@ async function main(): Promise<void> {
   try {
     // Wait for server to be ready
     console.log('Waiting for server startup...');
-    await sleep(3000); // Give server more time to start
     await waitForServer();
 
     // Run demo seed
@@ -150,37 +149,14 @@ async function main(): Promise<void> {
     // Set viewport
     await page.setViewportSize({ width: 1440, height: 900 });
 
-    // Log in via HTTP request (avoids browser automation complexity)
+    // Log in via browser UI (handles CSRF cookies transparently)
     console.log('Logging in...');
-    try {
-      // Get CSRF token first
-      const csrfRes = await page.request.get(`${BASE_URL}/api/auth/csrf-token`);
-      const csrfData = await csrfRes.json() as { token: string };
-
-      // POST login with CSRF token
-      const loginRes = await page.request.post(`${BASE_URL}/api/auth/login`, {
-        data: {
-          email: DEMO_EMAIL,
-          password: DEMO_PASSWORD,
-        },
-        headers: {
-          'Content-Type': 'application/json',
-          'x-csrf-token': csrfData.token,
-        },
-      });
-
-      if (loginRes.ok()) {
-        console.log('✓ Logged in successfully');
-        // Navigate to dashboard to load with authenticated session
-        await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle' });
-      } else {
-        throw new Error('Login failed');
-      }
-    } catch (error) {
-      throw new Error(`Failed to authenticate: ${error instanceof Error ? error.message : String(error)}`);
-    }
-
-    console.log('');
+    await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle' });
+    await page.fill('#email', DEMO_EMAIL);
+    await page.fill('#password', DEMO_PASSWORD);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(`${BASE_URL}/`, { timeout: 15000 });
+    console.log('✓ Logged in successfully\n');
 
     // Capture dark theme screenshots
     console.log('Capturing dark theme screenshots...');
@@ -201,19 +177,24 @@ async function main(): Promise<void> {
     // Clean up
     console.log('\nCleaning up...');
     await browser.close();
-    server.kill('SIGTERM');
-    await sleep(2000); // Give server time to shut down
 
-    // Delete demo database
-    for (let i = 0; i < 3; i++) {
+    // Kill server and wait for exit before deleting DB (avoids EPERM on Windows)
+    server.kill('SIGTERM');
+    await new Promise<void>((resolve) => {
+      server.on('exit', () => resolve());
+      setTimeout(resolve, 5000); // Fallback timeout
+    });
+
+    // Delete demo database (retry for Windows file-lock delays)
+    for (let i = 0; i < 5; i++) {
       try {
-        if (existsSync(DEMO_DB_PATH)) {
-          rmSync(DEMO_DB_PATH);
-        }
+        if (existsSync(DEMO_DB_PATH)) rmSync(DEMO_DB_PATH);
+        if (existsSync(DEMO_DB_PATH + '-wal')) rmSync(DEMO_DB_PATH + '-wal');
+        if (existsSync(DEMO_DB_PATH + '-shm')) rmSync(DEMO_DB_PATH + '-shm');
         break;
       } catch {
-        if (i === 2) throw new Error('Failed to delete demo database');
-        await sleep(500);
+        if (i === 4) console.warn('Warning: could not delete demo database');
+        await sleep(1000);
       }
     }
 
@@ -222,9 +203,16 @@ async function main(): Promise<void> {
     process.exit(0);
   } catch (error) {
     console.error('\n✗ Screenshot generation failed:', error instanceof Error ? error.message : error);
-    server.kill();
+
+    // Kill server and wait before cleanup to avoid EPERM
+    server.kill('SIGTERM');
+    await new Promise<void>((resolve) => {
+      server.on('exit', () => resolve());
+      setTimeout(resolve, 5000);
+    });
+
     if (existsSync(DEMO_DB_PATH)) {
-      rmSync(DEMO_DB_PATH);
+      try { rmSync(DEMO_DB_PATH); } catch { /* ignore */ }
     }
     process.exit(1);
   }
