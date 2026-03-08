@@ -123,6 +123,8 @@ async function main(): Promise<void> {
 
   try {
     // Wait for server to be ready
+    console.log('Waiting for server startup...');
+    await sleep(3000); // Give server more time to start
     await waitForServer();
 
     // Run demo seed
@@ -150,13 +152,31 @@ async function main(): Promise<void> {
 
     // Log in
     console.log('Logging in...');
-    await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle' });
-    await page.waitForSelector('input[type="email"]', { timeout: 15000 });
-    await page.fill('input[type="email"]', DEMO_EMAIL);
-    await page.fill('input[type="password"]', DEMO_PASSWORD);
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/^http:\/\/localhost:\d+\/$/, { timeout: 15000 });
-    console.log('✓ Logged in successfully\n');
+    await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
+    await sleep(2000); // Give page time to fully load and hydrate
+
+    // Check if we're already on the dashboard
+    if (page.url().includes('login')) {
+      await page.waitForSelector('input[type="email"]', { timeout: 10000 });
+      await page.fill('input[type="email"]', DEMO_EMAIL);
+      await page.fill('input[type="password"]', DEMO_PASSWORD);
+
+      // Wait for and click submit button
+      const submitButton = await page.waitForSelector('button[type="submit"]', { timeout: 5000 });
+      await submitButton?.click();
+
+      // Wait for redirect to dashboard
+      await page.waitForNavigation({ url: /\/$/, timeout: 15000 }).catch(() => {
+        // Ignore navigation timeout, page might already be on dashboard
+      });
+    }
+
+    // Verify we're on the dashboard
+    if (!page.url().includes('/login')) {
+      console.log('✓ Logged in successfully\n');
+    } else {
+      throw new Error('Failed to log in - still on login page');
+    }
 
     // Capture dark theme screenshots
     console.log('Capturing dark theme screenshots...');
