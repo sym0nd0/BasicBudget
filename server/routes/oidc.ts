@@ -66,6 +66,7 @@ router.get('/login', async (req: Request, res: Response) => {
       code_challenge_method: 'S256',
     });
 
+    await new Promise<void>((resolve, reject) => req.session.save((err) => (err ? reject(err) : resolve())));
     res.redirect(authUrl.toString());
   } catch (err) {
     res.status(500).json({ message: 'OIDC error' });
@@ -153,6 +154,7 @@ router.get('/callback', async (req: Request, res: Response) => {
     req.session.createdAt = Date.now();
 
     auditLog(userRow.id as string, 'oidc_login', { issuer }, req.ip, req.get('user-agent'));
+    await new Promise<void>((resolve, reject) => req.session.save((err) => (err ? reject(err) : resolve())));
     res.redirect(config.APP_URL);
   } catch {
     res.redirect(`${config.APP_URL}/login?error=oidc_failed`);
