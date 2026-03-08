@@ -6,10 +6,12 @@ const DEMO_PASSWORD = 'DemoPass123!';
 
 interface DemoData {
   csrf?: string;
-  cookies?: Record<string, string>;
+  cookies: string[];
 }
 
-const demoData: DemoData = {};
+const demoData: DemoData = {
+  cookies: [],
+};
 
 async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -28,11 +30,14 @@ async function request(
     headers['x-csrf-token'] = demoData.csrf;
   }
 
+  if (demoData.cookies.length > 0) {
+    headers['Cookie'] = demoData.cookies.join('; ');
+  }
+
   const config = {
     method,
     url: `${BASE_URL}${endpoint}`,
     headers,
-    withCredentials: true,
     validateStatus: () => true, // Don't throw on any status
   } as unknown as axios.AxiosRequestConfig;
 
@@ -42,6 +47,19 @@ async function request(
 
   try {
     const response = await axios(config);
+
+    // Store cookies from Set-Cookie header
+    const setCookieHeader = response.headers['set-cookie'];
+    if (setCookieHeader) {
+      const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : [setCookieHeader];
+      for (const cookie of cookies) {
+        const cookieName = cookie.split('=')[0];
+        // Replace or add cookie
+        demoData.cookies = demoData.cookies.filter(c => !c.startsWith(cookieName));
+        demoData.cookies.push(cookie.split(';')[0]); // Store only the name=value part
+      }
+    }
+
     return response;
   } catch (error) {
     console.error(`Request failed: ${method} ${endpoint}`, error);
