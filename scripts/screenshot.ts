@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { chromium } from 'playwright';
+import { chromium, request as playwrightRequest } from 'playwright';
 import { existsSync, rmSync, mkdirSync, cpSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -150,17 +150,34 @@ async function main(): Promise<void> {
     // Set viewport
     await page.setViewportSize({ width: 1440, height: 900 });
 
-    // Log in via browser UI (handles CSRF cookies transparently)
+    // Login via API request context — bypasses browser's Secure-cookie restriction
+    // over plain HTTP, so no server rebuild or COOKIE_SECURE env var is needed.
     console.log('Logging in...');
-    await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle' });
+    const apiContext = await playwrightRequest.newContext({ baseURL: BASE_URL });
 
-    // Wait for form to be visible
-    await page.waitForSelector('form', { timeout: 5000 });
+    // Fetch CSRF token (apiContext stores the resulting CSRF cookie)
+    const csrfRes = await apiContext.get('/api/auth/csrf-token');
+    if (!csrfRes.ok()) throw new Error(`CSRF token fetch failed: ${csrfRes.status()}`);
+    const { token: csrfToken } = await csrfRes.json() as { token: string };
 
-    await page.fill('#email', DEMO_EMAIL);
-    await page.fill('#password', DEMO_PASSWORD);
-    await page.click('button[type="submit"]');
-    await page.waitForURL(`${BASE_URL}/`, { timeout: 15000 });
+    // Login — apiContext sends CSRF cookie automatically; we add the token header
+    const loginRes = await apiContext.post('/api/auth/login', {
+      headers: { 'X-CSRF-Token': csrfToken },
+      data: { email: DEMO_EMAIL, password: DEMO_PASSWORD },
+    });
+    if (!loginRes.ok()) throw new Error(`Login failed: HTTP ${loginRes.status()}`);
+
+    // Transfer session + CSRF cookies into the browser context with secure:false
+    // so Chromium will send them over plain HTTP
+    const { cookies } = await apiContext.storageState();
+    await context.addCookies(cookies.map(c => ({ ...c, secure: false })));
+    await apiContext.dispose();
+
+    // Navigate home and verify the app shows the authenticated view
+    await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle' });
+    if (page.url().includes('/login')) {
+      throw new Error('Authentication failed: app redirected back to login page');
+    }
     console.log('✓ Logged in successfully\n');
 
     // Capture dark theme screenshots
