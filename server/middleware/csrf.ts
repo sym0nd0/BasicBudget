@@ -7,7 +7,7 @@ const { doubleCsrfProtection, generateCsrfToken } = doubleCsrf({
   cookieName: 'bb.csrf',
   cookieOptions: {
     httpOnly: true,
-    secure: config.NODE_ENV === 'production',
+    secure: config.COOKIE_SECURE ? config.COOKIE_SECURE === 'true' : config.NODE_ENV === 'production',
     sameSite: 'lax',
   },
   getCsrfTokenFromRequest: (req) => req.headers['x-csrf-token'] as string | undefined,

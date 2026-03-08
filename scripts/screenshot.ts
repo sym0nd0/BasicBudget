@@ -52,7 +52,7 @@ async function captureScreenshot(
 
   // Set theme via localStorage
   await page.evaluate((theme: string) => {
-    localStorage.setItem('theme', theme);
+    localStorage.setItem('bb-theme', theme);
   }, theme);
 
   // Wait for theme to apply
@@ -100,6 +100,7 @@ async function main(): Promise<void> {
       PORT: String(API_PORT),
       DB_PATH: DEMO_DB_PATH,
       NODE_ENV: 'production',
+      COOKIE_SECURE: 'false',
       SESSION_SECRET: process.env.SESSION_SECRET || generateSecretKey(32),
       TOTP_ENCRYPTION_KEY: process.env.TOTP_ENCRYPTION_KEY || generateSecretKey(32),
       APP_URL: BASE_URL,
@@ -156,29 +157,11 @@ async function main(): Promise<void> {
     // Wait for form to be visible
     await page.waitForSelector('form', { timeout: 5000 });
 
-    // Fill credentials
-    await page.fill('#email', DEMO_EMAIL, { timeout: 5000 });
-    await page.fill('#password', DEMO_PASSWORD, { timeout: 5000 });
-
-    // Set up navigation waiter before clicking
-    const navigationPromise = page.waitForURL(`${BASE_URL}/`, { timeout: 15000 });
-
-    // Click submit button
+    await page.fill('#email', DEMO_EMAIL);
+    await page.fill('#password', DEMO_PASSWORD);
     await page.click('button[type="submit"]');
-
-    // Wait for navigation to complete
-    try {
-      await navigationPromise;
-      console.log('✓ Logged in successfully\n');
-    } catch (error) {
-      // Check if we're already on dashboard (navigation may have happened differently)
-      const currentUrl = page.url();
-      if (currentUrl.includes(BASE_URL)) {
-        console.log('✓ Logged in successfully (via alternate path)\n');
-      } else {
-        throw new Error(`Login failed: navigation to home did not occur (current: ${currentUrl})`);
-      }
-    }
+    await page.waitForURL(`${BASE_URL}/`, { timeout: 15000 });
+    console.log('✓ Logged in successfully\n');
 
     // Capture dark theme screenshots
     console.log('Capturing dark theme screenshots...');

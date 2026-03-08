@@ -33,7 +33,7 @@ export const sessionMiddleware = session({
   rolling: true,
   cookie: {
     httpOnly: true,
-    secure: config.NODE_ENV === 'production',
+    secure: config.COOKIE_SECURE ? config.COOKIE_SECURE === 'true' : config.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   },
