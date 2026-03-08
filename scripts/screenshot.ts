@@ -121,10 +121,10 @@ async function main(): Promise<void> {
 
     // Run demo seed
     console.log('Seeding demo database...');
-    const seedProcess = spawnSync('node', ['--import', 'tsx', 'scripts/demo-seed-simple.ts'], {
+    const seedProcess = spawnSync('node', ['--import', 'tsx', 'scripts/demo-seed-db.ts'], {
       env: {
         ...process.env,
-        API_URL: BASE_URL,
+        DB_PATH: DEMO_DB_PATH,
       },
       stdio: 'inherit',
     });
