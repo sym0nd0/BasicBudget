@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { useBudget } from '../context/BudgetContext';
 import { useFilter } from '../context/FilterContext';
 import { PageShell } from '../components/layout/PageShell';
@@ -11,7 +11,7 @@ import { FilterBar } from '../components/layout/FilterBar';
 import { SortableHeader } from '../components/ui/SortableHeader';
 import { useSortableTable } from '../hooks/useSortableTable';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
-import { formatCurrency, formatOrdinal } from '../utils/formatters';
+import { formatCurrency, formatOrdinal, formatPercent } from '../utils/formatters';
 import { findDuplicateExpense } from '../utils/duplicates';
 import type { Expense } from '../types';
 
@@ -35,6 +35,8 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
 
   const { sorted: filtered, sortKey, sortDir, toggleSort } = useSortableTable<Expense>(preFiltered, 'name');
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const toggleExpand = (id: string) => setExpandedId(prev => prev === id ? null : id);
 
   const totalEffective = filtered.reduce((sum, e) => sum + Math.round(e.amount_pence * e.split_ratio), 0);
   const totalAll = expenses.reduce((sum, e) => sum + Math.round(e.amount_pence * e.split_ratio), 0);
@@ -147,57 +149,107 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                   </td>
                 </tr>
               )}
-              {filtered.map(expense => (
-                <tr
-                  key={expense.id}
-                  className="border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-2)]"
-                >
-                  <td className="px-5 py-3 font-medium text-[var(--color-text)] text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      {expense.name}
-                      {expense.is_household && (
-                        <Badge variant="primary" className="text-[10px]">½</Badge>
-                      )}
-                      {expense.is_recurring && (
-                        <Badge variant="default" className="text-[10px]">{expense.recurrence_type}</Badge>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-5 py-3 font-mono text-[var(--color-text-muted)] text-center">
-                    {formatCurrency(expense.amount_pence)}
-                  </td>
-                  <td className="px-5 py-3 font-mono font-semibold text-[var(--color-danger)] text-center">
-                    {formatCurrency(Math.round(expense.amount_pence * expense.split_ratio))}
-                  </td>
-                  <td className="px-5 py-3 text-center">
-                    <Badge variant="default">{formatOrdinal(expense.posting_day)}</Badge>
-                  </td>
-                  <td className="px-5 py-3 text-center">
-                    <Badge variant="default">{expense.category}</Badge>
-                  </td>
-                  <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs text-center">
-                    {accountName(expense.account_id)}
-                  </td>
-                  <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs max-w-[140px] truncate text-center">
-                    {expense.notes ?? '—'}
-                  </td>
-                  <td className="px-5 py-3 text-center">
-                    <div className="flex items-center gap-1 justify-center">
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(expense)}>
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(expense.id)}
-                        className="hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-light)]">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {filtered.map(expense => {
+                const isExpanded = expandedId === expense.id;
+                return (
+                  <Fragment key={expense.id}>
+                    <tr
+                      className="border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-2)] cursor-pointer"
+                      onClick={() => toggleExpand(expense.id)}
+                    >
+                      <td className="px-5 py-3 font-medium text-[var(--color-text)] text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <svg
+                            className={`w-4 h-4 text-[var(--color-text-muted)] transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                          </svg>
+                          {expense.name}
+                          {expense.is_household && (
+                            <Badge variant="primary" className="text-[10px]">½</Badge>
+                          )}
+                          {expense.is_recurring && (
+                            <Badge variant="default" className="text-[10px]">{expense.recurrence_type}</Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-3 font-mono text-[var(--color-text-muted)] text-center">
+                        {formatCurrency(expense.amount_pence)}
+                      </td>
+                      <td className="px-5 py-3 font-mono font-semibold text-[var(--color-danger)] text-center">
+                        {formatCurrency(Math.round(expense.amount_pence * expense.split_ratio))}
+                      </td>
+                      <td className="px-5 py-3 text-center">
+                        <Badge variant="default">{formatOrdinal(expense.posting_day)}</Badge>
+                      </td>
+                      <td className="px-5 py-3 text-center">
+                        <Badge variant="default">{expense.category}</Badge>
+                      </td>
+                      <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs text-center">
+                        {accountName(expense.account_id)}
+                      </td>
+                      <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs max-w-[140px] truncate text-center">
+                        {expense.notes ?? '—'}
+                      </td>
+                      <td className="px-5 py-3 text-center" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-1 justify-center">
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(expense)}>
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDelete(expense.id)}
+                            className="hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-light)]">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {isExpanded && (
+                      <tr className="border-t border-[var(--color-border)]">
+                        <td colSpan={8} className="px-5 py-4 bg-[var(--color-surface-2)]">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-3 text-sm">
+                            <div>
+                              <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-0.5">Start Date</p>
+                              <p className="text-[var(--color-text)]">{expense.start_date ?? '—'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-0.5">End Date</p>
+                              <p className="text-[var(--color-text)]">{expense.end_date ?? '—'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-0.5">Recurring</p>
+                              <p className="text-[var(--color-text)]">{expense.is_recurring ? expense.recurrence_type : 'No'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-0.5">Split</p>
+                              <p className="text-[var(--color-text)]">{formatPercent(expense.split_ratio * 100)}</p>
+                            </div>
+                            {expense.notes && (
+                              <div className="col-span-2">
+                                <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-0.5">Notes</p>
+                                <p className="text-[var(--color-text)]">{expense.notes}</p>
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-0.5">Created</p>
+                              <p className="text-xs text-[var(--color-text-muted)]">{expense.created_at ?? '—'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide mb-0.5">Updated</p>
+                              <p className="text-xs text-[var(--color-text-muted)]">{expense.updated_at ?? '—'}</p>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
               {/* Totals row */}
               {filtered.length > 0 && (
                 <tr className="border-t-2 border-[var(--color-border)] bg-[var(--color-surface-2)]">
