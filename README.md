@@ -32,6 +32,14 @@ A multi-user personal budgeting and debt management application built with React
 |---|---|
 | ![Dashboard](docs/screenshots/dashboard-light.png) | ![Expenses](docs/screenshots/expenses-light.png) |
 
+| Income | Debts |
+|---|---|
+| ![Income](docs/screenshots/income-light.png) | ![Debt](docs/screenshots/debt-light.png) |
+
+<p align="center">
+  <img src="docs/screenshots/savings-light.png" alt="Savings" width="700">
+</p>
+
 ---
 
 ## Table of Contents
