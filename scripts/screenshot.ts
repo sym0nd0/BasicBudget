@@ -150,33 +150,37 @@ async function main(): Promise<void> {
     // Set viewport
     await page.setViewportSize({ width: 1440, height: 900 });
 
-    // Log in
+    // Log in via HTTP request (avoids browser automation complexity)
     console.log('Logging in...');
-    await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
-    await sleep(2000); // Give page time to fully load and hydrate
+    try {
+      // Get CSRF token first
+      const csrfRes = await page.request.get(`${BASE_URL}/api/auth/csrf-token`);
+      const csrfData = await csrfRes.json() as { token: string };
 
-    // Check if we're already on the dashboard
-    if (page.url().includes('login')) {
-      await page.waitForSelector('input[type="email"]', { timeout: 10000 });
-      await page.fill('input[type="email"]', DEMO_EMAIL);
-      await page.fill('input[type="password"]', DEMO_PASSWORD);
-
-      // Wait for and click submit button
-      const submitButton = await page.waitForSelector('button[type="submit"]', { timeout: 5000 });
-      await submitButton?.click();
-
-      // Wait for redirect to dashboard
-      await page.waitForNavigation({ url: /\/$/, timeout: 15000 }).catch(() => {
-        // Ignore navigation timeout, page might already be on dashboard
+      // POST login with CSRF token
+      const loginRes = await page.request.post(`${BASE_URL}/api/auth/login`, {
+        data: {
+          email: DEMO_EMAIL,
+          password: DEMO_PASSWORD,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-csrf-token': csrfData.token,
+        },
       });
+
+      if (loginRes.ok()) {
+        console.log('✓ Logged in successfully');
+        // Navigate to dashboard to load with authenticated session
+        await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle' });
+      } else {
+        throw new Error('Login failed');
+      }
+    } catch (error) {
+      throw new Error(`Failed to authenticate: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    // Verify we're on the dashboard
-    if (!page.url().includes('/login')) {
-      console.log('✓ Logged in successfully\n');
-    } else {
-      throw new Error('Failed to log in - still on login page');
-    }
+    console.log('');
 
     // Capture dark theme screenshots
     console.log('Capturing dark theme screenshots...');
