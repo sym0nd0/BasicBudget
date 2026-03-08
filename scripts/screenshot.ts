@@ -52,7 +52,7 @@ async function captureScreenshot(
 
   // Set theme via localStorage
   await page.evaluate((theme: string) => {
-    localStorage.setItem('bb-theme', theme);
+    localStorage.setItem('bb-theme', JSON.stringify(theme));
   }, theme);
 
   // Wait for theme to apply
