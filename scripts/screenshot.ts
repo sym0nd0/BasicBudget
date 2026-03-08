@@ -136,7 +136,7 @@ async function main(): Promise<void> {
     // Launch Playwright
     console.log('\nLaunching Playwright...');
     const browser = await chromium.launch({ headless: true });
-    const context = await browser.createBrowserContext();
+    const context = await browser.newContext();
     const page = await context.newPage();
 
     // Set viewport
