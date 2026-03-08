@@ -121,7 +121,7 @@ async function main(): Promise<void> {
 
     // Run demo seed
     console.log('Seeding demo database...');
-    const seedProcess = spawnSync('node', ['--loader', 'tsx', 'scripts/demo-seed.ts'], {
+    const seedProcess = spawnSync('node', ['--import', 'tsx', 'scripts/demo-seed.ts'], {
       env: {
         ...process.env,
         API_URL: BASE_URL,
