@@ -22,9 +22,9 @@ A multi-user personal budgeting and debt management application built with React
 |---|---|
 | <img src="docs/screenshots/income-dark.png" alt="Income" width="350"> | <img src="docs/screenshots/debt-dark.png" alt="Debt" width="350"> |
 
-<p align="center">
-  <img src="docs/screenshots/savings-dark.png" alt="Savings" width="700">
-</p>
+| Savings |
+|---|
+| <img src="docs/screenshots/savings-dark.png" alt="Savings" width="350"> |
 
 ### Light theme
 
@@ -36,9 +36,9 @@ A multi-user personal budgeting and debt management application built with React
 |---|---|
 | <img src="docs/screenshots/income-light.png" alt="Income" width="350"> | <img src="docs/screenshots/debt-light.png" alt="Debt" width="350"> |
 
-<p align="center">
-  <img src="docs/screenshots/savings-light.png" alt="Savings" width="700">
-</p>
+| Savings |
+|---|
+| <img src="docs/screenshots/savings-light.png" alt="Savings" width="350"> |
 
 ---
 
