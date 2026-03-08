@@ -145,10 +145,11 @@ async function main(): Promise<void> {
     // Log in
     console.log('Logging in...');
     await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle' });
+    await page.waitForSelector('input[type="email"]', { timeout: 15000 });
     await page.fill('input[type="email"]', DEMO_EMAIL);
     await page.fill('input[type="password"]', DEMO_PASSWORD);
     await page.click('button[type="submit"]');
-    await page.waitForURL(`${BASE_URL}/`, { timeout: 10000 });
+    await page.waitForURL(/^http:\/\/localhost:\d+\/$/, { timeout: 15000 });
     console.log('✓ Logged in successfully\n');
 
     // Capture dark theme screenshots
@@ -170,12 +171,20 @@ async function main(): Promise<void> {
     // Clean up
     console.log('\nCleaning up...');
     await browser.close();
-    server.kill();
-    await sleep(500);
+    server.kill('SIGTERM');
+    await sleep(2000); // Give server time to shut down
 
     // Delete demo database
-    if (existsSync(DEMO_DB_PATH)) {
-      rmSync(DEMO_DB_PATH);
+    for (let i = 0; i < 3; i++) {
+      try {
+        if (existsSync(DEMO_DB_PATH)) {
+          rmSync(DEMO_DB_PATH);
+        }
+        break;
+      } catch {
+        if (i === 2) throw new Error('Failed to delete demo database');
+        await sleep(500);
+      }
     }
 
     console.log('\n✓ Screenshots generated successfully!\n');
