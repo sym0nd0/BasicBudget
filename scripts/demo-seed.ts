@@ -113,8 +113,8 @@ async function getCsrfToken(): Promise<void> {
   }
   const data = res.data as Record<string, unknown>;
   csrfToken = data.token as string;
-  console.log(`✓ CSRF token obtained: ${csrfToken.substring(0, 16)}...`);
-  console.log(`✓ Cookies stored: ${Array.from(cookies.entries()).map(([k, v]) => `${k}=${v.substring(0, 10)}...`).join(', ')}`);
+  console.log(`✓ Response token: ${csrfToken}`);
+  console.log(`✓ Cookies stored: ${Array.from(cookies.entries()).map(([k, v]) => `${k}=${v}`).join('; ')}`);
 }
 
 async function registerUser(): Promise<void> {
