@@ -150,6 +150,40 @@ Examples:
 
 ---
 
+## Coding Guidelines
+
+These guidelines ensure consistent, efficient, and minimal changes to the codebase.
+
+### Global Instructions
+
+- **Analyse codebase first**: Before making changes, explore the existing code to understand patterns, conventions, and architecture.
+- **Maintain design system consistency**: All UI changes must follow existing design patterns and component styles.
+- **No unsolicited style changes**: Do not modify CSS, formatting, or styling unless explicitly requested.
+- **Prefer layout over style**: When possible, adjust component layout or structure rather than introducing new styles.
+- **Minimum necessary changes**: Only modify what is directly needed to accomplish the stated task. Do not refactor, restructure, or improve surrounding code unless explicitly asked.
+
+### Guard Clauses
+
+- **No unrelated functionality changes**: Do not add, modify, or remove features outside the stated scope of the task.
+- **No unnecessary refactoring**: Do not refactor code, rename variables, reorganise functions, or restructure logic unless explicitly requested.
+- **No new UI styles outside design system**: Do not introduce new CSS classes, colour schemes, fonts, or styling patterns. Reuse existing design system components.
+- **Preserve component patterns**: Maintain existing naming conventions, component structure, prop patterns, and hooks usage.
+
+### Codebase Integrity
+
+- **Use only what exists**: Only use existing files, components, hooks, utilities, and libraries. Do not create new ones unless the task explicitly requires it and no existing alternative exists.
+- **Communicate gaps**: If something the task requires does not exist, explicitly state what is missing rather than creating it without asking.
+- **Follow project structure**: Respect the existing folder structure, naming conventions, and architectural patterns. Do not reorganise files or create new directories without explicit approval.
+
+### Token & Scope Efficiency
+
+- **Output minimal code**: Show only the modified files or the smallest possible code blocks needed to implement the change.
+- **Avoid repeating unchanged code**: Do not show full files or large unchanged sections. Use targeted edits and diffs.
+- **Do not exceed scope**: Modify only files mentioned in or directly required by the task. Do not touch unrelated files.
+- **Reuse existing utilities**: Always prefer existing components, hooks, utilities, and stylesheets over creating new ones.
+
+---
+
 ## Critical Rules (non-negotiable)
 
 ### 1. Language
