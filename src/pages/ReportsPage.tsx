@@ -9,7 +9,7 @@ import { ExpenseDonut } from '../components/charts/ExpenseDonut';
 import { ReportSection } from '../components/reports/ReportSection';
 import { MonthlyComparison } from '../components/reports/MonthlyComparison';
 import { formatCurrency } from '../utils/formatters';
-import { resolveRange } from '../utils/reportRanges';
+import { resolveRange, previousRange } from '../utils/reportRanges';
 import type { ReportRange, MonthlyReportRow } from '../types';
 
 interface ReportsPageProps {
@@ -20,6 +20,10 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
   const [range, setRange] = useState<ReportRange>('1y');
   const { from, to } = resolveRange(range);
   const { data: overview } = useApi<MonthlyReportRow[]>(`/reports/overview?from=${from}&to=${to}`);
+
+  // Fetch previous period data for delta calculation
+  const prevRange = previousRange(range);
+  const { data: previousOverview } = useApi<MonthlyReportRow[]>(`/reports/overview?from=${prevRange.from}&to=${prevRange.to}`);
 
   // Calculate aggregates across the range
   const totals = {
@@ -39,6 +43,32 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
       totals.disposable += row.disposable_pence;
     }
   }
+
+  // Calculate aggregates for previous period
+  const previousTotals = {
+    income: 0,
+    expenses: 0,
+    debt: 0,
+    savings: 0,
+    disposable: 0,
+  };
+
+  if (previousOverview) {
+    for (const row of previousOverview) {
+      previousTotals.income += row.income_pence;
+      previousTotals.expenses += row.expenses_pence;
+      previousTotals.debt += row.debt_payments_pence;
+      previousTotals.savings += row.savings_pence;
+      previousTotals.disposable += row.disposable_pence;
+    }
+  }
+
+  // Calculate deltas
+  const calculateDelta = (current: number, previous: number) => {
+    const delta = current - previous;
+    const percentage = previous !== 0 ? (delta / previous) * 100 : 0;
+    return { delta, percentage };
+  };
 
   // Aggregate all categories across the range
   const aggregatedCategories = (() => {
@@ -78,27 +108,87 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
           <div className="space-y-4">
             {/* Summary cards */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 items-stretch">
+              {/* Income card */}
               <Card className="h-full">
                 <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Income</p>
                 <p className="text-2xl font-bold text-[var(--color-success)]">{formatCurrency(totals.income)}</p>
+                {previousOverview && (
+                  (() => {
+                    const { delta, percentage } = calculateDelta(totals.income, previousTotals.income);
+                    const isPositive = delta >= 0;
+                    return (
+                      <div className={`text-xs mt-2 ${isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
+                        {isPositive ? '↑' : '↓'} {Math.abs(percentage).toFixed(1)}%
+                      </div>
+                    );
+                  })()
+                )}
               </Card>
+              {/* Expenses card */}
               <Card className="h-full">
                 <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Expenses</p>
                 <p className="text-2xl font-bold text-[var(--color-danger)]">{formatCurrency(totals.expenses)}</p>
+                {previousOverview && (
+                  (() => {
+                    const { delta, percentage } = calculateDelta(totals.expenses, previousTotals.expenses);
+                    const isPositive = delta >= 0; // For expenses, positive is bad
+                    return (
+                      <div className={`text-xs mt-2 ${!isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
+                        {isPositive ? '↑' : '↓'} {Math.abs(percentage).toFixed(1)}%
+                      </div>
+                    );
+                  })()
+                )}
               </Card>
+              {/* Debt Payments card */}
               <Card className="h-full">
                 <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Debt Payments</p>
                 <p className="text-2xl font-bold text-[var(--color-warning)]">{formatCurrency(totals.debt)}</p>
+                {previousOverview && (
+                  (() => {
+                    const { delta, percentage } = calculateDelta(totals.debt, previousTotals.debt);
+                    const isPositive = delta >= 0; // For debt, positive is bad
+                    return (
+                      <div className={`text-xs mt-2 ${!isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
+                        {isPositive ? '↑' : '↓'} {Math.abs(percentage).toFixed(1)}%
+                      </div>
+                    );
+                  })()
+                )}
               </Card>
+              {/* Savings card */}
               <Card className="h-full">
                 <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Savings</p>
                 <p className="text-2xl font-bold text-[var(--color-primary)]">{formatCurrency(totals.savings)}</p>
+                {previousOverview && (
+                  (() => {
+                    const { delta, percentage } = calculateDelta(totals.savings, previousTotals.savings);
+                    const isPositive = delta >= 0;
+                    return (
+                      <div className={`text-xs mt-2 ${isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
+                        {isPositive ? '↑' : '↓'} {Math.abs(percentage).toFixed(1)}%
+                      </div>
+                    );
+                  })()
+                )}
               </Card>
+              {/* Disposable card */}
               <Card className="h-full">
                 <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Disposable</p>
                 <p className={`text-2xl font-bold ${totals.disposable >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
                   {formatCurrency(totals.disposable)}
                 </p>
+                {previousOverview && (
+                  (() => {
+                    const { delta, percentage } = calculateDelta(totals.disposable, previousTotals.disposable);
+                    const isPositive = delta >= 0;
+                    return (
+                      <div className={`text-xs mt-2 ${isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
+                        {isPositive ? '↑' : '↓'} {Math.abs(percentage).toFixed(1)}%
+                      </div>
+                    );
+                  })()
+                )}
               </Card>
             </div>
 
@@ -143,7 +233,7 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
 
       {/* Debt section */}
       <ReportSection title="Debt">
-        <DebtBalanceChart />
+        <DebtBalanceChart range={range} />
       </ReportSection>
 
       {/* Detail section */}

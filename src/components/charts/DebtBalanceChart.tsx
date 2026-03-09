@@ -6,6 +6,10 @@ import { TimeRangeSelector } from '../ui/TimeRangeSelector';
 import { formatCurrency, formatYearMonth } from '../../utils/formatters';
 import type { ReportRange, DebtProjectionPoint } from '../../types';
 
+interface DebtBalanceChartProps {
+  range?: ReportRange;
+}
+
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
@@ -20,8 +24,10 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-export function DebtBalanceChart() {
-  const [range, setRange] = useState<ReportRange>('1y');
+export function DebtBalanceChart({ range: externalRange }: DebtBalanceChartProps) {
+  const [internalRange, setInternalRange] = useState<ReportRange>('1y');
+  const range = externalRange ?? internalRange;
+  const isControlled = externalRange !== undefined;
 
   // Resolve range to month count
   const getMonthCount = (r: ReportRange): number => {
@@ -49,17 +55,28 @@ export function DebtBalanceChart() {
     );
   }
 
-  // Format data for chart
-  const chartData = data.map(point => ({
-    ...point,
-    display_month: formatYearMonth(point.month),
-  }));
+  // Format data for chart, including per-debt balances
+  const chartData = data.map(point => {
+    const row: any = {
+      display_month: formatYearMonth(point.month),
+      'Total Debt': point.total_balance_pence,
+    };
+    // Add per-debt balances as separate keys
+    for (const debt of point.per_debt) {
+      row[debt.name] = debt.balance_pence;
+    }
+    return row;
+  });
 
-  // Get unique debt names for legend
-  const debtNames = new Set<string>();
+  // Get unique debt names for legend (in order of first appearance)
+  const debtNames: string[] = [];
+  const seenDebtNames = new Set<string>();
   for (const point of data) {
     for (const debt of point.per_debt) {
-      debtNames.add(debt.name);
+      if (!seenDebtNames.has(debt.name)) {
+        debtNames.push(debt.name);
+        seenDebtNames.add(debt.name);
+      }
     }
   }
 
@@ -78,9 +95,11 @@ export function DebtBalanceChart() {
     <Card>
       <div className="px-5 pt-5">
         <CardHeader title="Debt Balance Projection" subtitle="Projected debt balance over time" />
-        <div className="mt-4">
-          <TimeRangeSelector value={range} onChange={setRange} />
-        </div>
+        {!isControlled && (
+          <div className="mt-4">
+            <TimeRangeSelector value={range} onChange={setInternalRange} />
+          </div>
+        )}
       </div>
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
@@ -99,15 +118,29 @@ export function DebtBalanceChart() {
               <span style={{ color: 'var(--color-text)', fontSize: 11 }}>{value}</span>
             )}
           />
+          {/* Total debt line (thick) */}
           <Line
             type="monotone"
-            dataKey="total_balance_pence"
+            dataKey="Total Debt"
             stroke={COLORS[0]}
             strokeWidth={2.5}
             dot={false}
             activeDot={{ r: 5 }}
             name="Total Debt"
           />
+          {/* Per-debt lines (thin) */}
+          {debtNames.map((name, idx) => (
+            <Line
+              key={name}
+              type="monotone"
+              dataKey={name}
+              stroke={COLORS[(idx + 1) % COLORS.length]}
+              strokeWidth={1.5}
+              dot={false}
+              activeDot={{ r: 5 }}
+              name={name}
+            />
+          ))}
         </LineChart>
       </ResponsiveContainer>
     </Card>

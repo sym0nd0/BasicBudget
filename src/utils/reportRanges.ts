@@ -33,3 +33,38 @@ export function resolveRange(range: ReportRange): { from: string; to: string } {
     default:    return { from: addMonths(-12), to: today };
   }
 }
+
+/**
+ * Calculate the previous equal-length period for a given range.
+ * Returns { from: YYYY-MM-DD, to: YYYY-MM-DD } for the preceding period.
+ */
+export function previousRange(range: ReportRange): { from: string; to: string } {
+  const current = resolveRange(range);
+
+  // Parse dates
+  const fromDate = new Date(current.from);
+  const toDate = new Date(current.to);
+
+  // Calculate period length in days
+  const periodLength = Math.floor((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  // Go back by period length from the current from date
+  const newToDate = new Date(fromDate);
+  newToDate.setDate(newToDate.getDate() - 1);
+
+  const newFromDate = new Date(newToDate);
+  newFromDate.setDate(newFromDate.getDate() - periodLength);
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const formatDate = (date: Date) => {
+    const y = date.getFullYear();
+    const m = date.getMonth() + 1;
+    const d = date.getDate();
+    return `${y}-${pad(m)}-${pad(d)}`;
+  };
+
+  return {
+    from: formatDate(newFromDate),
+    to: formatDate(newToDate),
+  };
+}
