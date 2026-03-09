@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   AreaChart,
   Area,
@@ -5,7 +6,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts';
 import { formatCurrency, formatYearMonth } from '../../utils/formatters';
@@ -54,6 +54,16 @@ export function CategoryTrend({ data }: CategoryTrendProps) {
     .slice(0, 6)
     .map(([name]) => name);
 
+  const allNames = [...topCategories, 'Other'];
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const effectiveSelection = selectedCategories.length === 0 ? allNames : selectedCategories;
+  function toggleCategory(name: string) {
+    setSelectedCategories(prev => {
+      const current = prev.length === 0 ? allNames : prev;
+      return current.includes(name) ? current.filter(n => n !== name) : [...current, name];
+    });
+  }
+
   // Pivot: for each month, sum spending by category
   const chartData = data.map(row => {
     const month_data: any = { month: formatYearMonth(row.month) };
@@ -91,7 +101,20 @@ export function CategoryTrend({ data }: CategoryTrendProps) {
   ];
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
+    <div>
+      <div className="flex flex-wrap gap-1.5 px-1 pb-3">
+        {allNames.map((name) => (
+          <button key={name} onClick={() => toggleCategory(name)} className={[
+            'px-2.5 py-1 rounded text-xs font-medium transition-colors',
+            effectiveSelection.includes(name)
+              ? 'bg-[var(--color-primary)] text-white'
+              : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]',
+          ].join(' ')}>
+            {name}
+          </button>
+        ))}
+      </div>
+      <ResponsiveContainer width="100%" height={320}>
       <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
         <XAxis
@@ -103,13 +126,8 @@ export function CategoryTrend({ data }: CategoryTrendProps) {
           tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
         />
         <Tooltip content={<CustomTooltip />} />
-        <Legend
-          formatter={(value) => (
-            <span style={{ color: 'var(--color-text)', fontSize: 11 }}>{value}</span>
-          )}
-        />
         {/* Top 6 categories */}
-        {topCategories.map((cat, idx) => (
+        {topCategories.filter(cat => effectiveSelection.includes(cat)).map((cat, idx) => (
           <Area
             key={cat}
             type="monotone"
@@ -121,15 +139,18 @@ export function CategoryTrend({ data }: CategoryTrendProps) {
           />
         ))}
         {/* Other */}
-        <Area
-          type="monotone"
-          dataKey="Other"
-          stackId="spending"
-          fill={COLORS[6]}
-          stroke="none"
-          name="Other"
-        />
+        {effectiveSelection.includes('Other') && (
+          <Area
+            type="monotone"
+            dataKey="Other"
+            stackId="spending"
+            fill={COLORS[6]}
+            stroke="none"
+            name="Other"
+          />
+        )}
       </AreaChart>
-    </ResponsiveContainer>
+      </ResponsiveContainer>
+    </div>
   );
 }

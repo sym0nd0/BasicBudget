@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useApi } from '../../hooks/useApi';
 import { Card, CardHeader } from '../ui/Card';
 import { TimeRangeSelector } from '../ui/TimeRangeSelector';
@@ -80,6 +80,16 @@ export function DebtBalanceChart({ range: externalRange }: DebtBalanceChartProps
     }
   }
 
+  const [selectedDebts, setSelectedDebts] = useState<string[]>([]);
+  const [showTotal, setShowTotal] = useState(true);
+  const effectiveDebts = selectedDebts.length === 0 ? debtNames : selectedDebts;
+  function toggleDebt(name: string) {
+    setSelectedDebts(prev => {
+      const current = prev.length === 0 ? debtNames : prev;
+      return current.includes(name) ? current.filter(n => n !== name) : [...current, name];
+    });
+  }
+
   const COLORS = [
     'var(--color-chart-1)',
     'var(--color-chart-2)',
@@ -100,6 +110,22 @@ export function DebtBalanceChart({ range: externalRange }: DebtBalanceChartProps
             <TimeRangeSelector value={range} onChange={setInternalRange} />
           </div>
         )}
+        {debtNames.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <button onClick={() => setShowTotal(v => !v)} className={[
+              'px-2.5 py-1 rounded text-xs font-medium transition-colors',
+              showTotal ? 'bg-[var(--color-primary)] text-white'
+                        : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]',
+            ].join(' ')}>Total Debt</button>
+            {debtNames.map(name => (
+              <button key={name} onClick={() => toggleDebt(name)} className={[
+                'px-2.5 py-1 rounded text-xs font-medium transition-colors',
+                effectiveDebts.includes(name) ? 'bg-[var(--color-primary)] text-white'
+                                              : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]',
+              ].join(' ')}>{name}</button>
+            ))}
+          </div>
+        )}
       </div>
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
@@ -113,23 +139,20 @@ export function DebtBalanceChart({ range: externalRange }: DebtBalanceChartProps
             tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
           />
           <Tooltip content={<CustomTooltip />} />
-          <Legend
-            formatter={(value) => (
-              <span style={{ color: 'var(--color-text)', fontSize: 11 }}>{value}</span>
-            )}
-          />
           {/* Total debt line (thick) */}
-          <Line
-            type="monotone"
-            dataKey="Total Debt"
-            stroke={COLORS[0]}
-            strokeWidth={2.5}
-            dot={false}
-            activeDot={{ r: 5 }}
-            name="Total Debt"
-          />
+          {showTotal && (
+            <Line
+              type="monotone"
+              dataKey="Total Debt"
+              stroke={COLORS[0]}
+              strokeWidth={2.5}
+              dot={false}
+              activeDot={{ r: 5 }}
+              name="Total Debt"
+            />
+          )}
           {/* Per-debt lines (thin) */}
-          {debtNames.map((name, idx) => (
+          {debtNames.filter(name => effectiveDebts.includes(name)).map((name, idx) => (
             <Line
               key={name}
               type="monotone"
