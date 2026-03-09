@@ -10,6 +10,7 @@ import { Badge } from '../components/ui/Badge';
 import { SortableHeader } from '../components/ui/SortableHeader';
 import { useSortableTable } from '../hooks/useSortableTable';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
+import { DebtBalanceChart } from '../components/charts/DebtBalanceChart';
 import { formatCurrency, formatPercent, formatYearMonth } from '../utils/formatters';
 import { findDuplicateDebt } from '../utils/duplicates';
 import type { Debt, RepaymentRow, DebtPayoffSummary } from '../types';
@@ -150,6 +151,13 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
           <p className="text-2xl font-bold text-[var(--color-primary)]">{totalInterestDebts}</p>
         </Card>
       </div>
+
+      {/* Debt balance projection chart */}
+      {debts.length > 0 && (
+        <div className="mb-5">
+          <DebtBalanceChart />
+        </div>
+      )}
 
       {/* Debt table */}
       <Card padding={false}>

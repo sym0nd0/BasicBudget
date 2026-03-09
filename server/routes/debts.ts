@@ -109,6 +109,12 @@ router.post('/', (req: Request, res: Response) => {
     return;
   }
   const row = db.prepare('SELECT * FROM debts WHERE id = ?').get(id) as Record<string, unknown>;
+
+  // Record initial balance snapshot
+  const today = new Date().toISOString().slice(0, 10);
+  db.prepare('INSERT INTO debt_balance_snapshots (id, debt_id, household_id, balance_pence, recorded_at) VALUES (?, ?, ?, ?, ?)')
+    .run(randomUUID(), id, req.householdId!, body.balance_pence, today);
+
   logger.info('Debt created', { id, userId: req.userId, name: nameValue });
   res.status(201).json(enrichDebtWithPeriods(mapDebt(row)));
 });
@@ -159,6 +165,8 @@ router.put('/:id', (req: Request, res: Response) => {
     }
   }
 
+  const balanceChanged = body.balance_pence !== undefined && body.balance_pence !== existing.balance_pence;
+
   try {
     db.transaction(() => {
       db.prepare(`
@@ -189,6 +197,13 @@ router.put('/:id', (req: Request, res: Response) => {
         reminderMonths,
         id,
       );
+
+      // Record snapshot if balance changed
+      if (balanceChanged) {
+        const today = new Date().toISOString().slice(0, 10);
+        db.prepare('INSERT INTO debt_balance_snapshots (id, debt_id, household_id, balance_pence, recorded_at) VALUES (?, ?, ?, ?, ?)')
+          .run(randomUUID(), id, req.householdId!, body.balance_pence, today);
+      }
 
       // Replace all deal periods with new ones (auto-generate labels based on index)
       db.prepare('DELETE FROM debt_deal_periods WHERE debt_id = ?').run(id);
