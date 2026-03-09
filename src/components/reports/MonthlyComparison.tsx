@@ -71,19 +71,19 @@ export function MonthlyComparison({ data }: MonthlyComparisonProps) {
         <h3 className="text-sm font-semibold text-[var(--color-text)] mb-3">This Month</h3>
         <p className="text-xs text-[var(--color-text-muted)] mb-3">{thisMonth.month}</p>
         <div className="space-y-1">
-          <div className="flex justify-between py-2 border-b border-[var(--color-border)]">
+          <div className="flex justify-between py-2">
             <span className="text-sm text-[var(--color-text)]">Income</span>
             <span className="text-sm font-mono text-[var(--color-success)]">{formatCurrency(thisMonth.income_pence)}</span>
           </div>
-          <div className="flex justify-between py-2 border-b border-[var(--color-border)]">
+          <div className="flex justify-between py-2">
             <span className="text-sm text-[var(--color-text)]">Expenses</span>
             <span className="text-sm font-mono text-[var(--color-danger)]">{formatCurrency(thisMonth.expenses_pence)}</span>
           </div>
-          <div className="flex justify-between py-2 border-b border-[var(--color-border)]">
+          <div className="flex justify-between py-2">
             <span className="text-sm text-[var(--color-text)]">Debt Payments</span>
             <span className="text-sm font-mono text-[var(--color-warning)]">{formatCurrency(thisMonth.debt_payments_pence)}</span>
           </div>
-          <div className="flex justify-between py-2 border-b border-[var(--color-border)]">
+          <div className="flex justify-between py-2 border-t border-[var(--color-border)] pt-2">
             <span className="text-sm text-[var(--color-text)]">Savings</span>
             <span className="text-sm font-mono text-[var(--color-primary)]">{formatCurrency(thisMonth.savings_pence)}</span>
           </div>

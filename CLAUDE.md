@@ -110,22 +110,6 @@ Without `step="0.01"`, HTML5 validation rejects valid 2-decimal values with "Ple
 
 **Exception:** Inline CSS width values for progress bars (`style={{ width: \`${percentage}%\` }}`) are not text display and do not need `formatPercent()`.
 
-### Chart styling
-
-**Recharts charts must not display grey hover highlights.**
-
-All Recharts components (`BarChart`, `LineChart`, `AreaChart`, etc.) must use `cursor={false}` on the `<Tooltip>` to prevent the default grey background hover effect:
-
-```typescript
-// ✓ Good — no hover highlight
-<Tooltip content={<CustomTooltip />} cursor={false} />
-
-// ✗ Bad — shows grey hover background
-<Tooltip content={<CustomTooltip />} />
-```
-
-This ensures visual consistency across all charts and prevents the hover highlight from obscuring data. Existing charts must be audited and updated: check `src/components/charts/` and `src/components/reports/` for any `<Tooltip>` elements without this property.
-
 ### Settings service (`server/services/settings.ts`)
 
 SMTP and OIDC configuration is stored in the `system_settings` SQLite table (key/value pairs) and accessed through this service. It maintains an in-memory cache invalidated on writes.
