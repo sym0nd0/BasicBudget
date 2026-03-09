@@ -34,6 +34,11 @@ export type {
   AuditLogEntry,
   PaginatedResponse,
   VersionInfo,
+  // Reports types
+  ReportRange,
+  MonthlyReportRow,
+  DebtPerDebtBreakdown,
+  DebtProjectionPoint,
 } from '../../shared/types';
 
 export { EXPENSE_CATEGORIES } from '../../shared/types';

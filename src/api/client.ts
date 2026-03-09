@@ -20,6 +20,8 @@ import type {
   AuditLogEntry,
   PaginatedResponse,
   VersionInfo,
+  MonthlyReportRow,
+  DebtProjectionPoint,
 } from '../types';
 
 // ─── CSRF token management ─────────────────────────────────────────────────────
@@ -317,4 +319,10 @@ export const api = {
     if (filters?.action) qs.set('action', filters.action);
     return request<PaginatedResponse<AuditLogEntry>>(`/admin/audit-log?${qs.toString()}`);
   },
+
+  // ── Reports ──
+  getReportsOverview: (from: string, to: string) =>
+    request<MonthlyReportRow[]>(`/reports/overview?from=${from}&to=${to}`),
+  getDebtProjection: (months: number = 12) =>
+    request<DebtProjectionPoint[]>(`/reports/debt-projection?months=${months}`),
 };

@@ -8,6 +8,7 @@ import { Card, CardHeader } from '../components/ui/Card';
 import { FilterBar } from '../components/layout/FilterBar';
 import { IncomeVsExpensesBar } from '../components/charts/IncomeVsExpensesBar';
 import { ExpenseDonut } from '../components/charts/ExpenseDonut';
+import { DebtBalanceChart } from '../components/charts/DebtBalanceChart';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { formatCurrency, formatPercent } from '../utils/formatters';
@@ -241,6 +242,11 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
             </p>
           </div>
         </Card>
+      </div>
+
+      {/* Debt balance chart */}
+      <div className="mb-4">
+        <DebtBalanceChart />
       </div>
     </PageShell>
   );

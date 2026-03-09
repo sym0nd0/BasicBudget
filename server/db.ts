@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { migrateEncryptedSettings } from './services/settings.js';
 
 const DATA_DIR = process.env.DB_PATH
@@ -242,6 +243,24 @@ try {
   dbLog('Dropped expenses.type column.');
 } catch {
   // Column already removed or not supported, ignore
+}
+
+// Seed initial debt balance snapshots for existing debts (one-time)
+try {
+  const snapshotCount = (db.prepare('SELECT COUNT(*) as c FROM debt_balance_snapshots').get() as { c: number }).c;
+  if (snapshotCount === 0) {
+    const existingDebts = db.prepare('SELECT id, household_id, balance_pence FROM debts WHERE balance_pence > 0').all() as Array<{ id: string; household_id: string; balance_pence: number }>;
+    const today = new Date().toISOString().slice(0, 10);
+    const ins = db.prepare('INSERT OR IGNORE INTO debt_balance_snapshots (id, debt_id, household_id, balance_pence, recorded_at) VALUES (?, ?, ?, ?, ?)');
+    for (const d of existingDebts) {
+      ins.run(randomUUID(), d.id, d.household_id, d.balance_pence, today);
+    }
+    if (existingDebts.length > 0) {
+      dbLog(`Seeded ${existingDebts.length} initial debt balance snapshots.`);
+    }
+  }
+} catch {
+  // Snapshots already seeded or table doesn't exist yet, ignore
 }
 
 export default db;

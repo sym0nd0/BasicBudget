@@ -222,6 +222,14 @@ CREATE TABLE IF NOT EXISTS system_settings (
     updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS debt_balance_snapshots (
+    id              TEXT PRIMARY KEY,
+    debt_id         TEXT NOT NULL REFERENCES debts(id) ON DELETE CASCADE,
+    household_id    TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+    balance_pence   INTEGER NOT NULL,
+    recorded_at     TEXT NOT NULL DEFAULT (date('now'))
+);
+
 -- ─── Indexes ──────────────────────────────────────────────────────────────────
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -248,3 +256,5 @@ CREATE INDEX IF NOT EXISTS idx_savings_goals_household ON savings_goals(househol
 CREATE INDEX IF NOT EXISTS idx_month_locks_household ON month_locks(household_id);
 CREATE INDEX IF NOT EXISTS idx_incomes_contributor ON incomes(contributor_name);
 CREATE INDEX IF NOT EXISTS idx_system_settings_key ON system_settings(key);
+CREATE INDEX IF NOT EXISTS idx_debt_balance_snapshots_debt ON debt_balance_snapshots(debt_id, recorded_at);
+CREATE INDEX IF NOT EXISTS idx_debt_balance_snapshots_household ON debt_balance_snapshots(household_id, recorded_at);

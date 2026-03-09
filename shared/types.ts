@@ -326,3 +326,30 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
 }
+
+// ─── Reports ──────────────────────────────────────────────────────────────
+
+export type ReportRange = '1w' | '1m' | '3m' | 'ytd' | '1y' | '2y' | '5y' | 'all';
+
+export interface MonthlyReportRow {
+  month: string;
+  income_pence: number;
+  expenses_pence: number;
+  debt_payments_pence: number;
+  savings_pence: number;
+  disposable_pence: number;
+  category_breakdown: CategoryBreakdown[];
+}
+
+export interface DebtPerDebtBreakdown {
+  id: string;
+  name: string;
+  balance_pence: number;
+}
+
+export interface DebtProjectionPoint {
+  month: string;
+  total_balance_pence: number;
+  is_actual: boolean;
+  per_debt: DebtPerDebtBreakdown[];
+}
