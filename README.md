@@ -127,6 +127,14 @@ A multi-user personal budgeting and debt management application built with React
 - Mark savings goals as household goals to split the target equally among all household members
 - Assign savings goals to specific household members for individual tracking
 
+### Reports
+- **Overview section** — at-a-glance summary cards (income, expenses, debt payments, savings, disposable) plus month-over-month comparison with percentage change indicators
+- **Trends section** — multi-month income vs expenses grouped bar chart showing financial patterns across the selected period
+- **Spending section** — expense breakdown donut chart showing spending proportions by category across the entire period
+- **Debt section** — debt projection line chart displaying all debts' balances over time with per-debt visibility
+- **Detail section** — exact monthly figures in tabular format for reference
+- **Flexible time ranges** — single time range selector governs all reports (1W, 1M, 3M, YTD, 1Y, 2Y, 5Y, All)
+
 ### Settings & Appearance
 - Manage named payment accounts, including joint accounts shared across all household members; month locking to prevent edits on closed months
 - Change password, change email, 2FA setup/disable
