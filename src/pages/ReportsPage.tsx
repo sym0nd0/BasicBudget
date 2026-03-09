@@ -6,9 +6,12 @@ import { DebtBalanceChart } from '../components/charts/DebtBalanceChart';
 import { TimeRangeSelector } from '../components/ui/TimeRangeSelector';
 import { IncomeExpensesTrend } from '../components/charts/IncomeExpensesTrend';
 import { ExpenseDonut } from '../components/charts/ExpenseDonut';
+import { DisposableSavingsRateTrend } from '../components/charts/DisposableSavingsRateTrend';
+import { CategoryTrend } from '../components/charts/CategoryTrend';
+import { DebtToIncomeTrend } from '../components/charts/DebtToIncomeTrend';
 import { ReportSection } from '../components/reports/ReportSection';
 import { MonthlyComparison } from '../components/reports/MonthlyComparison';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, formatPercent } from '../utils/formatters';
 import { resolveRange, previousRange } from '../utils/reportRanges';
 import type { ReportRange, MonthlyReportRow } from '../types';
 
@@ -214,6 +217,12 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
               <CardHeader title="Income vs Expenses Over Time" subtitle="Monthly comparison across the period" />
               <IncomeExpensesTrend data={overview} />
             </Card>
+
+            {/* Disposable & Savings Rate */}
+            <Card>
+              <CardHeader title="Disposable Income & Savings Rate" subtitle="Financial margin and savings percentage over time" />
+              <DisposableSavingsRateTrend data={overview} />
+            </Card>
           </div>
         </ReportSection>
       )}
@@ -227,13 +236,30 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
               <CardHeader title="Expense Breakdown" subtitle="Proportions across the period" />
               <ExpenseDonut breakdown={aggregatedCategories} />
             </Card>
+
+            {/* Category trend */}
+            <Card>
+              <CardHeader title="Category Spending Over Time" subtitle="Top 6 categories tracked month-by-month" />
+              <CategoryTrend data={overview} />
+            </Card>
           </div>
         </ReportSection>
       )}
 
       {/* Debt section */}
       <ReportSection title="Debt">
-        <DebtBalanceChart range={range} />
+        <div className="space-y-4">
+          {/* Debt projection */}
+          <DebtBalanceChart range={range} />
+
+          {/* DTI ratio */}
+          {overview && overview.length > 0 && (
+            <Card>
+              <CardHeader title="Debt-to-Income Ratio" subtitle="Debt payments relative to income (35% is healthy threshold)" />
+              <DebtToIncomeTrend data={overview} />
+            </Card>
+          )}
+        </div>
       </ReportSection>
 
       {/* Detail section */}
@@ -250,22 +276,27 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
                     <th className="text-right px-4 py-2 font-semibold text-[var(--color-text-muted)]">Expenses</th>
                     <th className="text-right px-4 py-2 font-semibold text-[var(--color-text-muted)]">Debt</th>
                     <th className="text-right px-4 py-2 font-semibold text-[var(--color-text-muted)]">Savings</th>
+                    <th className="text-right px-4 py-2 font-semibold text-[var(--color-text-muted)]">Savings Rate</th>
                     <th className="text-right px-4 py-2 font-semibold text-[var(--color-text-muted)]">Disposable</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {overview.map((row, idx) => (
-                    <tr key={idx} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)]">
-                      <td className="px-4 py-2 font-medium text-[var(--color-text)]">{row.month}</td>
-                      <td className="text-right px-4 py-2 font-mono text-[var(--color-success)]">{formatCurrency(row.income_pence)}</td>
-                      <td className="text-right px-4 py-2 font-mono text-[var(--color-danger)]">{formatCurrency(row.expenses_pence)}</td>
-                      <td className="text-right px-4 py-2 font-mono text-[var(--color-warning)]">{formatCurrency(row.debt_payments_pence)}</td>
-                      <td className="text-right px-4 py-2 font-mono text-[var(--color-primary)]">{formatCurrency(row.savings_pence)}</td>
-                      <td className={`text-right px-4 py-2 font-mono ${row.disposable_pence >= 0 ? 'text-[var(--color-primary)]' : 'text-[var(--color-danger)]'}`}>
-                        {formatCurrency(row.disposable_pence)}
-                      </td>
-                    </tr>
-                  ))}
+                  {overview.map((row, idx) => {
+                    const savingsRate = row.income_pence > 0 ? (row.savings_pence / row.income_pence) * 100 : 0;
+                    return (
+                      <tr key={idx} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)]">
+                        <td className="px-4 py-2 font-medium text-[var(--color-text)]">{row.month}</td>
+                        <td className="text-right px-4 py-2 font-mono text-[var(--color-success)]">{formatCurrency(row.income_pence)}</td>
+                        <td className="text-right px-4 py-2 font-mono text-[var(--color-danger)]">{formatCurrency(row.expenses_pence)}</td>
+                        <td className="text-right px-4 py-2 font-mono text-[var(--color-warning)]">{formatCurrency(row.debt_payments_pence)}</td>
+                        <td className="text-right px-4 py-2 font-mono text-[var(--color-primary)]">{formatCurrency(row.savings_pence)}</td>
+                        <td className="text-right px-4 py-2 font-mono text-[var(--color-text)]">{formatPercent(savingsRate)}</td>
+                        <td className={`text-right px-4 py-2 font-mono ${row.disposable_pence >= 0 ? 'text-[var(--color-primary)]' : 'text-[var(--color-danger)]'}`}>
+                          {formatCurrency(row.disposable_pence)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
