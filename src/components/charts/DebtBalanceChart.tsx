@@ -114,12 +114,12 @@ export function DebtBalanceChart({ range: externalRange }: DebtBalanceChartProps
             tickFormatter={v => `£${(v / 100000).toFixed(1)}k`}
             tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
           />
-          <Tooltip content={<CustomTooltip />} />
           <Legend
             formatter={(value) => (
               <span style={{ color: 'var(--color-text)', fontSize: 11 }}>{value}</span>
             )}
           />
+          <Tooltip content={<CustomTooltip />} wrapperStyle={{ zIndex: 20 }} />
           {/* Total debt line (thick) */}
           <Line
             type="monotone"
@@ -148,4 +148,5 @@ export function DebtBalanceChart({ range: externalRange }: DebtBalanceChartProps
     </Card>
   );
 }
+
 

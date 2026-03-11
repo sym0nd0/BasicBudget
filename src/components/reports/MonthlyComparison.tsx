@@ -12,6 +12,33 @@ function getDelta(current: number, previous: number): { delta: number; percentag
   return { delta, percentage, isPositive };
 }
 
+function RowLayout({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-[var(--color-border)] last:border-b-0">
+      <span className="text-sm text-[var(--color-text)]">{label}</span>
+      {children}
+    </div>
+  );
+}
+
+function ValueRow({ label, value }: { label: string; value: number }) {
+  return (
+    <RowLayout label={label}>
+      <div className="flex items-center gap-3">
+        <div className="text-right">
+          <p className="text-sm font-mono text-[var(--color-text)]">{formatCurrency(value)}</p>
+          <p className="text-xs text-[var(--color-text-muted)] opacity-0 pointer-events-none select-none" aria-hidden="true">
+            placeholder
+          </p>
+        </div>
+        <div className="px-2 py-0.5 rounded text-xs font-medium opacity-0 pointer-events-none select-none" aria-hidden="true">
+          0.0%
+        </div>
+      </div>
+    </RowLayout>
+  );
+}
+
 function ComparisonRow({
   label,
   current,
@@ -30,8 +57,7 @@ function ComparisonRow({
     : !isPositive;
 
   return (
-    <div className="flex items-center justify-between py-2 border-b border-[var(--color-border)] last:border-b-0">
-      <span className="text-sm text-[var(--color-text)]">{label}</span>
+    <RowLayout label={label}>
       <div className="flex items-center gap-3">
         <div className="text-right">
           <p className="text-sm font-mono text-[var(--color-text)]">{formatCurrency(current)}</p>
@@ -47,7 +73,7 @@ function ComparisonRow({
           {isGood ? '↓' : '↑'} {Math.abs(percentage).toFixed(1)}%
         </div>
       </div>
-    </div>
+    </RowLayout>
   );
 }
 
@@ -71,28 +97,11 @@ export function MonthlyComparison({ data }: MonthlyComparisonProps) {
         <h3 className="text-sm font-semibold text-[var(--color-text)] mb-3">This Month</h3>
         <p className="text-xs text-[var(--color-text-muted)] mb-3">{thisMonth.month}</p>
         <div className="space-y-1">
-          <div className="flex justify-between py-2">
-            <span className="text-sm text-[var(--color-text)]">Income</span>
-            <span className="text-sm font-mono text-[var(--color-success)]">{formatCurrency(thisMonth.income_pence)}</span>
-          </div>
-          <div className="flex justify-between py-2">
-            <span className="text-sm text-[var(--color-text)]">Expenses</span>
-            <span className="text-sm font-mono text-[var(--color-danger)]">{formatCurrency(thisMonth.expenses_pence)}</span>
-          </div>
-          <div className="flex justify-between py-2">
-            <span className="text-sm text-[var(--color-text)]">Debt Payments</span>
-            <span className="text-sm font-mono text-[var(--color-warning)]">{formatCurrency(thisMonth.debt_payments_pence)}</span>
-          </div>
-          <div className="flex justify-between py-2 border-t border-[var(--color-border)] pt-2">
-            <span className="text-sm text-[var(--color-text)]">Savings</span>
-            <span className="text-sm font-mono text-[var(--color-primary)]">{formatCurrency(thisMonth.savings_pence)}</span>
-          </div>
-          <div className="flex justify-between py-2">
-            <span className="text-sm text-[var(--color-text)]">Disposable</span>
-            <span className={`text-sm font-mono ${thisMonth.disposable_pence >= 0 ? 'text-[var(--color-primary)]' : 'text-[var(--color-danger)]'}`}>
-              {formatCurrency(thisMonth.disposable_pence)}
-            </span>
-          </div>
+          <ValueRow label="Income" value={thisMonth.income_pence} />
+          <ValueRow label="Expenses" value={thisMonth.expenses_pence} />
+          <ValueRow label="Debt Payments" value={thisMonth.debt_payments_pence} />
+          <ValueRow label="Savings" value={thisMonth.savings_pence} />
+          <ValueRow label="Disposable" value={thisMonth.disposable_pence} />
         </div>
       </div>
 
