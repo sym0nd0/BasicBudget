@@ -26,8 +26,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function DebtBalanceChart({ range: externalRange }: DebtBalanceChartProps) {
   const [internalRange, setInternalRange] = useState<ReportRange>('1y');
-  const [selectedDebts, setSelectedDebts] = useState<string[]>([]);
-  const [showTotal, setShowTotal] = useState(true);
   const range = externalRange ?? internalRange;
   const isControlled = externalRange !== undefined;
 
@@ -73,14 +71,6 @@ export function DebtBalanceChart({ range: externalRange }: DebtBalanceChartProps
         seenDebtNames.add(debt.name);
       }
     }
-  }
-
-  const effectiveDebts = selectedDebts.length === 0 ? debtNames : selectedDebts;
-  function toggleDebt(name: string) {
-    setSelectedDebts(prev => {
-      const current = prev.length === 0 ? debtNames : prev;
-      return current.includes(name) ? current.filter(n => n !== name) : [...current, name];
-    });
   }
 
   if (!data || data.length === 0) {
