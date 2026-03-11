@@ -26,6 +26,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function DebtBalanceChart({ range: externalRange }: DebtBalanceChartProps) {
   const [internalRange, setInternalRange] = useState<ReportRange>('1y');
+  const [selectedDebts, setSelectedDebts] = useState<string[]>([]);
+  const [showTotal, setShowTotal] = useState(true);
   const range = externalRange ?? internalRange;
   const isControlled = externalRange !== undefined;
 
@@ -46,17 +48,10 @@ export function DebtBalanceChart({ range: externalRange }: DebtBalanceChartProps
 
   const { data } = useApi<DebtProjectionPoint[]>(`/reports/debt-projection?months=${getMonthCount(range)}`);
 
-  if (!data || data.length === 0) {
-    return (
-      <Card>
-        <CardHeader title="Debt Balance Projection" subtitle="Projected balance over time" />
-        <p className="text-sm text-[var(--color-text-muted)] p-4">No debt data available</p>
-      </Card>
-    );
-  }
+  const safeData = data ?? [];
 
   // Format data for chart, including per-debt balances
-  const chartData = data.map(point => {
+  const chartData = safeData.map(point => {
     const row: any = {
       display_month: formatYearMonth(point.month),
       'Total Debt': point.total_balance_pence,
@@ -71,13 +66,30 @@ export function DebtBalanceChart({ range: externalRange }: DebtBalanceChartProps
   // Get unique debt names for legend (in order of first appearance)
   const debtNames: string[] = [];
   const seenDebtNames = new Set<string>();
-  for (const point of data) {
+  for (const point of safeData) {
     for (const debt of point.per_debt) {
       if (!seenDebtNames.has(debt.name)) {
         debtNames.push(debt.name);
         seenDebtNames.add(debt.name);
       }
     }
+  }
+
+  const effectiveDebts = selectedDebts.length === 0 ? debtNames : selectedDebts;
+  function toggleDebt(name: string) {
+    setSelectedDebts(prev => {
+      const current = prev.length === 0 ? debtNames : prev;
+      return current.includes(name) ? current.filter(n => n !== name) : [...current, name];
+    });
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <Card>
+        <CardHeader title="Debt Balance Projection" subtitle="Projected balance over time" />
+        <p className="text-sm text-[var(--color-text-muted)] p-4">No debt data available</p>
+      </Card>
+    );
   }
 
   const COLORS = [
@@ -146,3 +158,4 @@ export function DebtBalanceChart({ range: externalRange }: DebtBalanceChartProps
     </Card>
   );
 }
+
