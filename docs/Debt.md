@@ -54,3 +54,8 @@ Below the schedule, a summary shows:
 - **Months remaining** until the debt is paid off
 - **Total interest** that will be paid over the repayment period
 - **Projected payoff date**
+
+
+---
+
+← [[Expenses]] | [[Savings]] →

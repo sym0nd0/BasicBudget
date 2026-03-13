@@ -33,3 +33,8 @@ Goals marked as **Household Goals** appear on the [Household](Household.md) summ
 ## Editing and Deleting
 
 Click the **edit icon** on any goal card to update it. Click the **delete icon** to remove it permanently.
+
+
+---
+
+← [[Debt]] | [[Household]] →

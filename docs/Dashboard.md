@@ -37,3 +37,8 @@ The filter bar appears above the summary cards and allows you to narrow down the
 | **Recurrence** | Show only recurring items, one-off items, or all. |
 
 Changing any filter updates all summary cards and charts simultaneously.
+
+
+---
+
+← [[Getting Started|Getting-Started]] | [[Income]] →

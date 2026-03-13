@@ -64,3 +64,8 @@ A line chart of the ratio of total debt to annual income over time.
 ## Monthly Detail Table
 
 A table at the bottom of the page showing a row per month with income, expenses, disposable income, and savings rate columns. Click any column header to sort.
+
+
+---
+
+← [[Household]] | [[Settings]] →

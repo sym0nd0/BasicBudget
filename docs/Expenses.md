@@ -40,3 +40,8 @@ When an expense is marked as a **Household Expense**, a split ratio field become
 ## Editing and Deleting
 
 Click the **edit icon** on any row to update an entry. Click the **delete icon** to remove it permanently.
+
+
+---
+
+← [[Income]] | [[Debt]] →

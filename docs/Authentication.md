@@ -85,3 +85,8 @@ Click **Revoke** next to any session to log out that device immediately.
 ### New Device Email Alerts
 
 When you log in from a new device or browser, BasicBudget sends an email alert to your registered address. If you do not recognise the login, revoke the session immediately and change your password.
+
+
+---
+
+← [[Settings]] | [[Admin]] →
