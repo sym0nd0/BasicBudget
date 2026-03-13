@@ -58,5 +58,9 @@ Below the schedule, a summary shows:
 
 ---
 
-| ← [[Expenses]] | | [[Savings]] → |
-| :-- | --- | --: |
+<table width="100%">
+<tr>
+<td align="left">&#8592; <a href="Expenses">Expenses</a></td>
+<td align="right"><a href="Savings">Savings</a> &#8594;</td>
+</tr>
+</table>

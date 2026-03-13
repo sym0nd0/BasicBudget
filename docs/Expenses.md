@@ -44,5 +44,9 @@ Click the **edit icon** on any row to update an entry. Click the **delete icon**
 
 ---
 
-| ← [[Income]] | | [[Debt]] → |
-| :-- | --- | --: |
+<table width="100%">
+<tr>
+<td align="left">&#8592; <a href="Income">Income</a></td>
+<td align="right"><a href="Debt">Debt</a> &#8594;</td>
+</tr>
+</table>

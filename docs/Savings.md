@@ -37,5 +37,9 @@ Click the **edit icon** on any goal card to update it. Click the **delete icon**
 
 ---
 
-| ← [[Debt]] | | [[Household]] → |
-| :-- | --- | --: |
+<table width="100%">
+<tr>
+<td align="left">&#8592; <a href="Debt">Debt</a></td>
+<td align="right"><a href="Household">Household</a> &#8594;</td>
+</tr>
+</table>

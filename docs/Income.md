@@ -41,5 +41,9 @@ Income flagged as **Household Income** appears on the [Household](Household.md) 
 
 ---
 
-| ← [[Dashboard]] | | [[Expenses]] → |
-| :-- | --- | --: |
+<table width="100%">
+<tr>
+<td align="left">&#8592; <a href="Dashboard">Dashboard</a></td>
+<td align="right"><a href="Expenses">Expenses</a> &#8594;</td>
+</tr>
+</table>
