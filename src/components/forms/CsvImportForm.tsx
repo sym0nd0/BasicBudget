@@ -7,10 +7,27 @@ interface CsvImportFormProps {
   onCancel: () => void;
 }
 
+type ImportType = 'expenses' | 'incomes' | 'debts' | 'savings';
+
+const COLUMN_HINTS: Record<ImportType, string> = {
+  expenses: 'name, amount, day, category, type, household, split_ratio, account, recurrence_type, is_recurring, notes, start_date, end_date',
+  incomes: 'name, amount, day, contributor, gross_or_net, recurrence_type, is_recurring, notes, start_date, end_date',
+  debts: 'name, balance, interest_rate, minimum_payment, overpayment, compounding_frequency, day, is_household, split_ratio, recurrence_type, is_recurring, notes, start_date, end_date',
+  savings: 'name, target_amount, current_amount, monthly_contribution, is_household, target_date, notes',
+};
+
+const TEMPLATE_HEADERS: Record<ImportType, string> = {
+  expenses: 'name,amount,day,category,type,household,split_ratio,account,recurrence_type,is_recurring,notes,start_date,end_date',
+  incomes: 'name,amount,day,contributor,gross_or_net,recurrence_type,is_recurring,notes,start_date,end_date',
+  debts: 'name,balance,interest_rate,minimum_payment,overpayment,compounding_frequency,day,is_household,split_ratio,recurrence_type,is_recurring,notes,start_date,end_date',
+  savings: 'name,target_amount,current_amount,monthly_contribution,is_household,target_date,notes',
+};
+
 export function CsvImportForm({ onSuccess, onCancel }: CsvImportFormProps) {
-  const [importType, setImportType] = useState<'expenses' | 'incomes'>('expenses');
+  const [importType, setImportType] = useState<ImportType>('expenses');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rowErrors, setRowErrors] = useState<{ row: number; message: string }[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -23,6 +40,7 @@ export function CsvImportForm({ onSuccess, onCancel }: CsvImportFormProps) {
 
     setLoading(true);
     setError(null);
+    setRowErrors([]);
 
     try {
       const formData = new FormData();
@@ -41,11 +59,10 @@ export function CsvImportForm({ onSuccess, onCancel }: CsvImportFormProps) {
         return;
       }
 
-      let msg = result.message;
       if (result.errors?.length > 0) {
-        msg += `. Errors on rows: ${result.errors.map(e => e.row).join(', ')}`;
+        setRowErrors(result.errors);
       }
-      onSuccess(msg);
+      onSuccess(result.message);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -53,19 +70,28 @@ export function CsvImportForm({ onSuccess, onCancel }: CsvImportFormProps) {
     }
   };
 
+  const templateHref = `data:text/csv;charset=utf-8,${encodeURIComponent(TEMPLATE_HEADERS[importType] + '\n')}`;
+  const templateFilename = `${importType}-template.csv`;
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div>
         <p className="text-sm text-[var(--color-text-muted)] mb-3">
-          Import expenses or incomes from a CSV file. Dates should be in DD/MM/YYYY format and amounts in pounds (e.g. 12.50).
+          Import data from a CSV file. Dates should be in DD/MM/YYYY format and amounts in pounds (e.g. 12.50).
         </p>
         <Select
           label="Import Type"
           value={importType}
-          onChange={e => setImportType(e.target.value as 'expenses' | 'incomes')}
+          onChange={e => {
+            setImportType(e.target.value as ImportType);
+            setRowErrors([]);
+            setError(null);
+          }}
           options={[
             { value: 'expenses', label: 'Expenses' },
             { value: 'incomes', label: 'Incomes' },
+            { value: 'debts', label: 'Debts' },
+            { value: 'savings', label: 'Savings Goals' },
           ]}
         />
       </div>
@@ -85,16 +111,32 @@ export function CsvImportForm({ onSuccess, onCancel }: CsvImportFormProps) {
             hover:file:opacity-90 cursor-pointer"
         />
         <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-          {importType === 'expenses'
-            ? 'Columns: name, amount, day, category, type, household, notes, start_date, end_date'
-            : 'Columns: name, amount, day, contributor, gross_or_net, notes, start_date, end_date'}
+          Columns: {COLUMN_HINTS[importType]}
         </p>
+        <a
+          href={templateHref}
+          download={templateFilename}
+          className="mt-1 inline-block text-xs text-[var(--color-primary)] hover:underline"
+        >
+          Download template
+        </a>
       </div>
 
       {error && (
         <p className="text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">
           {error}
         </p>
+      )}
+
+      {rowErrors.length > 0 && (
+        <div className="text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">
+          <p className="font-medium mb-1">Row errors:</p>
+          <ul className="list-disc list-inside space-y-0.5">
+            {rowErrors.map(e => (
+              <li key={e.row}>Row {e.row}: {e.message}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <div className="flex gap-3 justify-end pt-2">

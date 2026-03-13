@@ -138,7 +138,7 @@ A multi-user personal budgeting and debt management application built with React
 ### Settings & Appearance
 - Manage named payment accounts, including joint accounts shared across all household members; month locking to prevent edits on closed months
 - Change password, change email, 2FA setup/disable
-- CSV import (expenses and incomes) and JSON export for bulk data management and backups
+- CSV import (expenses, incomes, debts, and savings goals) and JSON export for bulk data management and backups
 - **Version update notifications** — opt-in sidebar badge notifying admins when a new release is available on GitHub
 - **Colour blindness palettes** — per-user accessibility setting (server-persisted); choose from Default, Deuteranopia (blue/orange), Protanopia (teal/pink), or Tritanopia (green/red); affects status colours and charts
 
@@ -549,7 +549,7 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 | GET | `/api/version` | Get current and latest version info |
 | POST | `/api/months/:ym/lock` | Lock a month (prevent edits) |
 | DELETE | `/api/months/:ym/lock` | Unlock a month |
-| POST | `/api/import/csv` | CSV import (expenses or incomes) |
+| POST | `/api/import/csv` | CSV import (expenses, incomes, debts, savings goals) |
 | GET | `/api/export/json` | JSON export of all user data |
 
 ### Admin (requires `system_role = 'admin'`)
