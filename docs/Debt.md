@@ -58,4 +58,5 @@ Below the schedule, a summary shows:
 
 ---
 
-← [[Expenses]] | [[Savings]] →
+| ← [[Expenses]] | [[Savings]] → |
+| :-- | --: |

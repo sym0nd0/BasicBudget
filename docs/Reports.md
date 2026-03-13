@@ -68,4 +68,5 @@ A table at the bottom of the page showing a row per month with income, expenses,
 
 ---
 
-← [[Household]] | [[Settings]] →
+| ← [[Household]] | [[Settings]] → |
+| :-- | --: |

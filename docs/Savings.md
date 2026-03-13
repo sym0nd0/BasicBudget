@@ -37,4 +37,5 @@ Click the **edit icon** on any goal card to update it. Click the **delete icon**
 
 ---
 
-← [[Debt]] | [[Household]] →
+| ← [[Debt]] | [[Household]] → |
+| :-- | --: |
