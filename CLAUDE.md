@@ -128,6 +128,14 @@ On startup, `server/db.ts` runs a one-time migration: if any `SMTP_HOST` / `OIDC
 - Admin nav items in the sidebar are conditional on `user?.system_role === 'admin'`.
 - OIDC client cache (`server/routes/oidc.ts`) uses `undefined` as "not yet built" sentinel and `null` as "built but not configured". Call `resetOidcClient()` after updating OIDC settings to force a rebuild.
 
+### Household tab — jointly appointed items only
+
+**All data displayed on the Household tab (`/household`) must be filtered to `is_household = true` items only.** This applies to every section without exception: income, expenses, debts, savings, charts, and projections. Personal (sole) items must never appear on this page.
+
+- The `/api/household/summary` endpoint uses `sharedExpensesPence` for `total_expenses_pence`, disposable income, and category breakdown — never `totalExpensesPence` (which includes sole expenses).
+- The `DebtBalanceChart` on the Household page must always pass `householdOnly={true}`, which appends `&household_only=true` to `/api/reports/debt-projection`.
+- When adding new components or API calls to the Household tab, always apply the `is_household = true` filter at the server level. Never display sole/personal data on this page.
+
 ### Semantic Versioning
 
 Follow [Semantic Versioning 2.0.0](https://semver.org/) strictly:

@@ -119,12 +119,14 @@ router.get('/overview', (req: Request, res: Response) => {
   res.json(rows);
 });
 
-// GET /api/reports/debt-projection?months=N (default 12, max 600)
+// GET /api/reports/debt-projection?months=N (default 12, max 600)&household_only=true
 router.get('/debt-projection', (req: Request, res: Response) => {
   const numMonths = Math.min(parseInt(req.query.months as string ?? '12', 10), 600);
+  const householdOnly = req.query.household_only === 'true';
 
   const rawDebts = db.prepare('SELECT * FROM debts WHERE household_id = ?').all(req.householdId!) as Record<string, unknown>[];
   const visibleDebts = filterVisible(rawDebts, req.userId!)
+    .filter(row => !householdOnly || Boolean(row.is_household))
     .map(row => {
       const debt = row as Omit<Debt, 'is_recurring' | 'is_household'>;
       const periods = db.prepare('SELECT * FROM debt_deal_periods WHERE debt_id = ? ORDER BY start_date').all(debt.id) as DebtDealPeriod[];

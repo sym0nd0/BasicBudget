@@ -169,7 +169,7 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
           <CardHeader title="Income vs Outgoings" subtitle="Full household view" />
           <IncomeVsExpensesBar
             income={overview?.total_income_pence ?? 0}
-            expenses={overview?.total_expenses_pence ?? 0}
+            expenses={overview?.shared_expenses_pence ?? 0}
             debtPayments={overview?.debt_payments_pence ?? 0}
           />
         </Card>
@@ -179,74 +179,11 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
           <ExpenseDonut breakdown={overview?.category_breakdown ?? []} />
         </Card>
 
-        <Card>
-          <CardHeader title="Expense Split" subtitle="Shared vs sole expenses" />
-          <div className="mt-4 space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-[var(--color-text-muted)]">Shared (household)</span>
-                <span className="font-mono font-medium text-[var(--color-text)]">
-                  {formatCurrency(overview?.shared_expenses_pence ?? 0)}
-                </span>
-              </div>
-              <div className="w-full bg-[var(--color-surface-2)] rounded-full h-2">
-                <div
-                  className="h-2 rounded-full bg-[var(--color-primary)]"
-                  style={{
-                    width: overview && overview.total_expenses_pence > 0
-                      ? `${(overview.shared_expenses_pence / overview.total_expenses_pence) * 100}%`
-                      : '0%',
-                  }}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-[var(--color-text-muted)]">Sole expenses</span>
-                <span className="font-mono font-medium text-[var(--color-text)]">
-                  {formatCurrency(overview?.sole_expenses_pence ?? 0)}
-                </span>
-              </div>
-              <div className="w-full bg-[var(--color-surface-2)] rounded-full h-2">
-                <div
-                  className="h-2 rounded-full bg-[var(--color-warning)]"
-                  style={{
-                    width: overview && overview.total_expenses_pence > 0
-                      ? `${(overview.sole_expenses_pence / overview.total_expenses_pence) * 100}%`
-                      : '0%',
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Debt-to-income */}
-          <div className="mt-6 pt-4 border-t border-[var(--color-border)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-[var(--color-text)]">Debt-to-Income Ratio</p>
-                <p className="text-xs text-[var(--color-text-muted)]">Monthly debt payments ÷ income</p>
-              </div>
-              <div className={`text-xl font-bold ${
-                (overview?.debt_to_income_ratio ?? 0) > 35
-                  ? 'text-[var(--color-danger)]'
-                  : 'text-[var(--color-success)]'
-              }`}>
-                {formatPercent(overview?.debt_to_income_ratio ?? 0)}
-              </div>
-            </div>
-            <p className="text-xs text-[var(--color-text-muted)] mt-1">
-              {(overview?.debt_to_income_ratio ?? 0) <= 35
-                ? 'Healthy — below the 35% guideline'
-                : 'Above 35% — consider reducing debt payments'}
-            </p>
-          </div>
-        </Card>
       </div>
 
       {/* Debt balance chart */}
       <div className="mb-4">
-        <DebtBalanceChart />
+        <DebtBalanceChart householdOnly={true} />
       </div>
     </PageShell>
   );
