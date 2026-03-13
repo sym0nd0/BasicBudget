@@ -18,14 +18,14 @@ BasicBudget is a self-hosted, multi-user personal finance application for tracki
 
 | Page | Description |
 |---|---|
-| [Getting Started](Getting-Started.md) | Docker setup, environment variables, first login, development mode |
-| [Dashboard](Dashboard.md) | Summary cards, charts, and the filter bar |
-| [Income](Income.md) | Adding and managing income entries |
-| [Expenses](Expenses.md) | Adding and managing expense entries |
-| [Debt](Debt.md) | Debt tracking, deal periods, and repayment schedules |
-| [Savings](Savings.md) | Savings goals and progress tracking |
-| [Household](Household.md) | Multi-user households, invites, and roles |
-| [Reports](Reports.md) | Reports page, time ranges, and all chart sections |
-| [Settings](Settings.md) | Profile, accounts, CSV import, export, appearance, and month locking |
-| [Authentication](Authentication.md) | Login, 2FA, OIDC SSO, sessions, and account recovery |
-| [Admin](Admin.md) | User management, SMTP, OIDC, categories, and audit log |
+| [[Getting Started\|Getting-Started]] | Docker setup, environment variables, first login, development mode |
+| [[Dashboard]] | Summary cards, charts, and the filter bar |
+| [[Income]] | Adding and managing income entries |
+| [[Expenses]] | Adding and managing expense entries |
+| [[Debt]] | Debt tracking, deal periods, and repayment schedules |
+| [[Savings]] | Savings goals and progress tracking |
+| [[Household]] | Multi-user households, invites, and roles |
+| [[Reports]] | Reports page, time ranges, and all chart sections |
+| [[Settings]] | Profile, accounts, CSV import, export, appearance, and month locking |
+| [[Authentication]] | Login, 2FA, OIDC SSO, sessions, and account recovery |
+| [[Admin]] | User management, SMTP, OIDC, categories, and audit log |
