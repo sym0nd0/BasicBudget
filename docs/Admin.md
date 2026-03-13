@@ -87,5 +87,9 @@ The Audit Log records significant actions performed by all users.
 
 ---
 
-| ← [[Authentication]] | |
-| :-- | --- |
+<table width="100%">
+<tr>
+<td align="left">&#8592; <a href="Authentication">Authentication</a></td>
+<td align="right"></td>
+</tr>
+</table>

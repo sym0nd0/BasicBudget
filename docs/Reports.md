@@ -68,5 +68,9 @@ A table at the bottom of the page showing a row per month with income, expenses,
 
 ---
 
-| ← [[Household]] | | [[Settings]] → |
-| :-- | --- | --: |
+<table width="100%">
+<tr>
+<td align="left">&#8592; <a href="Household">Household</a></td>
+<td align="right"><a href="Settings">Settings</a> &#8594;</td>
+</tr>
+</table>

@@ -82,5 +82,9 @@ Open `http://localhost:5173` in your browser.
 
 ---
 
-| ← [[Home]] | | [[Dashboard]] → |
-| :-- | --- | --: |
+<table width="100%">
+<tr>
+<td align="left">&#8592; <a href="Home">Home</a></td>
+<td align="right"><a href="Dashboard">Dashboard</a> &#8594;</td>
+</tr>
+</table>

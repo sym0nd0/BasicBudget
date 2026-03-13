@@ -53,5 +53,9 @@ The `/household` page shows a combined view of all household-flagged items:
 
 ---
 
-| ← [[Savings]] | | [[Reports]] → |
-| :-- | --- | --: |
+<table width="100%">
+<tr>
+<td align="left">&#8592; <a href="Savings">Savings</a></td>
+<td align="right"><a href="Reports">Reports</a> &#8594;</td>
+</tr>
+</table>
