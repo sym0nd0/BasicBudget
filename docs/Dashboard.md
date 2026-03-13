@@ -40,9 +40,8 @@ Changing any filter updates all summary cards and charts simultaneously.
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Importing-Data">Importing Data</a></td>
-<td align="right"><a href="Budget-Categories">Budget Categories</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Importing Data|Importing-Data]]</span>
+  <span style="float:right;">[[Budget Categories|Budget-Categories]] →</span>
+</p>
+<div style="clear:both;"></div>

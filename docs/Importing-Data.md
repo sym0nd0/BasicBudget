@@ -33,9 +33,8 @@ For full column specifications for each type, see [[Data Import\|Data-Import]].
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Adding-Transactions">Adding Transactions</a></td>
-<td align="right"><a href="Dashboard">Dashboard</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Adding Transactions|Adding-Transactions]]</span>
+  <span style="float:right;">[[Dashboard]] →</span>
+</p>
+<div style="clear:both;"></div>

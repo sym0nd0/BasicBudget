@@ -78,9 +78,8 @@ After starting the container, follow the [[Getting Started\|Getting-Started]] gu
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="System-Requirements">System Requirements</a></td>
-<td align="right"><a href="Manual-Setup">Manual Setup</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[System Requirements|System-Requirements]]</span>
+  <span style="float:right;">[[Manual Setup|Manual-Setup]] →</span>
+</p>
+<div style="clear:both;"></div>

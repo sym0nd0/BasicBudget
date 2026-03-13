@@ -47,9 +47,8 @@ Choose between **Light**, **Dark**, or **System** (follows your operating system
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Backup-and-Restore">Backup and Restore</a></td>
-<td align="right"><a href="Authentication">Authentication</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Backup and Restore|Backup-and-Restore]]</span>
+  <span style="float:right;">[[Authentication]] →</span>
+</p>
+<div style="clear:both;"></div>

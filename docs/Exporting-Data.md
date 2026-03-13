@@ -42,9 +42,8 @@ For a complete backup strategy, combine the JSON export with a direct backup of 
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Net-Worth-Tracking">Net Worth Tracking</a></td>
-<td align="right"><a href="Automation">Automation</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Net Worth Tracking|Net-Worth-Tracking]]</span>
+  <span style="float:right;">[[Automation]] →</span>
+</p>
+<div style="clear:both;"></div>

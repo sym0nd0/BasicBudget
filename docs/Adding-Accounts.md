@@ -37,9 +37,8 @@ When adding or editing an expense, select the account from the **Account** dropd
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Creating-Your-First-Budget">Creating Your First Budget</a></td>
-<td align="right"><a href="Adding-Transactions">Adding Transactions</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Creating Your First Budget|Creating-Your-First-Budget]]</span>
+  <span style="float:right;">[[Adding Transactions|Adding-Transactions]] →</span>
+</p>
+<div style="clear:both;"></div>

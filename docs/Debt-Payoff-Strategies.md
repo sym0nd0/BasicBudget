@@ -65,9 +65,8 @@ During an active deal period, the repayment schedule uses the deal's interest ra
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Adding-Debts">Adding Debts</a></td>
-<td align="right"><a href="Debt-Charts">Debt Charts</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Adding Debts|Adding-Debts]]</span>
+  <span style="float:right;">[[Debt Charts|Debt-Charts]] →</span>
+</p>
+<div style="clear:both;"></div>

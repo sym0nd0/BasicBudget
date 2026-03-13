@@ -23,9 +23,8 @@ See [[Updating BasicBudget\|Updating-BasicBudget]] for instructions on pulling n
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Screenshots">Screenshots</a></td>
-<td align="right"><a href="System-Requirements">System Requirements</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Screenshots]]</span>
+  <span style="float:right;">[[System Requirements|System-Requirements]] →</span>
+</p>
+<div style="clear:both;"></div>

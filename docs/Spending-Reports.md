@@ -29,9 +29,8 @@ If you have a colour vision impairment, you can switch to an accessible palette 
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Reports">Reports</a></td>
-<td align="right"><a href="Budget-Performance">Budget Performance</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Reports]]</span>
+  <span style="float:right;">[[Budget Performance|Budget-Performance]] →</span>
+</p>
+<div style="clear:both;"></div>

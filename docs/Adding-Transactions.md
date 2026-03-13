@@ -47,9 +47,8 @@ All four entry types share some common fields:
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Adding-Accounts">Adding Accounts</a></td>
-<td align="right"><a href="Importing-Data">Importing Data</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Adding Accounts|Adding-Accounts]]</span>
+  <span style="float:right;">[[Importing Data|Importing-Data]] →</span>
+</p>
+<div style="clear:both;"></div>

@@ -35,9 +35,8 @@ Switching palettes takes effect immediately without a page reload.
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="API">API</a></td>
-<td align="right"><a href="Backup-and-Restore">Backup and Restore</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[API]]</span>
+  <span style="float:right;">[[Backup and Restore|Backup-and-Restore]] →</span>
+</p>
+<div style="clear:both;"></div>

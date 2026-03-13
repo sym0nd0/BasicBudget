@@ -27,9 +27,8 @@ Debts flagged as **Household Debt** appear on the [Household](Household) summary
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Household">Household</a></td>
-<td align="right"><a href="Adding-Debts">Adding Debts</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Household]]</span>
+  <span style="float:right;">[[Adding Debts|Adding-Debts]] →</span>
+</p>
+<div style="clear:both;"></div>

@@ -32,9 +32,8 @@ A table at the bottom of the page showing a row per month with income, expenses,
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Savings">Savings</a></td>
-<td align="right"><a href="Spending-Reports">Spending Reports</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Savings]]</span>
+  <span style="float:right;">[[Spending Reports|Spending-Reports]] →</span>
+</p>
+<div style="clear:both;"></div>

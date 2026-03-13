@@ -52,9 +52,8 @@ After a full reset:
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Chart-Issues">Chart Issues</a></td>
-<td align="right"><a href="Development-Setup">Development Setup</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Chart Issues|Chart-Issues]]</span>
+  <span style="float:right;">[[Development Setup|Development-Setup]] →</span>
+</p>
+<div style="clear:both;"></div>

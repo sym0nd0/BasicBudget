@@ -72,9 +72,8 @@ After starting, follow the [[Getting Started\|Getting-Started]] guide to registe
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Docker-Setup">Docker Setup</a></td>
-<td align="right"><a href="Configuration">Configuration</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Docker Setup|Docker-Setup]]</span>
+  <span style="float:right;">[[Configuration]] →</span>
+</p>
+<div style="clear:both;"></div>

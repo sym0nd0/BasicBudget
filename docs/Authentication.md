@@ -88,9 +88,8 @@ When you log in from a new device or browser, BasicBudget sends an email alert t
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Settings">Settings</a></td>
-<td align="right"><a href="Admin">Admin</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Settings]]</span>
+  <span style="float:right;">[[Admin]] →</span>
+</p>
+<div style="clear:both;"></div>

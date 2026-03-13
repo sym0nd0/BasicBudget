@@ -92,9 +92,8 @@ docker compose start
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Customisation">Customisation</a></td>
-<td align="right"><a href="Settings">Settings</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Customisation]]</span>
+  <span style="float:right;">[[Settings]] →</span>
+</p>
+<div style="clear:both;"></div>

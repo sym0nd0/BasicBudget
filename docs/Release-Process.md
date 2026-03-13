@@ -78,9 +78,7 @@ If there are no breaking changes, omit this section entirely.
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Testing">Testing</a></td>
-<td align="right"></td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Testing]]</span>
+</p>
+<div style="clear:both;"></div>

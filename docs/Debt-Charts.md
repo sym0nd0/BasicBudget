@@ -38,9 +38,8 @@ Both charts are on the **Reports** page, in the **Debt** section. Select a time 
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Debt-Payoff-Strategies">Debt Payoff Strategies</a></td>
-<td align="right"><a href="Savings">Savings</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Debt Payoff Strategies|Debt-Payoff-Strategies]]</span>
+  <span style="float:right;">[[Savings]] →</span>
+</p>
+<div style="clear:both;"></div>

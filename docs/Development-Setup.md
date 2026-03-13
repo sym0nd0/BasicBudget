@@ -84,9 +84,8 @@ npm start
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Resetting-the-Application">Resetting the Application</a></td>
-<td align="right"><a href="Project-Structure">Project Structure</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Resetting the Application|Resetting-the-Application]]</span>
+  <span style="float:right;">[[Project Structure|Project-Structure]] →</span>
+</p>
+<div style="clear:both;"></div>

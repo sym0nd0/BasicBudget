@@ -45,9 +45,8 @@ BasicBudget automatically sends an email alert when you log in from a new device
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Exporting-Data">Exporting Data</a></td>
-<td align="right"><a href="Data-Import">Data Import</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Exporting Data|Exporting-Data]]</span>
+  <span style="float:right;">[[Data Import|Data-Import]] →</span>
+</p>
+<div style="clear:both;"></div>

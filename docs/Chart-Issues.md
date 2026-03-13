@@ -41,9 +41,8 @@ When printing or saving as PDF, use the browser's print function with "Backgroun
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Database-Problems">Database Problems</a></td>
-<td align="right"><a href="Resetting-the-Application">Resetting the Application</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Database Problems|Database-Problems]]</span>
+  <span style="float:right;">[[Resetting the Application|Resetting-the-Application]] →</span>
+</p>
+<div style="clear:both;"></div>

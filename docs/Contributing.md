@@ -57,9 +57,8 @@ docs: update API endpoint table in wiki
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Project-Structure">Project Structure</a></td>
-<td align="right"><a href="Testing">Testing</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Project Structure|Project-Structure]]</span>
+  <span style="float:right;">[[Testing]] →</span>
+</p>
+<div style="clear:both;"></div>
