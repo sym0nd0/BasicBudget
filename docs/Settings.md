@@ -121,3 +121,8 @@ Choose a chart colour palette optimised for different types of colour vision:
 ## Theme
 
 Choose between **Light**, **Dark**, or **System** (follows your operating system preference).
+
+
+---
+
+← [[Reports]] | [[Authentication]] →

@@ -49,3 +49,8 @@ The `/household` page shows a combined view of all household-flagged items:
 - **Debts** — all members' household debts
 - **Savings** — all members' household savings goals
 - **Charts** — income vs expenses, expense breakdown, and debt projection filtered to household items only
+
+
+---
+
+← [[Savings]] | [[Reports]] →

@@ -83,3 +83,8 @@ The Audit Log records significant actions performed by all users.
 - **Filter by action** — Select an action type from the dropdown to narrow the list.
 - **Filter by user** — Select a specific user to see only their actions.
 - **Expandable rows** — Click any row to expand it and see the full detail payload for that event.
+
+
+---
+
+← [[Authentication]]
