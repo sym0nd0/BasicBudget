@@ -84,12 +84,11 @@ The Audit Log records significant actions performed by all users.
 - **Filter by user** — Select a specific user to see only their actions.
 - **Expandable rows** — Click any row to expand it and see the full detail payload for that event.
 
-
 ---
 
 <table width="100%">
 <tr>
 <td align="left">&#8592; <a href="Authentication">Authentication</a></td>
-<td align="right"></td>
+<td align="right"><a href="Troubleshooting">Troubleshooting</a> &#8594;</td>
 </tr>
 </table>

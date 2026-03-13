@@ -38,12 +38,11 @@ The filter bar appears above the summary cards and allows you to narrow down the
 
 Changing any filter updates all summary cards and charts simultaneously.
 
-
 ---
 
 <table width="100%">
 <tr>
-<td align="left">&#8592; <a href="Getting-Started">Getting Started</a></td>
-<td align="right"><a href="Income">Income</a> &#8594;</td>
+<td align="left">&#8592; <a href="Importing-Data">Importing Data</a></td>
+<td align="right"><a href="Budget-Categories">Budget Categories</a> &#8594;</td>
 </tr>
 </table>

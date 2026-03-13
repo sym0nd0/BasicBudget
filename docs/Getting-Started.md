@@ -1,90 +1,50 @@
 # Getting Started
 
-## Docker (Recommended)
+After installing BasicBudget (see [[Docker Setup\|Docker-Setup]] or [[Manual Setup\|Manual-Setup]]), follow these steps to set up the application for first use.
 
-The quickest way to run BasicBudget is with Docker Compose.
+## Register the First Account
 
-```yaml
-services:
-  basicbudget:
-    image: ghcr.io/sym0nd0/basicbudget:latest
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      SESSION_SECRET: your-long-random-secret
-      TOTP_ENCRYPTION_KEY: your-32-char-hex-key
-      APP_URL: https://budget.example.com
-      CORS_ORIGIN: https://budget.example.com
-      NODE_ENV: production
-    volumes:
-      - ./data:/app/data
-```
+1. Navigate to your BasicBudget URL.
+2. Click **Register** and create an account with your email address, display name, and a password.
+3. The **first user to register** is automatically assigned the **Admin** role.
 
-Save this as `docker-compose.yml`, then run:
-
-```bash
-docker compose up -d
-```
-
-BasicBudget will be available at `http://localhost:3000` (or your configured `APP_URL`).
-
-## Environment Variables
-
-| Variable | Required | Description |
-|---|---|---|
-| `SESSION_SECRET` | Yes | Secret used to sign session cookies. Use a long random string (32+ characters). |
-| `TOTP_ENCRYPTION_KEY` | Yes | 32-character hex string used to encrypt TOTP secrets at rest. Generate with `openssl rand -hex 32`. |
-| `APP_URL` | Yes | Public URL of the application (e.g. `https://budget.example.com`). Used in email links and OIDC redirects. |
-| `CORS_ORIGIN` | No | Allowed CORS origin. Defaults to `APP_URL` if not set. |
-| `DB_PATH` | No | Path to the SQLite database file. Defaults to `data/basicbudget.db`. |
-| `PORT` | No | Port the Express server listens on. Defaults to `3000`. |
-| `NODE_ENV` | No | Set to `production` for production deployments. |
-
-> **Security:** Never commit `SESSION_SECRET` or `TOTP_ENCRYPTION_KEY` to version control. Use Docker secrets, environment files excluded from git, or a secrets manager.
+> If the application is already configured with registration disabled, you will need an invitation link.
 
 ## First Login
 
-1. Navigate to your BasicBudget URL.
-2. Click **Register** and create the first account.
-3. The first registered user is automatically assigned the **Admin** role.
-4. Log in and explore the [Admin panel](Admin.md) to configure SMTP, OIDC, and user settings.
+1. Enter your email and password on the login page.
+2. You are taken to the Dashboard.
 
-## Development Mode
+## Admin Setup
 
-To run BasicBudget locally without Docker:
+As the first user (and admin), configure the application before inviting others:
 
-**Prerequisites:** Node.js 20+
+1. Open the **Admin** panel from the sidebar.
+2. Configure **SMTP** if you want email features (invitations, 2FA alerts, debt reminders). See [[Admin]] → SMTP Configuration.
+3. Optionally configure **OIDC** for single sign-on. See [[Admin]] → OIDC Configuration.
+4. Review **Expense Categories** and add or remove categories to match your budget. See [[Budget Categories\|Budget-Categories]].
+5. Set **Registration Control** — disable public registration once all household members have joined if desired.
 
-```bash
-git clone https://github.com/sym0nd0/BasicBudget.git
-cd BasicBudget
-npm install
-```
+## Invite Household Members
 
-Create a `.env` file in the project root:
+If you share finances with others, invite them from the Household page:
 
-```env
-SESSION_SECRET=dev-secret-change-me
-TOTP_ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
-APP_URL=http://localhost:5173
-NODE_ENV=development
-```
+1. Go to **Household** in the sidebar.
+2. Enter the email address of the person you want to invite.
+3. Click **Send Invite**.
 
-Start the development servers (runs Vite on `:5173` and Express on `:3001`):
+They will receive an email with a link valid for 7 days.
 
-```bash
-npm run dev
-```
+## Next Steps
 
-Open `http://localhost:5173` in your browser.
-
+- Follow the [[Creating Your First Budget\|Creating-Your-First-Budget]] walkthrough to add your first income and expenses.
+- Set up [[Adding Accounts\|Adding-Accounts]] for your payment accounts.
 
 ---
 
 <table width="100%">
 <tr>
-<td align="left">&#8592; <a href="Home">Home</a></td>
-<td align="right"><a href="Dashboard">Dashboard</a> &#8594;</td>
+<td align="left">&#8592; <a href="Updating-BasicBudget">Updating BasicBudget</a></td>
+<td align="right"><a href="Creating-Your-First-Budget">Creating Your First Budget</a> &#8594;</td>
 </tr>
 </table>

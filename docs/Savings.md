@@ -28,18 +28,17 @@ Each goal shows:
 
 ## Household Savings Goals
 
-Goals marked as **Household Goals** appear on the [Household](Household.md) summary page. The target is shared across the household; progress counts contributions from all members.
+Goals marked as **Household Goals** appear on the [Household](Household) summary page. The target is shared across the household; progress counts contributions from all members.
 
 ## Editing and Deleting
 
 Click the **edit icon** on any goal card to update it. Click the **delete icon** to remove it permanently.
 
-
 ---
 
 <table width="100%">
 <tr>
-<td align="left">&#8592; <a href="Debt">Debt</a></td>
-<td align="right"><a href="Household">Household</a> &#8594;</td>
+<td align="left">&#8592; <a href="Debt-Charts">Debt Charts</a></td>
+<td align="right"><a href="Reports">Reports</a> &#8594;</td>
 </tr>
 </table>
