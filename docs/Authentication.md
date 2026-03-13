@@ -89,5 +89,5 @@ When you log in from a new device or browser, BasicBudget sends an email alert t
 
 ---
 
-| ← [[Settings]] | [[Admin]] → |
-| :-- | --: |
+| ← [[Settings]] | | [[Admin]] → |
+| :-- | --- | --: |

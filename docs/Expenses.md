@@ -44,5 +44,5 @@ Click the **edit icon** on any row to update an entry. Click the **delete icon**
 
 ---
 
-| ← [[Income]] | [[Debt]] → |
-| :-- | --: |
+| ← [[Income]] | | [[Debt]] → |
+| :-- | --- | --: |
