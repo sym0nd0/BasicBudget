@@ -8,6 +8,7 @@ import type { ReportRange, DebtProjectionPoint } from '../../types';
 
 interface DebtBalanceChartProps {
   range?: ReportRange;
+  householdOnly?: boolean;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -24,7 +25,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-export function DebtBalanceChart({ range: externalRange }: DebtBalanceChartProps) {
+export function DebtBalanceChart({ range: externalRange, householdOnly }: DebtBalanceChartProps) {
   const [internalRange, setInternalRange] = useState<ReportRange>('1y');
   const range = externalRange ?? internalRange;
   const isControlled = externalRange !== undefined;
@@ -44,7 +45,7 @@ export function DebtBalanceChart({ range: externalRange }: DebtBalanceChartProps
     }
   };
 
-  const { data } = useApi<DebtProjectionPoint[]>(`/reports/debt-projection?months=${getMonthCount(range)}`);
+  const { data } = useApi<DebtProjectionPoint[]>(`/reports/debt-projection?months=${getMonthCount(range)}${householdOnly ? '&household_only=true' : ''}`);
 
   const safeData = data ?? [];
 

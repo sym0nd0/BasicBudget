@@ -194,8 +194,9 @@ router.get('/summary', (req: Request, res: Response) => {
   const allSavings = db.prepare('SELECT monthly_contribution_pence, is_household FROM savings_goals WHERE household_id = ? AND is_household = 1').all(req.householdId!) as SavingsGoal[];
   const householdSavingsPence = allSavings.reduce((s, g) => s + (g.monthly_contribution_pence ?? 0), 0);
 
+  const householdActiveExpenses = activeExpenses.filter(e => Boolean(e.is_household));
   const categoryMap = new Map<string, number>();
-  for (const e of activeExpenses) {
+  for (const e of householdActiveExpenses) {
     const cat = (e.category as string) ?? 'Other';
     categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + (e.effective_pence ?? 0));
   }
@@ -203,18 +204,18 @@ router.get('/summary', (req: Request, res: Response) => {
     .map(([category, total_pence]) => ({
       category,
       total_pence,
-      percentage: totalExpensesPence > 0 ? (total_pence / totalExpensesPence) * 100 : 0,
+      percentage: sharedExpensesPence > 0 ? (total_pence / sharedExpensesPence) * 100 : 0,
     }))
     .sort((a, b) => b.total_pence - a.total_pence);
 
   const overview: HouseholdOverview = {
     total_income_pence: totalIncomePence,
-    total_expenses_pence: totalExpensesPence,
+    total_expenses_pence: sharedExpensesPence,
     shared_expenses_pence: sharedExpensesPence,
     sole_expenses_pence: soleExpensesPence,
     debt_payments_pence: debtPaymentsPence,
     household_savings_pence: householdSavingsPence,
-    disposable_income_pence: totalIncomePence - totalExpensesPence - debtPaymentsPence - householdSavingsPence,
+    disposable_income_pence: totalIncomePence - sharedExpensesPence - debtPaymentsPence - householdSavingsPence,
     debt_to_income_ratio: totalIncomePence > 0 ? Math.round((debtPaymentsPence / totalIncomePence) * 1000) / 10 : 0,
     total_debt_balance_pence: totalDebtBalancePence,
     category_breakdown: categoryBreakdown,
