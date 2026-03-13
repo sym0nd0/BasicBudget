@@ -42,9 +42,8 @@ They will receive an email with a link valid for 7 days.
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Updating-BasicBudget">Updating BasicBudget</a></td>
-<td align="right"><a href="Creating-Your-First-Budget">Creating Your First Budget</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Updating BasicBudget|Updating-BasicBudget]]</span>
+  <span style="float:right;">[[Creating Your First Budget|Creating-Your-First-Budget]] →</span>
+</p>
+<div style="clear:both;"></div>

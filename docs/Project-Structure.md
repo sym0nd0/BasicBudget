@@ -69,9 +69,8 @@ The `norm(v)` function canonicalises values before comparison, handling SQLite b
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Development-Setup">Development Setup</a></td>
-<td align="right"><a href="Contributing">Contributing</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Development Setup|Development-Setup]]</span>
+  <span style="float:right;">[[Contributing]] →</span>
+</p>
+<div style="clear:both;"></div>

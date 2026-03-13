@@ -53,9 +53,8 @@ For fortnightly entries, BasicBudget counts occurrences of the fortnightly cycle
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Expenses">Expenses</a></td>
-<td align="right"><a href="Household">Household</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Expenses]]</span>
+  <span style="float:right;">[[Household]] →</span>
+</p>
+<div style="clear:both;"></div>

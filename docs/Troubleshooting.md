@@ -37,9 +37,8 @@ Missing or incorrect environment variables cause the most common startup failure
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Admin">Admin</a></td>
-<td align="right"><a href="Common-Issues">Common Issues</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Admin]]</span>
+  <span style="float:right;">[[Common Issues|Common-Issues]] →</span>
+</p>
+<div style="clear:both;"></div>

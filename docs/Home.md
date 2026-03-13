@@ -107,9 +107,7 @@ Welcome to the BasicBudget wiki. BasicBudget is a self-hosted, multi-user person
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left"></td>
-<td align="right"><a href="Introduction">Introduction</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:right;">[[Introduction]] →</span>
+</p>
+<div style="clear:both;"></div>

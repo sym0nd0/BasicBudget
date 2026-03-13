@@ -74,9 +74,8 @@ A comprehensive list of everything BasicBudget can do.
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Introduction">Introduction</a></td>
-<td align="right"><a href="Screenshots">Screenshots</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Introduction]]</span>
+  <span style="float:right;">[[Screenshots]] →</span>
+</p>
+<div style="clear:both;"></div>

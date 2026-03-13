@@ -44,9 +44,8 @@ SQLite is bundled with the application — no installation is needed.
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Installation">Installation</a></td>
-<td align="right"><a href="Docker-Setup">Docker Setup</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Installation]]</span>
+  <span style="float:right;">[[Docker Setup|Docker-Setup]] →</span>
+</p>
+<div style="clear:both;"></div>

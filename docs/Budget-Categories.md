@@ -49,9 +49,8 @@ When adding or editing an expense, select a category from the **Category** dropd
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Dashboard">Dashboard</a></td>
-<td align="right"><a href="Income">Income</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Dashboard]]</span>
+  <span style="float:right;">[[Income]] →</span>
+</p>
+<div style="clear:both;"></div>

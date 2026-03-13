@@ -50,9 +50,8 @@ If you see `Access-Control-Allow-Origin` errors in the browser console:
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Troubleshooting">Troubleshooting</a></td>
-<td align="right"><a href="Database-Problems">Database Problems</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Troubleshooting]]</span>
+  <span style="float:right;">[[Database Problems|Database-Problems]] →</span>
+</p>
+<div style="clear:both;"></div>

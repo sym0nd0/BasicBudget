@@ -37,9 +37,8 @@ Click the **edit icon** on any debt card to update it. Click the **delete icon**
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Debt">Debt</a></td>
-<td align="right"><a href="Debt-Payoff-Strategies">Debt Payoff Strategies</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Debt]]</span>
+  <span style="float:right;">[[Debt Payoff Strategies|Debt-Payoff-Strategies]] →</span>
+</p>
+<div style="clear:both;"></div>

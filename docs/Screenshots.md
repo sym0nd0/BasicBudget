@@ -44,9 +44,8 @@ The Savings page tracks progress towards financial goals with visual progress ba
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Features-Overview">Features Overview</a></td>
-<td align="right"><a href="Installation">Installation</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Features Overview|Features-Overview]]</span>
+  <span style="float:right;">[[Installation]] →</span>
+</p>
+<div style="clear:both;"></div>

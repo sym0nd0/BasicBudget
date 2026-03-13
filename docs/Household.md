@@ -52,9 +52,8 @@ The `/household` page shows a combined view of all household-flagged items:
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Recurring-Expenses">Recurring Expenses</a></td>
-<td align="right"><a href="Debt">Debt</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Recurring Expenses|Recurring-Expenses]]</span>
+  <span style="float:right;">[[Debt]] →</span>
+</p>
+<div style="clear:both;"></div>

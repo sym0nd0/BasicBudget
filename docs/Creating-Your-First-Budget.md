@@ -58,9 +58,8 @@ Go to **Dashboard** in the sidebar. You will see:
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Getting-Started">Getting Started</a></td>
-<td align="right"><a href="Adding-Accounts">Adding Accounts</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Getting Started|Getting-Started]]</span>
+  <span style="float:right;">[[Adding Accounts|Adding-Accounts]] →</span>
+</p>
+<div style="clear:both;"></div>

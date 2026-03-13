@@ -84,9 +84,8 @@ curl -c cookies.txt -X POST http://localhost:3000/api/auth/login \
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Data-Import">Data Import</a></td>
-<td align="right"><a href="Customisation">Customisation</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Data Import|Data-Import]]</span>
+  <span style="float:right;">[[Customisation]] →</span>
+</p>
+<div style="clear:both;"></div>

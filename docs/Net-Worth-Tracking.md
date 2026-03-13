@@ -31,9 +31,8 @@ For deeper analysis in a spreadsheet, export your data as JSON. See [[Exporting 
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Budget-Performance">Budget Performance</a></td>
-<td align="right"><a href="Exporting-Data">Exporting Data</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Budget Performance|Budget-Performance]]</span>
+  <span style="float:right;">[[Exporting Data|Exporting-Data]] →</span>
+</p>
+<div style="clear:both;"></div>

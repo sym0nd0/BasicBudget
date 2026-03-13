@@ -43,9 +43,8 @@ A rate above 20% is generally considered healthy for long-term financial stabili
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Spending-Reports">Spending Reports</a></td>
-<td align="right"><a href="Net-Worth-Tracking">Net Worth Tracking</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Spending Reports|Spending-Reports]]</span>
+  <span style="float:right;">[[Net Worth Tracking|Net-Worth-Tracking]] →</span>
+</p>
+<div style="clear:both;"></div>

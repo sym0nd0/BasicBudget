@@ -38,9 +38,8 @@ If you lose the `TOTP_ENCRYPTION_KEY`, all users with TOTP 2FA enabled will be u
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Manual-Setup">Manual Setup</a></td>
-<td align="right"><a href="Updating-BasicBudget">Updating BasicBudget</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Manual Setup|Manual-Setup]]</span>
+  <span style="float:right;">[[Updating BasicBudget|Updating-BasicBudget]] →</span>
+</p>
+<div style="clear:both;"></div>

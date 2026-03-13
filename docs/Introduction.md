@@ -43,9 +43,8 @@ BasicBudget uses a **month-by-month** model. You select a month using the filter
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Home">Home</a></td>
-<td align="right"><a href="Features-Overview">Features Overview</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Home]]</span>
+  <span style="float:right;">[[Features Overview|Features-Overview]] →</span>
+</p>
+<div style="clear:both;"></div>

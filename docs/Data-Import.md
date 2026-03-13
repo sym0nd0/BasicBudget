@@ -66,9 +66,8 @@ This page provides a detailed reference for the CSV import feature. For an overv
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Automation">Automation</a></td>
-<td align="right"><a href="API">API</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Automation]]</span>
+  <span style="float:right;">[[API]] →</span>
+</p>
+<div style="clear:both;"></div>

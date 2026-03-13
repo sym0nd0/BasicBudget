@@ -50,9 +50,8 @@ curl http://localhost:3000/api/version
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Configuration">Configuration</a></td>
-<td align="right"><a href="Getting-Started">Getting Started</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Configuration]]</span>
+  <span style="float:right;">[[Getting Started|Getting-Started]] →</span>
+</p>
+<div style="clear:both;"></div>

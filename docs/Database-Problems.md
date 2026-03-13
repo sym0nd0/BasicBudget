@@ -66,9 +66,8 @@ Then restore from a backup or start fresh.
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Common-Issues">Common Issues</a></td>
-<td align="right"><a href="Chart-Issues">Chart Issues</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Common Issues|Common-Issues]]</span>
+  <span style="float:right;">[[Chart Issues|Chart-Issues]] →</span>
+</p>
+<div style="clear:both;"></div>

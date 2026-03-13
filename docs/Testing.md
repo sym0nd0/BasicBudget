@@ -58,9 +58,8 @@ describe('formatPence', () => {
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Contributing">Contributing</a></td>
-<td align="right"><a href="Release-Process">Release Process</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Contributing]]</span>
+  <span style="float:right;">[[Release Process|Release-Process]] →</span>
+</p>
+<div style="clear:both;"></div>

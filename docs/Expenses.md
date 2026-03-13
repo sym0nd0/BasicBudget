@@ -43,9 +43,8 @@ Click the **edit icon** on any row to update an entry. Click the **delete icon**
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Income">Income</a></td>
-<td align="right"><a href="Recurring-Expenses">Recurring Expenses</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Income]]</span>
+  <span style="float:right;">[[Recurring Expenses|Recurring-Expenses]] →</span>
+</p>
+<div style="clear:both;"></div>

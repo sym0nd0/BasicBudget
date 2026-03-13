@@ -40,9 +40,8 @@ Income flagged as **Household Income** appears on the [Household](Household) sum
 
 ---
 
-<table width="100%">
-<tr>
-<td align="left">&#8592; <a href="Budget-Categories">Budget Categories</a></td>
-<td align="right"><a href="Expenses">Expenses</a> &#8594;</td>
-</tr>
-</table>
+<p>
+  <span style="float:left;">← Back: [[Budget Categories|Budget-Categories]]</span>
+  <span style="float:right;">[[Expenses]] →</span>
+</p>
+<div style="clear:both;"></div>
