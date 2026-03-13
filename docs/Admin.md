@@ -87,4 +87,5 @@ The Audit Log records significant actions performed by all users.
 
 ---
 
-← [[Authentication]]
+| ← [[Authentication]] |
+| :-- |

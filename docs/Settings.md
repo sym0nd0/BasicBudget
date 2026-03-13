@@ -125,4 +125,5 @@ Choose between **Light**, **Dark**, or **System** (follows your operating system
 
 ---
 
-← [[Reports]] | [[Authentication]] →
+| ← [[Reports]] | [[Authentication]] → |
+| :-- | --: |

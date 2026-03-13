@@ -41,4 +41,5 @@ Changing any filter updates all summary cards and charts simultaneously.
 
 ---
 
-← [[Getting Started|Getting-Started]] | [[Income]] →
+| ← [[Getting Started|Getting-Started]] | [[Income]] → |
+| :-- | --: |

@@ -41,4 +41,5 @@ Income flagged as **Household Income** appears on the [Household](Household.md) 
 
 ---
 
-← [[Dashboard]] | [[Expenses]] →
+| ← [[Dashboard]] | [[Expenses]] → |
+| :-- | --: |
