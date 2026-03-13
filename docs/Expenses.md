@@ -13,7 +13,7 @@ Click **Add Expense** to open the form. Fill in the fields and click **Save**.
 | **Name** | A label for the expense (e.g. "Rent", "Groceries"). |
 | **Amount** | The expense amount in pounds. |
 | **Posting Day** | The day of the month the expense is due (1–31). |
-| **Category** | The expense category (e.g. Housing, Food, Transport). Categories are managed in the [Admin panel](Admin.md). |
+| **Category** | The expense category (e.g. Housing, Food, Transport). Categories are managed in the [Admin panel](Admin). |
 | **Type** | **Fixed** (same amount each month) or **Variable** (amount varies). |
 | **Account** | The payment account used for this expense. |
 | **Recurrence** | How often the expense occurs: One-off, Monthly, Weekly, or Fortnightly. |
@@ -41,12 +41,11 @@ When an expense is marked as a **Household Expense**, a split ratio field become
 
 Click the **edit icon** on any row to update an entry. Click the **delete icon** to remove it permanently.
 
-
 ---
 
 <table width="100%">
 <tr>
 <td align="left">&#8592; <a href="Income">Income</a></td>
-<td align="right"><a href="Debt">Debt</a> &#8594;</td>
+<td align="right"><a href="Recurring-Expenses">Recurring Expenses</a> &#8594;</td>
 </tr>
 </table>

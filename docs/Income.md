@@ -36,14 +36,13 @@ Click the **edit icon** on any row to update an entry. Click the **delete icon**
 
 ## Household Income
 
-Income flagged as **Household Income** appears on the [Household](Household.md) summary page alongside other household members' contributions. Personal (non-household) income is visible only on your own Dashboard.
-
+Income flagged as **Household Income** appears on the [Household](Household) summary page alongside other household members' contributions. Personal (non-household) income is visible only on your own Dashboard.
 
 ---
 
 <table width="100%">
 <tr>
-<td align="left">&#8592; <a href="Dashboard">Dashboard</a></td>
+<td align="left">&#8592; <a href="Budget-Categories">Budget Categories</a></td>
 <td align="right"><a href="Expenses">Expenses</a> &#8594;</td>
 </tr>
 </table>

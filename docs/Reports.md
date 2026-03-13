@@ -15,62 +15,26 @@ Select a preset from the dropdown at the top of the page:
 | 1 Year | Last 12 months |
 | All Time | All available data |
 
-## Overview Section
+## Sections
 
-Five summary cards with trend indicators (up/down arrows compared to the previous equivalent period):
+The Reports page is divided into four sections:
 
-| Card | Description |
+| Section | Contents |
 |---|---|
-| **Total Income** | Sum of income over the selected period |
-| **Total Expenses** | Sum of expenses over the selected period |
-| **Disposable Income** | Income minus Expenses |
-| **Savings Rate** | Disposable income as a percentage of total income |
-| **Total Debt** | Current outstanding debt balance |
-
-## Trends Section
-
-### Income vs Expenses Bar Chart
-
-A grouped bar chart showing monthly income and expenses side by side. Useful for identifying months where spending exceeded income.
-
-### Disposable Income Line Chart
-
-A line chart of monthly disposable income (income minus expenses) over the period. Highlights trends in financial headroom.
-
-### Savings Rate Chart
-
-A line chart showing the percentage of income saved each month.
-
-## Spending Section
-
-### Expense Breakdown Donut
-
-A donut chart of total spending by category over the selected period, with a legend table showing each category's total and percentage.
-
-### Category Trends Stacked Area Chart
-
-A stacked area chart showing how spending in each category has changed month by month. Useful for spotting categories that are growing over time.
-
-## Debt Section
-
-### Debt Projection Line Chart
-
-A line chart projecting the combined debt balance forward to the projected payoff date, based on current minimum payments and overpayments.
-
-### Debt-to-Income Ratio Chart
-
-A line chart of the ratio of total debt to annual income over time.
+| **[[Budget Performance\|Budget-Performance]]** | Overview cards with trend indicators, income vs expenses bar chart, disposable income trend, savings rate |
+| **[[Spending Reports\|Spending-Reports]]** | Expense breakdown donut, category trends stacked area chart |
+| **[[Debt Charts\|Debt-Charts]]** | Debt projection line chart, debt-to-income ratio chart |
+| **Monthly Detail Table** | Sortable per-month breakdown |
 
 ## Monthly Detail Table
 
 A table at the bottom of the page showing a row per month with income, expenses, disposable income, and savings rate columns. Click any column header to sort.
 
-
 ---
 
 <table width="100%">
 <tr>
-<td align="left">&#8592; <a href="Household">Household</a></td>
-<td align="right"><a href="Settings">Settings</a> &#8594;</td>
+<td align="left">&#8592; <a href="Savings">Savings</a></td>
+<td align="right"><a href="Spending-Reports">Spending Reports</a> &#8594;</td>
 </tr>
 </table>

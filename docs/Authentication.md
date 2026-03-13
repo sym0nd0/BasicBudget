@@ -16,7 +16,7 @@ If public registration is disabled by an administrator, you will need an invitat
 
 ### Account Lockout
 
-After **5 consecutive failed login attempts**, your account is locked for **30 minutes**. After the lockout period, you may try again. An administrator can unlock accounts manually via the [Admin panel](Admin.md).
+After **5 consecutive failed login attempts**, your account is locked for **30 minutes**. After the lockout period, you may try again. An administrator can unlock accounts manually via the [Admin panel](Admin).
 
 ## Two-Factor Authentication (TOTP)
 
@@ -49,7 +49,7 @@ If you have lost both your authenticator and your recovery codes:
 - **Immediate reset (with password + OTP):** Not possible if OTP is unavailable. Contact your administrator.
 - **24-hour delayed reset:** Submit a reset request from the login page. After a 24-hour waiting period (to protect against unauthorised resets), 2FA will be removed from your account and you will receive an email confirmation.
 
-Administrators can immediately remove 2FA from any account via the [Admin panel](Admin.md).
+Administrators can immediately remove 2FA from any account via the [Admin panel](Admin).
 
 ## OIDC Single Sign-On
 
@@ -85,7 +85,6 @@ Click **Revoke** next to any session to log out that device immediately.
 ### New Device Email Alerts
 
 When you log in from a new device or browser, BasicBudget sends an email alert to your registered address. If you do not recognise the login, revoke the session immediately and change your password.
-
 
 ---
 

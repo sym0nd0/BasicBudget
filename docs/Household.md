@@ -50,12 +50,11 @@ The `/household` page shows a combined view of all household-flagged items:
 - **Savings** — all members' household savings goals
 - **Charts** — income vs expenses, expense breakdown, and debt projection filtered to household items only
 
-
 ---
 
 <table width="100%">
 <tr>
-<td align="left">&#8592; <a href="Savings">Savings</a></td>
-<td align="right"><a href="Reports">Reports</a> &#8594;</td>
+<td align="left">&#8592; <a href="Recurring-Expenses">Recurring Expenses</a></td>
+<td align="right"><a href="Debt">Debt</a> &#8594;</td>
 </tr>
 </table>
