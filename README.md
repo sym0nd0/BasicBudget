@@ -10,6 +10,24 @@ A multi-user personal budgeting and debt management application built with React
 
 > **Disclaimer:** BasicBudget was entirely created using [Claude Code](https://claude.com/claude-code) by Anthropic. As with any AI-generated code, caution should be exercised — use entirely at your own risk. PRs and contributions are welcome; even more so, if someone who knows what they're actually doing forks it and improves it.
 
+## Documentation
+
+Full user documentation is available in the [`docs/`](docs/) directory:
+
+| Page | Description |
+|---|---|
+| [Getting Started](docs/Getting-Started.md) | Docker setup, environment variables, first login |
+| [Dashboard](docs/Dashboard.md) | Summary cards and charts |
+| [Income](docs/Income.md) | Managing income entries |
+| [Expenses](docs/Expenses.md) | Managing expense entries |
+| [Debt](docs/Debt.md) | Debt tracking and repayment schedules |
+| [Savings](docs/Savings.md) | Savings goals and progress tracking |
+| [Household](docs/Household.md) | Multi-user households |
+| [Reports](docs/Reports.md) | Reports and charts |
+| [Settings](docs/Settings.md) | Profile, accounts, CSV import, appearance |
+| [Authentication](docs/Authentication.md) | Login, 2FA, OIDC, sessions |
+| [Admin](docs/Admin.md) | User management, SMTP, OIDC, categories |
+
 ## Screenshots
 
 ### Dark theme

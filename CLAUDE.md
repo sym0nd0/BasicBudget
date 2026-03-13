@@ -250,6 +250,17 @@ If any of the above are affected, update `README.md` first. Only proceed with th
 
 **A commit must never be created or pushed if README.md requires an update but has not been updated.**
 
+### 1a. Wiki (`docs/`) must be reviewed before every commit
+
+Before creating any commit, review the `docs/` directory and determine whether the change affects:
+- Any user-facing features, pages, or behaviour
+- API routes or data models
+- Configuration, environment variables, or infrastructure
+
+If any of the above are affected, update the relevant `docs/` page(s) first. Only proceed with the commit after the wiki is up to date or explicitly confirmed as not requiring changes.
+
+**A commit must never be created or pushed if a `docs/` page requires an update but has not been updated.**
+
 ### 2. All work must be on a named branch (NO EXCEPTIONS)
 
 Direct commits to `master` (or any other protected branch) are strictly prohibited without exception.
