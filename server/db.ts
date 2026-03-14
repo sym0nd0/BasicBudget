@@ -216,6 +216,32 @@ try {
   // Column already exists, ignore
 }
 
+try {
+  db.prepare('ALTER TABLE savings_goals ADD COLUMN auto_contribute INTEGER DEFAULT 0').run();
+} catch { /* Column already exists */ }
+
+try {
+  db.prepare('ALTER TABLE savings_goals ADD COLUMN contribution_day INTEGER DEFAULT 1').run();
+} catch { /* Column already exists */ }
+
+// Create savings_transactions table for existing databases
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS savings_transactions (
+    id                  TEXT PRIMARY KEY,
+    savings_goal_id     TEXT NOT NULL REFERENCES savings_goals(id) ON DELETE CASCADE,
+    household_id        TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+    user_id             TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type                TEXT NOT NULL CHECK(type IN ('contribution','deposit','withdrawal')),
+    amount_pence        INTEGER NOT NULL,
+    balance_after_pence INTEGER NOT NULL,
+    notes               TEXT,
+    created_at          TEXT DEFAULT (datetime('now'))
+  )
+`).run();
+
+db.prepare('CREATE INDEX IF NOT EXISTS idx_savings_transactions_goal_id ON savings_transactions(savings_goal_id)').run();
+db.prepare('CREATE INDEX IF NOT EXISTS idx_savings_transactions_household_id ON savings_transactions(household_id)').run();
+
 // Migrate existing contributor_name values to contributor_user_id where a matching user exists
 try {
   db.prepare(`
