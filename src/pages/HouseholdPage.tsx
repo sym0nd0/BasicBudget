@@ -12,7 +12,7 @@ import { DebtBalanceChart } from '../components/charts/DebtBalanceChart';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { formatCurrency, formatPercent } from '../utils/formatters';
-import type { HouseholdOverview, HouseholdMember } from '../types';
+import type { HouseholdOverview, HouseholdMember, MonthlyReportRow } from '../types';
 
 interface HouseholdPageProps {
   onMenuClick: () => void;
@@ -20,8 +20,44 @@ interface HouseholdPageProps {
 
 export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
   const { householdRole } = useAuth();
-  const { activeMonth } = useFilter();
+  const { activeMonth, isRangeActive, fromMonth, toMonth } = useFilter();
   const { data: overview } = useApi<HouseholdOverview>(`/household/summary?month=${activeMonth}`);
+  const { data: rangeOverview } = useApi<MonthlyReportRow[]>(
+    isRangeActive && fromMonth && toMonth
+      ? `/reports/overview?from=${fromMonth}&to=${toMonth}&household_only=true`
+      : null
+  );
+
+  const displayOverview: HouseholdOverview | null = isRangeActive && rangeOverview ? (() => {
+    const categoryMap = new Map<string, number>();
+    for (const row of rangeOverview) {
+      for (const cat of row.category_breakdown) {
+        categoryMap.set(cat.category, (categoryMap.get(cat.category) ?? 0) + cat.total_pence);
+      }
+    }
+    const shared_expenses_pence = rangeOverview.reduce((s, r) => s + r.expenses_pence, 0);
+    const debt_payments_pence = rangeOverview.reduce((s, r) => s + r.debt_payments_pence, 0);
+    const total_income_pence = rangeOverview.reduce((s, r) => s + r.income_pence, 0);
+    const category_breakdown = Array.from(categoryMap.entries())
+      .map(([category, total_pence]) => ({
+        category,
+        total_pence,
+        percentage: shared_expenses_pence > 0 ? (total_pence / shared_expenses_pence) * 100 : 0,
+      }))
+      .sort((a, b) => b.total_pence - a.total_pence);
+    return {
+      total_income_pence,
+      shared_expenses_pence,
+      total_expenses_pence: shared_expenses_pence,
+      sole_expenses_pence: 0,
+      debt_payments_pence,
+      household_savings_pence: 0,
+      disposable_income_pence: total_income_pence - shared_expenses_pence - debt_payments_pence,
+      debt_to_income_ratio: total_income_pence > 0 ? Math.round((debt_payments_pence / total_income_pence) * 1000) / 10 : 0,
+      total_debt_balance_pence: overview?.total_debt_balance_pence ?? 0,
+      category_breakdown,
+    } as HouseholdOverview;
+  })() : overview;
   const { data: householdDetails, refetch } = useApi<{ id?: string; name?: string; members?: HouseholdMember[] }>('/household');
 
   const [isEditingName, setIsEditingName] = useState(false);
@@ -30,7 +66,7 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
   const [error, setError] = useState('');
 
   const memberCount = householdDetails?.members?.length ?? 1;
-  const totalOutgoingPence = (overview?.shared_expenses_pence ?? 0) + (overview?.debt_payments_pence ?? 0);
+  const totalOutgoingPence = (displayOverview?.shared_expenses_pence ?? 0) + (displayOverview?.debt_payments_pence ?? 0);
   const perMemberOutgoingPence = Math.round(totalOutgoingPence / memberCount);
 
   const handleSaveName = async () => {
@@ -118,22 +154,22 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Income</p>
           <p className="text-2xl font-bold text-[var(--color-success)]">
-            {formatCurrency(overview?.total_income_pence ?? 0)}
+            {formatCurrency(displayOverview?.total_income_pence ?? 0)}
           </p>
         </Card>
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Shared Expenses</p>
           <p className="text-2xl font-bold text-[var(--color-danger)]">
-            {formatCurrency(overview?.shared_expenses_pence ?? 0)}
+            {formatCurrency(displayOverview?.shared_expenses_pence ?? 0)}
           </p>
         </Card>
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Debt Payments</p>
           <p className="text-2xl font-bold text-[var(--color-warning)]">
-            {formatCurrency(overview?.debt_payments_pence ?? 0)}
+            {formatCurrency(displayOverview?.debt_payments_pence ?? 0)}
           </p>
           <p className="text-xs text-[var(--color-text-muted)] mt-1">
-            {formatPercent(overview?.debt_to_income_ratio ?? 0)} DTI
+            {formatPercent(displayOverview?.debt_to_income_ratio ?? 0)} DTI
           </p>
         </Card>
         <Card className="h-full">
@@ -154,11 +190,11 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Disposable</p>
           <p className={`text-2xl font-bold ${
-            (overview?.disposable_income_pence ?? 0) >= 0
+            (displayOverview?.disposable_income_pence ?? 0) >= 0
               ? 'text-[var(--color-primary)]'
               : 'text-[var(--color-danger)]'
           }`}>
-            {formatCurrency(overview?.disposable_income_pence ?? 0)}
+            {formatCurrency(displayOverview?.disposable_income_pence ?? 0)}
           </p>
         </Card>
       </div>
@@ -168,15 +204,15 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
         <Card>
           <CardHeader title="Income vs Outgoings" subtitle="Full household view" />
           <IncomeVsExpensesBar
-            income={overview?.total_income_pence ?? 0}
-            expenses={overview?.shared_expenses_pence ?? 0}
-            debtPayments={overview?.debt_payments_pence ?? 0}
+            income={displayOverview?.total_income_pence ?? 0}
+            expenses={displayOverview?.shared_expenses_pence ?? 0}
+            debtPayments={displayOverview?.debt_payments_pence ?? 0}
           />
         </Card>
 
         <Card>
           <CardHeader title="Expense Breakdown" subtitle="By category — full household" />
-          <ExpenseDonut breakdown={overview?.category_breakdown ?? []} />
+          <ExpenseDonut breakdown={displayOverview?.category_breakdown ?? []} />
         </Card>
 
       </div>

@@ -36,10 +36,9 @@ export function DebtBalanceChart({ range: externalRange, householdOnly }: DebtBa
       case '1w': return 1;
       case '1m': return 2;
       case '3m': return 3;
-      case 'ytd': return 12;
+      case 'ytd': return new Date().getMonth() + 1;
       case '2y': return 24;
       case '5y': return 60;
-      case 'all': return 120;
       case '1y':
       default: return 12;
     }
@@ -100,7 +99,7 @@ export function DebtBalanceChart({ range: externalRange, householdOnly }: DebtBa
         <CardHeader title="Debt Balance Projection" subtitle="Projected debt balance over time" />
         {!isControlled && (
           <div className="mt-4">
-            <TimeRangeSelector value={range} onChange={setInternalRange} />
+            <TimeRangeSelector value={range} onChange={setInternalRange} excludeRanges={['ytd']} />
           </div>
         )}
       </div>

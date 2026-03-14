@@ -79,14 +79,20 @@ router.get('/overview', (req: Request, res: Response) => {
   const memberCount = (db.prepare('SELECT COUNT(*) as c FROM household_members WHERE household_id = ?').get(req.householdId!) as { c: number }).c || 1;
   const debtItems = allDebtRows.map(mapDebtToRecurringItem);
 
+  const householdOnly = req.query.household_only === 'true';
+
   const rows: MonthlyReportRow[] = months.map(month => {
     const activeIncomes = filterActiveInMonth(allIncomes, month);
     const activeExpenses = filterActiveInMonth(allExpenses, month);
     const activeDebts = filterActiveInMonth(debtItems, month);
 
     const income_pence = activeIncomes.reduce((s, i) => s + (i.effective_pence ?? 0), 0);
-    const expenses_pence = activeExpenses.reduce((s, e) => s + Math.round((e.effective_pence ?? 0) * ((e.split_ratio as number) ?? 1)), 0);
-    const debt_payments_pence = activeDebts.reduce((s, d) => s + Math.round((d.effective_pence ?? 0) * ((d.split_ratio as number) ?? 1)), 0);
+    const expenses_pence = householdOnly
+      ? activeExpenses.filter(e => Boolean(e.is_household)).reduce((s, e) => s + (e.effective_pence ?? 0), 0)
+      : activeExpenses.reduce((s, e) => s + Math.round((e.effective_pence ?? 0) * ((e.split_ratio as number) ?? 1)), 0);
+    const debt_payments_pence = householdOnly
+      ? activeDebts.filter(d => Boolean(d.is_household)).reduce((s, d) => s + (d.effective_pence ?? 0), 0)
+      : activeDebts.reduce((s, d) => s + Math.round((d.effective_pence ?? 0) * ((d.split_ratio as number) ?? 1)), 0);
 
     let savings_pence = 0;
     for (const s of allSavings) {
@@ -96,8 +102,11 @@ router.get('/overview', (req: Request, res: Response) => {
 
     const categoryMap = new Map<string, number>();
     for (const e of activeExpenses) {
+      if (householdOnly && !Boolean(e.is_household)) continue;
       const cat = (e.category as string) ?? 'Other';
-      const share = Math.round((e.effective_pence ?? 0) * ((e.split_ratio as number) ?? 1));
+      const share = householdOnly
+        ? (e.effective_pence ?? 0)
+        : Math.round((e.effective_pence ?? 0) * ((e.split_ratio as number) ?? 1));
       categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + share);
     }
 
@@ -161,7 +170,7 @@ router.get('/debt-projection', (req: Request, res: Response) => {
   // Sort and slice to requested range
   const sorted = Array.from(monthMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
-    .slice(0, numMonths + 1);
+    .slice(0, numMonths);
 
   // Build per-debt breakdown
   const debtLines = schedules.map(summary => {
