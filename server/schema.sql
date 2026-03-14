@@ -207,6 +207,21 @@ CREATE TABLE IF NOT EXISTS savings_goals (
     updated_at                  TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS savings_transactions (
+    id                  TEXT PRIMARY KEY,
+    savings_goal_id     TEXT NOT NULL REFERENCES savings_goals(id) ON DELETE CASCADE,
+    household_id        TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+    user_id             TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type                TEXT NOT NULL CHECK(type IN ('contribution','deposit','withdrawal')),
+    amount_pence        INTEGER NOT NULL,
+    balance_after_pence INTEGER NOT NULL,
+    notes               TEXT,
+    created_at          TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_savings_transactions_goal_id ON savings_transactions(savings_goal_id);
+CREATE INDEX IF NOT EXISTS idx_savings_transactions_household_id ON savings_transactions(household_id);
+
 CREATE TABLE IF NOT EXISTS month_locks (
     year_month      TEXT NOT NULL,
     household_id    TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,

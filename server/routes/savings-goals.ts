@@ -6,7 +6,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { filterVisible, canModify } from '../utils/visibility.js';
 import { logger } from '../services/logger.js';
 import type { SavingsGoal } from '../../shared/types.js';
-import { savingsGoalSchema } from '../validation/schemas.js';
+import { savingsGoalSchema, savingsTransactionSchema } from '../validation/schemas.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -15,8 +15,85 @@ function mapGoal(row: Record<string, unknown>): SavingsGoal {
   return row as unknown as SavingsGoal;
 }
 
+function processAutoContributions(householdId: string, userId: string): void {
+  const now = new Date();
+  const todayDay = now.getDate();
+  const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  const goals = db.prepare(
+    "SELECT * FROM savings_goals WHERE household_id = ? AND auto_contribute = 1 AND monthly_contribution_pence > 0"
+  ).all(householdId) as Record<string, unknown>[];
+
+  const insertTx = db.prepare(`
+    INSERT INTO savings_transactions (id, savings_goal_id, household_id, user_id, type, amount_pence, balance_after_pence, notes, created_at)
+    VALUES (?, ?, ?, ?, 'contribution', ?, ?, 'Auto-contribution', ?)
+  `);
+  const updateGoal = db.prepare("UPDATE savings_goals SET current_amount_pence = ?, updated_at = datetime('now') WHERE id = ?");
+
+  const doProcess = db.transaction(() => {
+    for (const goal of goals) {
+      const goalId = goal.id as string;
+      const contribDay = (goal.contribution_day as number) ?? 1;
+      const monthly = goal.monthly_contribution_pence as number;
+
+      const latest = db.prepare(
+        "SELECT created_at FROM savings_transactions WHERE savings_goal_id = ? AND type = 'contribution' ORDER BY created_at DESC LIMIT 1"
+      ).get(goalId) as { created_at: string } | undefined;
+
+      const lastDate = latest ? new Date(latest.created_at) : new Date(goal.created_at as string);
+      const lastYM = `${lastDate.getFullYear()}-${String(lastDate.getMonth() + 1).padStart(2, '0')}`;
+
+      let [y, m] = lastYM.split('-').map(Number);
+      let balance = goal.current_amount_pence as number;
+
+      m++;
+      if (m > 12) { m = 1; y++; }
+
+      while (true) {
+        const ym = `${y}-${String(m).padStart(2, '0')}`;
+        if (ym > currentYM) break;
+        if (ym === currentYM && todayDay < contribDay) break;
+
+        balance += monthly;
+        const txId = randomUUID();
+        const createdAt = `${ym}-${String(contribDay).padStart(2, '0')} 00:00:00`;
+        insertTx.run(txId, goalId, householdId, userId, monthly, balance, createdAt);
+        updateGoal.run(balance, goalId);
+
+        m++;
+        if (m > 12) { m = 1; y++; }
+      }
+    }
+  });
+
+  doProcess();
+}
+
+// GET /api/savings-goals/transactions — must be before /:id routes
+router.get('/transactions', (req: Request, res: Response) => {
+  processAutoContributions(req.householdId!, req.userId!);
+  const from = req.query.from as string | undefined;
+  const to = req.query.to as string | undefined;
+
+  let sql = `
+    SELECT t.*, g.name as goal_name
+    FROM savings_transactions t
+    JOIN savings_goals g ON g.id = t.savings_goal_id
+    WHERE t.household_id = ?
+  `;
+  const params: unknown[] = [req.householdId!];
+
+  if (from) { sql += ' AND substr(t.created_at, 1, 7) >= ?'; params.push(from); }
+  if (to)   { sql += ' AND substr(t.created_at, 1, 7) <= ?'; params.push(to); }
+  sql += ' ORDER BY t.created_at DESC';
+
+  const rows = db.prepare(sql).all(...params) as Record<string, unknown>[];
+  res.json(rows);
+});
+
 // GET /api/savings-goals
 router.get('/', (req: Request, res: Response) => {
+  processAutoContributions(req.householdId!, req.userId!);
   const rows = db.prepare('SELECT * FROM savings_goals WHERE household_id = ? ORDER BY created_at').all(req.householdId!) as Record<string, unknown>[];
   const visible = filterVisible(rows, req.userId!);
   res.json(visible.map(mapGoal));
@@ -43,8 +120,8 @@ router.post('/', (req: Request, res: Response) => {
   try {
     db.prepare(`
       INSERT INTO savings_goals
-        (id, household_id, user_id, contributor_user_id, name, target_amount_pence, current_amount_pence, monthly_contribution_pence, is_household, target_date, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (id, household_id, user_id, contributor_user_id, name, target_amount_pence, current_amount_pence, monthly_contribution_pence, is_household, target_date, notes, auto_contribute, contribution_day)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       req.householdId!,
@@ -57,6 +134,8 @@ router.post('/', (req: Request, res: Response) => {
       rawBody.is_household ? 1 : 0,
       rawBody.target_date ?? null,
       body.notes ?? null,
+      body.auto_contribute ? 1 : 0,
+      body.contribution_day ?? 1,
     );
   } catch (err) {
     res.status(400).json({ message: (err as Error).message });
@@ -65,6 +144,59 @@ router.post('/', (req: Request, res: Response) => {
   const row = db.prepare('SELECT * FROM savings_goals WHERE id = ?').get(id) as Record<string, unknown>;
   logger.info('Savings goal created', { id, userId: req.userId, name: body.name.trim() });
   res.status(201).json(mapGoal(row));
+});
+
+// GET /api/savings-goals/:id/transactions
+router.get('/:id/transactions', (req: Request, res: Response) => {
+  const id = req.params['id'] as string;
+  const goal = db.prepare('SELECT * FROM savings_goals WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
+  if (!goal) { res.status(404).json({ message: 'Savings goal not found' }); return; }
+
+  const from = req.query.from as string | undefined;
+  const to = req.query.to as string | undefined;
+  let sql = 'SELECT * FROM savings_transactions WHERE savings_goal_id = ?';
+  const params: unknown[] = [id];
+  if (from) { sql += ' AND substr(created_at, 1, 7) >= ?'; params.push(from); }
+  if (to)   { sql += ' AND substr(created_at, 1, 7) <= ?'; params.push(to); }
+  sql += ' ORDER BY created_at DESC';
+
+  res.json(db.prepare(sql).all(...params));
+});
+
+// POST /api/savings-goals/:id/transactions
+router.post('/:id/transactions', (req: Request, res: Response) => {
+  const id = req.params['id'] as string;
+  const result = savingsTransactionSchema.safeParse(req.body);
+  if (!result.success) { res.status(400).json({ message: 'Validation error' }); return; }
+
+  const existing = db.prepare('SELECT * FROM savings_goals WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
+  if (!existing) { res.status(404).json({ message: 'Savings goal not found' }); return; }
+  if (!canModify(existing, req.userId!)) { res.status(403).json({ message: 'You can only modify your own entries' }); return; }
+
+  const { type, amount_pence, notes } = result.data;
+  const currentBalance = existing.current_amount_pence as number;
+  let newBalance: number;
+
+  if (type === 'withdrawal') {
+    if (amount_pence > currentBalance) { res.status(400).json({ message: 'Withdrawal amount exceeds current balance' }); return; }
+    newBalance = currentBalance - amount_pence;
+  } else {
+    newBalance = currentBalance + amount_pence;
+  }
+
+  const txId = randomUUID();
+  const doInsert = db.transaction(() => {
+    db.prepare(`
+      INSERT INTO savings_transactions (id, savings_goal_id, household_id, user_id, type, amount_pence, balance_after_pence, notes)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(txId, id, req.householdId!, req.userId!, type, amount_pence, newBalance, notes ?? null);
+    db.prepare("UPDATE savings_goals SET current_amount_pence = ?, updated_at = datetime('now') WHERE id = ?").run(newBalance, id);
+  });
+  doInsert();
+
+  const tx = db.prepare('SELECT * FROM savings_transactions WHERE id = ?').get(txId);
+  logger.info('Savings transaction created', { id: txId, goalId: id, type, userId: req.userId });
+  res.status(201).json(tx);
 });
 
 // PUT /api/savings-goals/:id
@@ -85,7 +217,7 @@ router.put('/:id', (req: Request, res: Response) => {
       UPDATE savings_goals SET
         name = ?, contributor_user_id = ?, target_amount_pence = ?, current_amount_pence = ?,
         monthly_contribution_pence = ?, is_household = ?, target_date = ?, notes = ?,
-        updated_at = datetime('now')
+        auto_contribute = ?, contribution_day = ?, updated_at = datetime('now')
       WHERE id = ?
     `).run(
       body.name?.trim() ?? existing.name,
@@ -96,6 +228,8 @@ router.put('/:id', (req: Request, res: Response) => {
       body.is_household !== undefined ? (body.is_household ? 1 : 0) : existing.is_household,
       body.target_date !== undefined ? body.target_date : existing.target_date,
       body.notes !== undefined ? body.notes : existing.notes,
+      body.auto_contribute !== undefined ? (body.auto_contribute ? 1 : 0) : existing.auto_contribute,
+      body.contribution_day ?? existing.contribution_day,
       id,
     );
   } catch (err) {

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useCallback } from 'react';
-import type { SavingsGoal } from '../types';
+import type { SavingsGoal, SavingsTransaction, SavingsTransactionType } from '../types';
 import { useApi } from '../hooks/useApi';
 import { api } from '../api/client';
 
@@ -9,6 +9,7 @@ interface SavingsContextValue {
   addGoal: (data: Omit<SavingsGoal, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
   updateGoal: (id: string, data: Partial<Omit<SavingsGoal, 'id'>>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
+  createTransaction: (goalId: string, data: { type: SavingsTransactionType; amount_pence: number; notes?: string | null }) => Promise<SavingsTransaction>;
   refetchGoals: () => void;
 }
 
@@ -32,8 +33,14 @@ export function SavingsProvider({ children }: { children: React.ReactNode }) {
     refetchGoals();
   }, [refetchGoals]);
 
+  const createTransaction = useCallback(async (goalId: string, data: { type: SavingsTransactionType; amount_pence: number; notes?: string | null }) => {
+    const tx = await api.createSavingsTransaction(goalId, data);
+    refetchGoals();
+    return tx;
+  }, [refetchGoals]);
+
   return (
-    <SavingsContext.Provider value={{ goals: goals ?? [], loading, addGoal, updateGoal, deleteGoal, refetchGoals }}>
+    <SavingsContext.Provider value={{ goals: goals ?? [], loading, addGoal, updateGoal, deleteGoal, createTransaction, refetchGoals }}>
       {children}
     </SavingsContext.Provider>
   );
