@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Select } from '../ui/Input';
 import { Button } from '../ui/Button';
+import { Badge } from '../ui/Badge';
 import { useFilter } from '../../context/FilterContext';
 import { formatYearMonth } from '../../utils/formatters';
 import { useApi } from '../../hooks/useApi';
@@ -29,12 +30,16 @@ export function FilterBar({ showCategory = false }: FilterBarProps) {
     filterCategory, setFilterCategory,
     fromMonth, toMonth, setFromMonth, setToMonth,
     isRangeActive,
+    rangeMonths,
   } = useFilter();
   const { data: categoriesData } = useApi<string[]>(showCategory ? '/categories' : null);
   const categories = categoriesData ?? [...EXPENSE_CATEGORIES];
   const [showRange, setShowRange] = useState(false);
 
   const isDefault = filterCategory === 'all';
+  const rangeLabel = isRangeActive && fromMonth && toMonth
+    ? `${formatYearMonth(fromMonth)} to ${formatYearMonth(toMonth)} (${rangeMonths.length} ${rangeMonths.length === 1 ? 'month' : 'months'})`
+    : null;
 
   const handleToggleRange = () => {
     if (showRange) {
@@ -42,6 +47,12 @@ export function FilterBar({ showCategory = false }: FilterBarProps) {
       setToMonth(null);
     }
     setShowRange(prev => !prev);
+  };
+
+  const handleClearRange = () => {
+    setFromMonth(null);
+    setToMonth(null);
+    setShowRange(false);
   };
 
   return (
@@ -57,17 +68,32 @@ export function FilterBar({ showCategory = false }: FilterBarProps) {
         </div>
       )}
 
-      <Button
-        variant={showRange ? 'secondary' : 'ghost'}
-        size="sm"
-        onClick={handleToggleRange}
-        title="Toggle date range"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-        Range
-      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant={isRangeActive || showRange ? 'secondary' : 'ghost'}
+          size="sm"
+          onClick={handleToggleRange}
+          title="Toggle date range"
+          className={isRangeActive ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : ''}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          Range
+        </Button>
+        {rangeLabel && (
+          <Badge variant="primary">{rangeLabel}</Badge>
+        )}
+        {isRangeActive && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearRange}
+          >
+            Clear
+          </Button>
+        )}
+      </div>
 
       {showRange && (
         <>
