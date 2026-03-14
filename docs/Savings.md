@@ -30,9 +30,9 @@ Each goal shows:
 
 Goals marked as **Household Goals** appear on the [Household](Household) summary page. The target is shared across the household; progress counts contributions from all members.
 
-## Editing and Deleting
+## Editing, Withdrawing, and Deleting
 
-Click the **edit icon** on any goal card to update it. Click the **delete icon** to remove it permanently.
+Click the **edit icon** on any goal card to update it. Click the **withdraw icon** (arrow down) to record a withdrawal — the modal shows the current balance and lets you enter an amount to deduct. Click the **delete icon** to remove it permanently.
 
 ---
 
