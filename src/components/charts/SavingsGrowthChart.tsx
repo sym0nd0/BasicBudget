@@ -8,6 +8,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import type { TooltipContentProps } from 'recharts';
 import { formatCurrency, formatYearMonth } from '../../utils/formatters';
 import type { SavingsTransaction, SavingsGoal } from '../../types';
 
@@ -24,14 +25,14 @@ const CHART_COLOURS = [
   'var(--color-chart-5)',
 ];
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: TooltipContentProps) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg p-3 text-sm">
       <p className="font-semibold text-[var(--color-text)] mb-1">{label}</p>
-      {payload.map((entry: any) => (
+      {payload.map((entry) => (
         <p key={entry.name} style={{ color: entry.color }}>
-          {entry.name}: {formatCurrency(entry.value)}
+          {entry.name}: {formatCurrency(entry.value as number)}
         </p>
       ))}
     </div>
@@ -109,7 +110,7 @@ export function SavingsGrowthChart({ transactions, goals }: SavingsGrowthChartPr
           tickFormatter={v => `£${(v / 100).toFixed(0)}`}
           tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
         />
-        <Tooltip content={<CustomTooltip />} cursor={false} />
+        <Tooltip content={CustomTooltip} cursor={false} />
         <Legend
           formatter={(value) => (
             <span style={{ color: 'var(--color-text)', fontSize: 11 }}>{value}</span>

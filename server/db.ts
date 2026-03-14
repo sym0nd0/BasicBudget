@@ -241,6 +241,12 @@ db.prepare(`
 
 db.prepare('CREATE INDEX IF NOT EXISTS idx_savings_transactions_goal_id ON savings_transactions(savings_goal_id)').run();
 db.prepare('CREATE INDEX IF NOT EXISTS idx_savings_transactions_household_id ON savings_transactions(household_id)').run();
+db.prepare(`
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_savings_tx_contribution_unique
+  ON savings_transactions(savings_goal_id, substr(created_at, 1, 7))
+  WHERE type = 'contribution'
+`).run();
+db.prepare('CREATE INDEX IF NOT EXISTS idx_savings_transactions_household_created ON savings_transactions(household_id, created_at)').run();
 
 // Migrate existing contributor_name values to contributor_user_id where a matching user exists
 try {

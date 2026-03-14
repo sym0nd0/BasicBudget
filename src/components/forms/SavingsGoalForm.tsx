@@ -28,7 +28,7 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
   const [contributionDay, setContributionDay] = useState(initial?.contribution_day ?? 1);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const monthlyPence = parseFloat(monthlyContribution);
+  const monthlyValue = parseFloat(monthlyContribution);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -120,7 +120,7 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
         />
         <span className="text-sm">Joint savings (split equally among household members)</span>
       </label>
-      {!isNaN(monthlyPence) && monthlyPence > 0 && (
+      {!isNaN(monthlyValue) && monthlyValue > 0 && (
         <div className="flex flex-col gap-3">
           <label className="flex items-center gap-2">
             <input

@@ -221,6 +221,11 @@ CREATE TABLE IF NOT EXISTS savings_transactions (
 
 CREATE INDEX IF NOT EXISTS idx_savings_transactions_goal_id ON savings_transactions(savings_goal_id);
 CREATE INDEX IF NOT EXISTS idx_savings_transactions_household_id ON savings_transactions(household_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_savings_tx_contribution_unique
+  ON savings_transactions(savings_goal_id, substr(created_at, 1, 7))
+  WHERE type = 'contribution';
+CREATE INDEX IF NOT EXISTS idx_savings_transactions_household_created
+  ON savings_transactions(household_id, created_at);
 
 CREATE TABLE IF NOT EXISTS month_locks (
     year_month      TEXT NOT NULL,

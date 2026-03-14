@@ -16,7 +16,7 @@ Click **Add Savings** to open the form. Fill in the fields and click **Save**.
 | **Monthly Contribution** | The amount you plan to add each month. |
 | **Target Date** | An optional date by which you want to reach the goal. |
 | **Household Goal** | Tick to include this goal in Household summary views. |
-| **Auto-contribute** | Visible only when Monthly Contribution is greater than zero. When ticked, the system automatically records a contribution transaction on the specified day each month. |
+| **Auto-contribute** | Visible only when Monthly Contribution is non-zero. When ticked, the system automatically records a contribution transaction on the specified day each month. |
 | **Contribution Day** | The day of the month (1–28) on which auto-contributions are applied. Only shown when Auto-contribute is enabled. |
 | **Notes** | Optional free-text notes. |
 
