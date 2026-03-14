@@ -25,7 +25,7 @@ function processAutoContributions(householdId: string, userId: string): void {
   ).all(householdId) as Record<string, unknown>[];
 
   const insertTx = db.prepare(`
-    INSERT INTO savings_transactions (id, savings_goal_id, household_id, user_id, type, amount_pence, balance_after_pence, notes, created_at)
+    INSERT OR IGNORE INTO savings_transactions (id, savings_goal_id, household_id, user_id, type, amount_pence, balance_after_pence, notes, created_at)
     VALUES (?, ?, ?, ?, 'contribution', ?, ?, 'Auto-contribution', ?)
   `);
   const updateGoal = db.prepare("UPDATE savings_goals SET current_amount_pence = ?, updated_at = datetime('now') WHERE id = ?");
@@ -57,8 +57,16 @@ function processAutoContributions(householdId: string, userId: string): void {
         balance += monthly;
         const txId = randomUUID();
         const createdAt = `${ym}-${String(contribDay).padStart(2, '0')} 00:00:00`;
-        insertTx.run(txId, goalId, householdId, userId, monthly, balance, createdAt);
-        updateGoal.run(balance, goalId);
+        const result = insertTx.run(txId, goalId, householdId, userId, monthly, balance, createdAt);
+        if (result.changes === 0) {
+          // Duplicate skipped — re-sync balance from the existing row for this month
+          const existing = db.prepare(
+            "SELECT balance_after_pence FROM savings_transactions WHERE savings_goal_id = ? AND substr(created_at, 1, 7) = ? AND type = 'contribution'"
+          ).get(goalId, ym) as { balance_after_pence: number } | undefined;
+          if (existing) balance = existing.balance_after_pence;
+        } else {
+          updateGoal.run(balance, goalId);
+        }
 
         m++;
         if (m > 12) { m = 1; y++; }
