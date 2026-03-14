@@ -5,6 +5,7 @@ import { PageShell } from '../components/layout/PageShell';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { Input } from '../components/ui/Input';
 import { SavingsGoalForm } from '../components/forms/SavingsGoalForm';
 import { Badge } from '../components/ui/Badge';
 import { formatCurrency, formatPercent } from '../utils/formatters';
@@ -33,6 +34,9 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SavingsGoal | undefined>();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [withdrawGoal, setWithdrawGoal] = useState<SavingsGoal | undefined>();
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
 
   const totalSaved = goals.reduce((s, g) => s + g.current_amount_pence, 0);
   const totalTarget = goals.reduce((s, g) => s + g.target_amount_pence, 0);
@@ -60,6 +64,30 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
   const handleEdit = (goal: SavingsGoal) => {
     setEditing(goal);
     setModalOpen(true);
+  };
+
+  const handleWithdraw = async () => {
+    if (!withdrawGoal) return;
+    const pounds = parseFloat(withdrawAmount);
+    if (isNaN(pounds) || pounds <= 0) {
+      setWithdrawError('Please enter a valid amount.');
+      return;
+    }
+    const pence = Math.round(pounds * 100);
+    if (pence > withdrawGoal.current_amount_pence) {
+      setWithdrawError('Withdrawal amount exceeds current savings.');
+      return;
+    }
+    try {
+      await updateGoal(withdrawGoal.id, {
+        current_amount_pence: withdrawGoal.current_amount_pence - pence,
+      });
+      setWithdrawGoal(undefined);
+      setWithdrawAmount('');
+      setWithdrawError(null);
+    } catch (err) {
+      setWithdrawError((err as Error).message);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -133,6 +161,13 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                       </svg>
                     </Button>
+                    <Button variant="ghost" size="sm"
+                      className="hover:text-[var(--color-warning)] hover:bg-[var(--color-warning-light)]"
+                      onClick={() => { setWithdrawGoal(goal); setWithdrawAmount(''); setWithdrawError(null); }}>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleDelete(goal.id)}
                       className="hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-light)]">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -204,6 +239,31 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
           onSave={handleSave}
           onCancel={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
         />
+      </Modal>
+      <Modal
+        isOpen={!!withdrawGoal}
+        onClose={() => { setWithdrawGoal(undefined); setWithdrawAmount(''); setWithdrawError(null); }}
+        title="Withdraw from Savings"
+      >
+        {withdrawError && (
+          <p className="mb-3 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">{withdrawError}</p>
+        )}
+        <p className="text-sm text-[var(--color-text-muted)] mb-3">
+          Current balance: <span className="font-medium text-[var(--color-text)]">{withdrawGoal && formatCurrency(withdrawGoal.current_amount_pence)}</span>
+        </p>
+        <Input
+          label="Amount (£)"
+          type="number"
+          step="0.01"
+          min="0.01"
+          value={withdrawAmount}
+          onChange={e => setWithdrawAmount(e.target.value)}
+          autoFocus
+        />
+        <div className="flex justify-end gap-2 mt-4">
+          <Button variant="ghost" onClick={() => { setWithdrawGoal(undefined); setWithdrawAmount(''); setWithdrawError(null); }}>Cancel</Button>
+          <Button onClick={handleWithdraw}>Withdraw</Button>
+        </div>
       </Modal>
     </PageShell>
   );
