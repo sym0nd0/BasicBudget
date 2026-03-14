@@ -204,8 +204,25 @@ export interface SavingsGoal {
   is_household: number; // 0 = personal, 1 = joint (split equally among all household members)
   target_date?: string | null;
   notes?: string | null;
+  auto_contribute?: boolean;
+  contribution_day?: number;
   created_at?: string;
   updated_at?: string;
+}
+
+export type SavingsTransactionType = 'contribution' | 'deposit' | 'withdrawal';
+
+export interface SavingsTransaction {
+  id: string;
+  savings_goal_id: string;
+  household_id: string;
+  user_id: string;
+  type: SavingsTransactionType;
+  amount_pence: number;
+  balance_after_pence: number;
+  notes?: string | null;
+  created_at?: string;
+  goal_name?: string; // populated when joining with savings_goals
 }
 
 // ─── Month Lock ────────────────────────────────────────────────────────────────

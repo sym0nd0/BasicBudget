@@ -24,7 +24,12 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
   const [isHousehold, setIsHousehold] = useState(Boolean(initial?.is_household) ?? false);
   const [targetDate, setTargetDate] = useState(initial?.target_date ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
+  const [autoContribute, setAutoContribute] = useState(initial?.auto_contribute ?? false);
+  const [contributionDay, setContributionDay] = useState(String(initial?.contribution_day ?? 1));
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const monthlyContributionPence = parseFloat(monthlyContribution);
+  const showAutoContribute = !isNaN(monthlyContributionPence) && monthlyContributionPence > 0;
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -35,6 +40,10 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
     if (isNaN(current) || current < 0) e.currentAmount = 'Enter a valid current amount';
     const monthly = parseFloat(monthlyContribution);
     if (isNaN(monthly) || monthly < 0) e.monthlyContribution = 'Enter a valid monthly contribution';
+    const day = parseInt(contributionDay, 10);
+    if (autoContribute && showAutoContribute && (isNaN(day) || day < 1 || day > 28)) {
+      e.contributionDay = 'Contribution day must be between 1 and 28';
+    }
     return e;
   };
 
@@ -53,6 +62,8 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
       is_household: isHousehold ? 1 : 0,
       target_date: targetDate || null,
       notes: notes.trim() || null,
+      auto_contribute: showAutoContribute ? autoContribute : false,
+      contribution_day: showAutoContribute && autoContribute ? parseInt(contributionDay, 10) : 1,
     });
   };
 
@@ -114,6 +125,30 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
         />
         <span className="text-sm">Joint savings (split equally among household members)</span>
       </label>
+      {showAutoContribute && (
+        <div className="space-y-3">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={autoContribute}
+              onChange={e => setAutoContribute(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <span className="text-sm">Auto-contribute monthly</span>
+          </label>
+          {autoContribute && (
+            <Input
+              label="Contribution Day (1–28)"
+              type="number"
+              min="1"
+              max="28"
+              value={contributionDay}
+              onChange={e => setContributionDay(e.target.value)}
+              error={errors.contributionDay}
+            />
+          )}
+        </div>
+      )}
       <Input
         label="Notes (optional)"
         value={notes}

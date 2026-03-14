@@ -263,4 +263,16 @@ try {
   // Snapshots already seeded or table doesn't exist yet, ignore
 }
 
+// Add auto_contribute and contribution_day columns to savings_goals for automated monthly contributions
+try {
+  db.prepare('ALTER TABLE savings_goals ADD COLUMN auto_contribute INTEGER DEFAULT 0').run();
+} catch {
+  // Column already exists, ignore
+}
+try {
+  db.prepare('ALTER TABLE savings_goals ADD COLUMN contribution_day INTEGER DEFAULT 1').run();
+} catch {
+  // Column already exists, ignore
+}
+
 export default db;
