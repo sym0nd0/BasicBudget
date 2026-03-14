@@ -21,8 +21,17 @@ export function resolveRange(range: ReportRange): { from: string; to: string } {
     return `${ny}-${pad(nm)}-${pad(nd)}`;
   };
 
+  const addDays = (days: number) => {
+    const date = new Date(now);
+    date.setDate(date.getDate() + days);
+    const ny = date.getFullYear();
+    const nm = date.getMonth() + 1;
+    const nd = date.getDate();
+    return `${ny}-${pad(nm)}-${pad(nd)}`;
+  };
+
   switch (range) {
-    case '1w':  return { from: addMonths(-1), to: addMonths(1) };   // ±1 month (debt doesn't change weekly)
+    case '1w':  return { from: addDays(-7), to: today };
     case '1m':  return { from: addMonths(-1), to: today };
     case '3m':  return { from: addMonths(-3), to: today };
     case 'ytd': return { from: `${y}-01-01`, to: today };

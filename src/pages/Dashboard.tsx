@@ -9,7 +9,7 @@ import { FilterBar } from '../components/layout/FilterBar';
 import { IncomeVsExpensesBar } from '../components/charts/IncomeVsExpensesBar';
 import { ExpenseDonut } from '../components/charts/ExpenseDonut';
 import { formatCurrency, formatPercent } from '../utils/formatters';
-import type { BudgetSummary } from '../types';
+import type { BudgetSummary, MonthlyReportRow } from '../types';
 
 interface DashboardProps {
   onMenuClick: () => void;
@@ -46,14 +46,47 @@ function SummaryCard({ label, value, sub, colorClass, iconBgClass, icon, to }: S
 
 export function Dashboard({ onMenuClick }: DashboardProps) {
   const { debts } = useDebt();
-  const { activeMonth } = useFilter();
+  const { activeMonth, fromMonth, toMonth, isRangeActive } = useFilter();
 
-  const { data: summary } = useApi<BudgetSummary>(`/summary?month=${activeMonth}`);
+  const { data: summary } = useApi<BudgetSummary>(
+    !isRangeActive ? `/summary?month=${activeMonth}` : null
+  );
+  const { data: overview } = useApi<MonthlyReportRow[]>(
+    isRangeActive && fromMonth && toMonth
+      ? `/reports/overview?from=${fromMonth}&to=${toMonth}`
+      : null
+  );
+
+  const rangeSummary: BudgetSummary | null = overview ? (() => {
+    const categoryMap = new Map<string, number>();
+    for (const row of overview) {
+      for (const cat of row.category_breakdown) {
+        categoryMap.set(cat.category, (categoryMap.get(cat.category) ?? 0) + cat.total_pence);
+      }
+    }
+    const total_expenses_pence = overview.reduce((s, r) => s + r.expenses_pence, 0);
+    const category_breakdown = Array.from(categoryMap.entries())
+      .map(([category, total_pence]) => ({
+        category, total_pence,
+        percentage: total_expenses_pence > 0 ? (total_pence / total_expenses_pence) * 100 : 0,
+      }))
+      .sort((a, b) => b.total_pence - a.total_pence);
+    return {
+      total_income_pence: overview.reduce((s, r) => s + r.income_pence, 0),
+      total_expenses_pence,
+      total_debt_payments_pence: overview.reduce((s, r) => s + r.debt_payments_pence, 0),
+      total_savings_pence: overview.reduce((s, r) => s + r.savings_pence, 0),
+      disposable_income_pence: overview.reduce((s, r) => s + r.disposable_pence, 0),
+      category_breakdown,
+    };
+  })() : null;
+
+  const displaySummary = isRangeActive ? rangeSummary : summary;
 
   const totalDebtPence = debts.reduce((s, d) => s + d.balance_pence, 0);
   const totalPaymentsPence = debts.reduce((s, d) => s + Math.round((d.minimum_payment_pence + d.overpayment_pence) * d.split_ratio), 0);
 
-  const disposablePence = summary?.disposable_income_pence ?? 0;
+  const disposablePence = displaySummary?.disposable_income_pence ?? 0;
   const disposableVariant = disposablePence >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
 
   return (
@@ -69,7 +102,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6 items-stretch">
         <SummaryCard
           label="Monthly Income"
-          value={formatCurrency(summary?.total_income_pence ?? 0)}
+          value={formatCurrency(displaySummary?.total_income_pence ?? 0)}
           colorClass="text-[var(--color-success)]"
           iconBgClass="bg-[var(--color-success-light)]"
           to="/income"
@@ -81,7 +114,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
         />
         <SummaryCard
           label="Monthly Expenses"
-          value={formatCurrency(summary?.total_expenses_pence ?? 0)}
+          value={formatCurrency(displaySummary?.total_expenses_pence ?? 0)}
           colorClass="text-[var(--color-danger)]"
           iconBgClass="bg-[var(--color-danger-light)]"
           to="/expenses"
@@ -93,7 +126,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
         />
         <SummaryCard
           label="Debt Payments"
-          value={formatCurrency(summary?.total_debt_payments_pence ?? 0)}
+          value={formatCurrency(displaySummary?.total_debt_payments_pence ?? 0)}
           sub={`${debts.length} debt${debts.length !== 1 ? 's' : ''} — ${formatCurrency(totalDebtPence)} total`}
           colorClass="text-[var(--color-warning)]"
           iconBgClass="bg-[var(--color-warning-light)]"
@@ -106,7 +139,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
         />
         <SummaryCard
           label="Total Monthly Outgoing"
-          value={formatCurrency((summary?.total_expenses_pence ?? 0) + (summary?.total_debt_payments_pence ?? 0))}
+          value={formatCurrency((displaySummary?.total_expenses_pence ?? 0) + (displaySummary?.total_debt_payments_pence ?? 0))}
           colorClass="text-[var(--color-primary)]"
           iconBgClass="bg-[var(--color-primary-light)]"
           to="/"
@@ -144,9 +177,9 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
             subtitle="Monthly overview"
           />
           <IncomeVsExpensesBar
-            income={summary?.total_income_pence ?? 0}
-            expenses={summary?.total_expenses_pence ?? 0}
-            debtPayments={summary?.total_debt_payments_pence ?? 0}
+            income={displaySummary?.total_income_pence ?? 0}
+            expenses={displaySummary?.total_expenses_pence ?? 0}
+            debtPayments={displaySummary?.total_debt_payments_pence ?? 0}
           />
         </Card>
 
@@ -155,12 +188,12 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
             title="Expense Breakdown"
             subtitle="By category (your share)"
           />
-          <ExpenseDonut breakdown={summary?.category_breakdown ?? []} />
+          <ExpenseDonut breakdown={displaySummary?.category_breakdown ?? []} />
         </Card>
       </div>
 
       {/* Category breakdown table */}
-      {(summary?.category_breakdown?.length ?? 0) > 0 && (
+      {(displaySummary?.category_breakdown?.length ?? 0) > 0 && (
         <Card padding={false}>
           <div className="px-5 pt-5">
             <CardHeader
@@ -179,7 +212,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
                 </tr>
               </thead>
               <tbody>
-                {summary?.category_breakdown.map(cat => (
+                {displaySummary?.category_breakdown.map(cat => (
                   <tr key={cat.category} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors">
                     <td className="px-5 py-3 font-medium text-[var(--color-text)] text-center">
                       <Badge variant="default">{cat.category}</Badge>

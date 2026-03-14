@@ -33,7 +33,7 @@ export function DebtBalanceChart({ range: externalRange, householdOnly }: DebtBa
   // Resolve range to month count
   const getMonthCount = (r: ReportRange): number => {
     switch (r) {
-      case '1w': return 2;   // ±1 month shown as 2 months
+      case '1w': return 1;
       case '1m': return 2;
       case '3m': return 3;
       case 'ytd': return 12;

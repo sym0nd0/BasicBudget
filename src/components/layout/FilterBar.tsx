@@ -28,7 +28,7 @@ export function FilterBar({ showCategory = false }: FilterBarProps) {
     activeMonth, setActiveMonth,
     filterCategory, setFilterCategory,
     fromMonth, toMonth, setFromMonth, setToMonth,
-    isRangeActive, rangeMonths, rangeIndex, setRangeIndex,
+    isRangeActive,
   } = useFilter();
   const { data: categoriesData } = useApi<string[]>(showCategory ? '/categories' : null);
   const categories = categoriesData ?? [...EXPENSE_CATEGORIES];
@@ -46,7 +46,7 @@ export function FilterBar({ showCategory = false }: FilterBarProps) {
 
   return (
     <div className="flex flex-wrap gap-3 items-end">
-      {!showRange || !isRangeActive ? (
+      {!isRangeActive && (
         <div className="min-w-40">
           <Select
             label="Month"
@@ -54,33 +54,6 @@ export function FilterBar({ showCategory = false }: FilterBarProps) {
             onChange={e => setActiveMonth(e.target.value)}
             options={MONTH_OPTIONS}
           />
-        </div>
-      ) : (
-        <div className="flex items-end gap-1">
-          <button
-            onClick={() => setRangeIndex(Math.max(0, rangeIndex - 1))}
-            disabled={rangeIndex === 0}
-            className="mb-0.5 p-1.5 rounded hover:bg-[var(--color-surface-2)] disabled:opacity-30 text-[var(--color-text)]"
-            aria-label="Previous month"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <div className="text-sm font-medium text-[var(--color-text)] min-w-28 text-center leading-none">
-            <div className="text-xs text-[var(--color-text-muted)] mb-1">Month {rangeIndex + 1} of {rangeMonths.length}</div>
-            <div>{formatYearMonth(activeMonth)}</div>
-          </div>
-          <button
-            onClick={() => setRangeIndex(Math.min(rangeMonths.length - 1, rangeIndex + 1))}
-            disabled={rangeIndex === rangeMonths.length - 1}
-            className="mb-0.5 p-1.5 rounded hover:bg-[var(--color-surface-2)] disabled:opacity-30 text-[var(--color-text)]"
-            aria-label="Next month"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
         </div>
       )}
 

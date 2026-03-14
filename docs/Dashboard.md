@@ -30,13 +30,20 @@ The filter bar appears above the summary cards and allows you to narrow down the
 
 | Filter | Description |
 |---|---|
-| **Month** | The month to display data for. Defaults to the current month. |
-| **Contributor** | Filter income and expenses to a specific household member. |
-| **Account** | Filter expenses to a specific payment account. |
-| **Category** | Filter expenses to a specific expense category. |
-| **Recurrence** | Show only recurring items, one-off items, or all. |
+| **Month** | The month to display data for. Defaults to the current month. Hidden when a date range is active. |
+| **Range (From / To)** | Click the calendar icon to enable date range mode. Set **From** and **To** months to aggregate summary cards and charts across all months in the range. The Month dropdown is hidden while a range is active. |
 
 Changing any filter updates all summary cards and charts simultaneously.
+
+### Date Range Mode
+
+When a From/To range is set, the Dashboard aggregates totals across every month in the range rather than showing a single month:
+
+- **Summary cards** — show totals for the entire range (e.g. Jan–Mar sums income across all 3 months).
+- **Charts** — update to reflect the aggregated data.
+- **Month dropdown** — hidden while a range is active.
+
+To return to single-month mode, click the calendar icon again to close the range panel (this clears the From/To values).
 
 ---
 
