@@ -8,18 +8,18 @@ const RANGES: { label: string; value: ReportRange }[] = [
   { label: '1Y', value: '1y' },
   { label: '2Y', value: '2y' },
   { label: '5Y', value: '5y' },
-  { label: 'All', value: 'all' },
 ];
 
 interface TimeRangeSelectorProps {
   value: ReportRange;
   onChange: (range: ReportRange) => void;
+  excludeRanges?: ReportRange[];
 }
 
-export function TimeRangeSelector({ value, onChange }: TimeRangeSelectorProps) {
+export function TimeRangeSelector({ value, onChange, excludeRanges }: TimeRangeSelectorProps) {
   return (
     <div className="flex gap-1 flex-wrap">
-      {RANGES.map(r => (
+      {RANGES.filter(r => !excludeRanges?.includes(r.value)).map(r => (
         <button
           key={r.value}
           onClick={() => onChange(r.value)}
