@@ -1,25 +1,26 @@
 import type { ReportRange } from '../../types';
 
-const RANGES: { label: string; value: ReportRange }[] = [
-  { label: '1W', value: '1w' },
+const BASE_RANGES: { label: string; value: ReportRange }[] = [
   { label: '1M', value: '1m' },
   { label: '3M', value: '3m' },
-  { label: 'YTD', value: 'ytd' },
-  { label: '1Y', value: '1y' },
-  { label: '2Y', value: '2y' },
-  { label: '5Y', value: '5y' },
+  { label: '6M', value: '6m' },
+  { label: '12M', value: '12m' },
 ];
 
 interface TimeRangeSelectorProps {
   value: ReportRange;
   onChange: (range: ReportRange) => void;
   excludeRanges?: ReportRange[];
+  showCustom?: boolean;
 }
 
-export function TimeRangeSelector({ value, onChange, excludeRanges }: TimeRangeSelectorProps) {
+export function TimeRangeSelector({ value, onChange, excludeRanges, showCustom }: TimeRangeSelectorProps) {
+  const ranges = showCustom
+    ? [...BASE_RANGES, { label: 'Custom', value: 'custom' as ReportRange }]
+    : BASE_RANGES;
   return (
     <div className="flex gap-1 flex-wrap">
-      {RANGES.filter(r => !excludeRanges?.includes(r.value)).map(r => (
+      {ranges.filter(r => !excludeRanges?.includes(r.value)).map(r => (
         <button
           key={r.value}
           onClick={() => onChange(r.value)}

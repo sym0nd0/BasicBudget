@@ -1,18 +1,20 @@
 import React, { createContext, useContext, useState } from 'react';
+import type { ReportRange } from '../types';
+import { resolveRange } from '../utils/reportRanges';
 
 interface FilterContextValue {
   activeMonth: string;
   setActiveMonth: (month: string) => void;
   filterCategory: string;
   setFilterCategory: (cat: string) => void;
-  fromMonth: string | null;
-  toMonth: string | null;
-  setFromMonth: (month: string | null) => void;
-  setToMonth: (month: string | null) => void;
+  fromMonth: string;
+  toMonth: string;
+  setFromMonth: (month: string) => void;
+  setToMonth: (month: string) => void;
   isRangeActive: boolean;
   rangeMonths: string[];
-  rangeIndex: number;
-  setRangeIndex: (i: number) => void;
+  rangePreset: ReportRange;
+  setRangePreset: (preset: ReportRange) => void;
 }
 
 const FilterContext = createContext<FilterContextValue | null>(null);
@@ -36,46 +38,53 @@ function monthsBetween(from: string, to: string): string[] {
 }
 
 export function FilterProvider({ children }: { children: React.ReactNode }) {
-  const [activeMonth, setActiveMonth] = useState<string>(currentYearMonth());
+  const initial = currentYearMonth();
+  const [rangePreset, setRangePresetState] = useState<ReportRange>('1m');
+  const [fromMonth, setFromMonthState] = useState<string>(initial);
+  const [toMonth, setToMonthState] = useState<string>(initial);
   const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [fromMonth, setFromMonth] = useState<string | null>(null);
-  const [toMonth, setToMonth] = useState<string | null>(null);
-  const [rangeIndex, setRangeIndex] = useState<number>(0);
 
-  const isRangeActive = Boolean(fromMonth && toMonth && fromMonth <= toMonth);
-  const rangeMonths = isRangeActive ? monthsBetween(fromMonth!, toMonth!) : [];
+  const isRangeActive = fromMonth !== toMonth;
+  const rangeMonths = monthsBetween(fromMonth, toMonth);
+  const activeMonth = fromMonth;
 
-  // When range is active, activeMonth reflects the current position in range
-  const effectiveMonth = isRangeActive ? (rangeMonths[rangeIndex] ?? rangeMonths[0]) : activeMonth;
-
-  const handleSetActiveMonth = (month: string) => {
-    setActiveMonth(month);
+  const setRangePreset = (preset: ReportRange) => {
+    setRangePresetState(preset);
+    if (preset !== 'custom') {
+      const { from, to } = resolveRange(preset);
+      setFromMonthState(from);
+      setToMonthState(to);
+    }
   };
 
-  const handleSetFromMonth = (month: string | null) => {
-    setFromMonth(month);
-    setRangeIndex(0);
+  const setActiveMonth = (month: string) => {
+    setRangePresetState('1m');
+    setFromMonthState(month);
+    setToMonthState(month);
   };
 
-  const handleSetToMonth = (month: string | null) => {
-    setToMonth(month);
-    setRangeIndex(0);
+  const setFromMonth = (month: string) => {
+    setFromMonthState(month);
+  };
+
+  const setToMonth = (month: string) => {
+    setToMonthState(month);
   };
 
   return (
     <FilterContext.Provider value={{
-      activeMonth: effectiveMonth,
-      setActiveMonth: handleSetActiveMonth,
+      activeMonth,
+      setActiveMonth,
       filterCategory,
       setFilterCategory,
       fromMonth,
       toMonth,
-      setFromMonth: handleSetFromMonth,
-      setToMonth: handleSetToMonth,
+      setFromMonth,
+      setToMonth,
       isRangeActive,
       rangeMonths,
-      rangeIndex,
-      setRangeIndex,
+      rangePreset,
+      setRangePreset,
     }}>
       {children}
     </FilterContext.Provider>

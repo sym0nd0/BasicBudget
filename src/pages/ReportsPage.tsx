@@ -20,13 +20,28 @@ interface ReportsPageProps {
 }
 
 export function ReportsPage({ onMenuClick }: ReportsPageProps) {
-  const [range, setRange] = useState<ReportRange>('1y');
-  const { from, to } = resolveRange(range);
+  const [range, setRange] = useState<ReportRange>('12m');
+  const [fromMonth, setFromMonth] = useState<string>(() => resolveRange('12m').from);
+  const [toMonth, setToMonth] = useState<string>(() => resolveRange('12m').to);
+
+  const { from, to } = range === 'custom'
+    ? { from: fromMonth, to: toMonth }
+    : resolveRange(range);
+
   const { data: overview } = useApi<MonthlyReportRow[]>(`/reports/overview?from=${from}&to=${to}`);
 
   // Fetch previous period data for delta calculation
-  const prevRange = previousRange(range);
+  const prevRange = previousRange(range, fromMonth, toMonth);
   const { data: previousOverview } = useApi<MonthlyReportRow[]>(`/reports/overview?from=${prevRange.from}&to=${prevRange.to}`);
+
+  const handleRangeChange = (newRange: ReportRange) => {
+    setRange(newRange);
+    if (newRange !== 'custom') {
+      const resolved = resolveRange(newRange);
+      setFromMonth(resolved.from);
+      setToMonth(resolved.to);
+    }
+  };
 
   // Calculate aggregates across the range
   const totals = {
@@ -101,7 +116,31 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
       {/* Time range selector */}
       <div className="mb-6">
         <Card>
-          <TimeRangeSelector value={range} onChange={setRange} />
+          <div className="flex flex-wrap items-end gap-3">
+            <TimeRangeSelector value={range} onChange={handleRangeChange} showCustom />
+            {range === 'custom' && (
+              <div className="flex items-end gap-2">
+                <div>
+                  <label className="block text-xs text-[var(--color-text-muted)] mb-1">From</label>
+                  <input
+                    type="month"
+                    value={fromMonth}
+                    onChange={e => setFromMonth(e.target.value || fromMonth)}
+                    className="text-sm border border-[var(--color-border)] rounded-lg px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text)]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-[var(--color-text-muted)] mb-1">To</label>
+                  <input
+                    type="month"
+                    value={toMonth}
+                    onChange={e => setToMonth(e.target.value || toMonth)}
+                    className="text-sm border border-[var(--color-border)] rounded-lg px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text)]"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </Card>
       </div>
 

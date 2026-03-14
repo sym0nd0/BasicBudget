@@ -23,34 +23,6 @@ function monthRange(from: string, to: string): string[] {
   return months;
 }
 
-/** Resolve report range to from/to YYYY-MM dates */
-function resolveRange(range: string): { from: string; to: string } {
-  const now = new Date();
-  const cy = now.getFullYear();
-  const cm = now.getMonth() + 1;
-  const today = `${cy}-${String(cm).padStart(2, '0')}`;
-
-  const addMonths = (ym: string, n: number): string => {
-    let [y, m] = ym.split('-').map(Number);
-    m += n;
-    while (m > 12) { m -= 12; y++; }
-    while (m < 1) { m += 12; y--; }
-    return `${y}-${String(m).padStart(2, '0')}`;
-  };
-
-  switch (range) {
-    case '1w': return { from: today, to: today };
-    case '1m': return { from: addMonths(today, -1), to: today };
-    case '3m': return { from: addMonths(today, -3), to: today };
-    case 'ytd': return { from: `${cy}-01`, to: today };
-    case '2y': return { from: addMonths(today, -24), to: today };
-    case '5y': return { from: addMonths(today, -60), to: today };
-    case 'all': return { from: addMonths(today, -120), to: today };
-    case '1y':
-    default: return { from: addMonths(today, -12), to: today };
-  }
-}
-
 // GET /api/reports/overview?from=YYYY-MM&to=YYYY-MM
 router.get('/overview', (req: Request, res: Response) => {
   const from = (req.query.from as string) ?? '';

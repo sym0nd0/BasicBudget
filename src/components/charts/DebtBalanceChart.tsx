@@ -26,20 +26,18 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export function DebtBalanceChart({ range: externalRange, householdOnly }: DebtBalanceChartProps) {
-  const [internalRange, setInternalRange] = useState<ReportRange>('1y');
+  const [internalRange, setInternalRange] = useState<ReportRange>('12m');
   const range = externalRange ?? internalRange;
   const isControlled = externalRange !== undefined;
 
   // Resolve range to month count
   const getMonthCount = (r: ReportRange): number => {
     switch (r) {
-      case '1w': return 1;
-      case '1m': return 2;
+      case '1m': return 1;
       case '3m': return 3;
-      case 'ytd': return new Date().getMonth() + 1;
-      case '2y': return 24;
-      case '5y': return 60;
-      case '1y':
+      case '6m': return 6;
+      case '12m':
+      case 'custom':
       default: return 12;
     }
   };
@@ -99,7 +97,7 @@ export function DebtBalanceChart({ range: externalRange, householdOnly }: DebtBa
         <CardHeader title="Debt Balance Projection" subtitle="Projected debt balance over time" />
         {!isControlled && (
           <div className="mt-4">
-            <TimeRangeSelector value={range} onChange={setInternalRange} excludeRanges={['ytd']} />
+            <TimeRangeSelector value={range} onChange={setInternalRange} />
           </div>
         )}
       </div>
