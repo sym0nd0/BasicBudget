@@ -7,8 +7,6 @@ export type {
   Debt,
   DebtDealPeriod,
   SavingsGoal,
-  SavingsTransaction,
-  SavingsTransactionType,
   MonthLock,
   RepaymentRow,
   DebtPayoffSummary,

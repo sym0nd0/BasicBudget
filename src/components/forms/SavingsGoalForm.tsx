@@ -24,11 +24,7 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
   const [isHousehold, setIsHousehold] = useState(Boolean(initial?.is_household) ?? false);
   const [targetDate, setTargetDate] = useState(initial?.target_date ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
-  const [autoContribute, setAutoContribute] = useState(Boolean(initial?.auto_contribute));
-  const [contributionDay, setContributionDay] = useState(initial?.contribution_day ?? 1);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const monthlyPence = parseFloat(monthlyContribution);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -57,8 +53,6 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
       is_household: isHousehold ? 1 : 0,
       target_date: targetDate || null,
       notes: notes.trim() || null,
-      auto_contribute: autoContribute ? 1 : 0,
-      contribution_day: autoContribute ? contributionDay : 1,
     });
   };
 
@@ -120,29 +114,6 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
         />
         <span className="text-sm">Joint savings (split equally among household members)</span>
       </label>
-      {!isNaN(monthlyPence) && monthlyPence > 0 && (
-        <div className="flex flex-col gap-3">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={autoContribute}
-              onChange={e => setAutoContribute(e.target.checked)}
-              className="w-4 h-4"
-            />
-            <span className="text-sm">Auto-contribute monthly on a set day</span>
-          </label>
-          {autoContribute && (
-            <Input
-              label="Contribution Day (1–28)"
-              type="number"
-              min="1"
-              max="28"
-              value={contributionDay}
-              onChange={e => setContributionDay(Math.min(28, Math.max(1, parseInt(e.target.value) || 1)))}
-            />
-          )}
-        </div>
-      )}
       <Input
         label="Notes (optional)"
         value={notes}

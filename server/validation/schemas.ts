@@ -78,14 +78,6 @@ export const savingsGoalSchema = z.object({
   monthly_contribution_pence: z.number().int().min(0).optional(),
   target_date: dateStr.nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
-  auto_contribute: z.boolean().optional(),
-  contribution_day: z.number().int().min(1).max(28).optional(),
-});
-
-export const savingsTransactionSchema = z.object({
-  type: z.enum(['contribution', 'deposit', 'withdrawal']),
-  amount_pence: z.number().int().min(1),
-  notes: z.string().max(2000).nullable().optional(),
 });
 
 // ─── Accounts ─────────────────────────────────────────────────────────────────

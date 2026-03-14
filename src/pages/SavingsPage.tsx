@@ -1,20 +1,16 @@
 import { useState } from 'react';
 import { useSavings } from '../context/SavingsContext';
-import { useFilter } from '../context/FilterContext';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
-import { useApi } from '../hooks/useApi';
 import { PageShell } from '../components/layout/PageShell';
-import { Card, CardHeader } from '../components/ui/Card';
+import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
-import { Badge } from '../components/ui/Badge';
-import { FilterBar } from '../components/layout/FilterBar';
 import { SavingsGoalForm } from '../components/forms/SavingsGoalForm';
-import { SavingsGrowthChart } from '../components/charts/SavingsGrowthChart';
+import { Badge } from '../components/ui/Badge';
 import { formatCurrency, formatPercent } from '../utils/formatters';
 import { findDuplicateSavingsGoal } from '../utils/duplicates';
-import type { SavingsGoal, SavingsTransaction, SavingsTransactionType } from '../types';
+import type { SavingsGoal } from '../types';
 
 interface SavingsPageProps {
   onMenuClick: () => void;
@@ -32,34 +28,15 @@ function progressPercent(goal: SavingsGoal): number {
   return Math.min(100, (goal.current_amount_pence / goal.target_amount_pence) * 100);
 }
 
-function txTypeBadgeVariant(type: SavingsTransactionType): 'success' | 'warning' {
-  return type === 'withdrawal' ? 'warning' : 'success';
-}
-
-function txTypeLabel(type: SavingsTransactionType): string {
-  if (type === 'contribution') return 'Auto';
-  if (type === 'deposit') return 'Deposit';
-  return 'Withdrawal';
-}
-
 export function SavingsPage({ onMenuClick }: SavingsPageProps) {
-  const { goals, addGoal, updateGoal, deleteGoal, createTransaction, refetchGoals } = useSavings();
-  const { fromMonth, toMonth } = useFilter();
+  const { goals, addGoal, updateGoal, deleteGoal } = useSavings();
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
-
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SavingsGoal | undefined>();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  // Combined deposit/withdrawal modal
-  const [txGoal, setTxGoal] = useState<SavingsGoal | undefined>();
-  const [txType, setTxType] = useState<'deposit' | 'withdrawal'>('deposit');
-  const [txAmount, setTxAmount] = useState('');
-  const [txNotes, setTxNotes] = useState('');
-  const [txError, setTxError] = useState<string | null>(null);
-
-  const txUrl = `/savings-goals/transactions?from=${fromMonth}&to=${toMonth}`;
-  const { data: transactions, refetch: refetchTx } = useApi<SavingsTransaction[]>(txUrl);
+  const [withdrawGoal, setWithdrawGoal] = useState<SavingsGoal | undefined>();
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
 
   const totalSaved = goals.reduce((s, g) => s + g.current_amount_pence, 0);
   const totalTarget = goals.reduce((s, g) => s + g.target_amount_pence, 0);
@@ -89,31 +66,27 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
     setModalOpen(true);
   };
 
-  const openTxModal = (goal: SavingsGoal, type: 'deposit' | 'withdrawal') => {
-    setTxGoal(goal);
-    setTxType(type);
-    setTxAmount('');
-    setTxNotes('');
-    setTxError(null);
-  };
-
-  const handleTxSubmit = async () => {
-    if (!txGoal) return;
-    const pounds = parseFloat(txAmount);
+  const handleWithdraw = async () => {
+    if (!withdrawGoal) return;
+    const pounds = parseFloat(withdrawAmount);
     if (isNaN(pounds) || pounds <= 0) {
-      setTxError('Please enter a valid amount.');
+      setWithdrawError('Please enter a valid amount.');
       return;
     }
     const pence = Math.round(pounds * 100);
+    if (pence > withdrawGoal.current_amount_pence) {
+      setWithdrawError('Withdrawal amount exceeds current savings.');
+      return;
+    }
     try {
-      await createTransaction(txGoal.id, { type: txType, amount_pence: pence, notes: txNotes.trim() || null });
-      refetchTx();
-      setTxGoal(undefined);
-      setTxAmount('');
-      setTxNotes('');
-      setTxError(null);
+      await updateGoal(withdrawGoal.id, {
+        current_amount_pence: withdrawGoal.current_amount_pence - pence,
+      });
+      setWithdrawGoal(undefined);
+      setWithdrawAmount('');
+      setWithdrawError(null);
     } catch (err) {
-      setTxError((err as Error).message);
+      setWithdrawError((err as Error).message);
     }
   };
 
@@ -121,8 +94,6 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
     if (!await confirm('Delete Savings Goal', 'Delete this savings goal?', 'danger')) return;
     try {
       await deleteGoal(id);
-      refetchGoals();
-      refetchTx();
     } catch (err) {
       alert((err as Error).message);
     }
@@ -141,13 +112,6 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
         </Button>
       }
     >
-      {/* Filter bar */}
-      <div className="mb-5">
-        <Card>
-          <FilterBar />
-        </Card>
-      </div>
-
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5 items-stretch">
         <Card className="h-full">
@@ -186,9 +150,6 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-[var(--color-text)]">{goal.name}</h3>
                       {achieved && <Badge variant="success">Achieved!</Badge>}
-                      {Boolean(goal.auto_contribute) && (
-                        <Badge variant="primary">Auto</Badge>
-                      )}
                     </div>
                     {goal.notes && (
                       <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{goal.notes}</p>
@@ -200,18 +161,9 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                       </svg>
                     </Button>
-                    {/* Deposit button */}
-                    <Button variant="ghost" size="sm"
-                      className="hover:text-[var(--color-success)] hover:bg-[var(--color-success-light)]"
-                      onClick={() => openTxModal(goal, 'deposit')}>
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                      </svg>
-                    </Button>
-                    {/* Withdraw button */}
                     <Button variant="ghost" size="sm"
                       className="hover:text-[var(--color-warning)] hover:bg-[var(--color-warning-light)]"
-                      onClick={() => openTxModal(goal, 'withdrawal')}>
+                      onClick={() => { setWithdrawGoal(goal); setWithdrawAmount(''); setWithdrawError(null); }}>
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                       </svg>
@@ -264,11 +216,6 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                       </span>
                     </span>
                   )}
-                  {Boolean(goal.auto_contribute) && goal.contribution_day && (
-                    <span className="text-[var(--color-text-muted)]">
-                      Auto on day <span className="font-medium text-[var(--color-text)]">{goal.contribution_day}</span>
-                    </span>
-                  )}
                 </div>
               </Card>
             );
@@ -276,70 +223,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
         </div>
       )}
 
-      {/* Savings Balance chart */}
-      {(transactions?.length ?? 0) > 0 && (
-        <div className="mt-6">
-          <Card padding={false}>
-            <div className="px-5 pt-5">
-              <CardHeader title="Savings Balance" subtitle="Balance progression over time" />
-            </div>
-            <div className="px-5 pb-5">
-              <SavingsGrowthChart transactions={transactions ?? []} goals={goals} />
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Transaction history */}
-      <div className="mt-6">
-        <Card padding={false}>
-          <div className="px-5 pt-5">
-            <CardHeader title="Transaction History" subtitle="All deposits, withdrawals, and auto-contributions" />
-          </div>
-          {!transactions || transactions.length === 0 ? (
-            <p className="px-5 pb-5 text-sm text-[var(--color-text-muted)]">No transactions in this period.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--color-border)]">
-                    <th className="text-left px-5 py-2 text-xs text-[var(--color-text-muted)] font-medium">Date</th>
-                    <th className="text-left px-5 py-2 text-xs text-[var(--color-text-muted)] font-medium">Goal</th>
-                    <th className="text-left px-5 py-2 text-xs text-[var(--color-text-muted)] font-medium">Type</th>
-                    <th className="text-right px-5 py-2 text-xs text-[var(--color-text-muted)] font-medium">Amount</th>
-                    <th className="text-right px-5 py-2 text-xs text-[var(--color-text-muted)] font-medium">Balance After</th>
-                    <th className="text-left px-5 py-2 text-xs text-[var(--color-text-muted)] font-medium">Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactions.map(tx => (
-                    <tr key={tx.id} className="border-b border-[var(--color-border)] last:border-0">
-                      <td className="px-5 py-2.5 text-[var(--color-text-muted)] whitespace-nowrap">
-                        {tx.created_at ? new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-                      </td>
-                      <td className="px-5 py-2.5 text-[var(--color-text)]">{tx.goal_name ?? '—'}</td>
-                      <td className="px-5 py-2.5">
-                        <Badge variant={txTypeBadgeVariant(tx.type)}>{txTypeLabel(tx.type)}</Badge>
-                      </td>
-                      <td className="px-5 py-2.5 text-right font-medium text-[var(--color-text)]">
-                        {tx.type === 'withdrawal' ? '−' : '+'}{formatCurrency(tx.amount_pence)}
-                      </td>
-                      <td className="px-5 py-2.5 text-right text-[var(--color-text-muted)]">
-                        {formatCurrency(tx.balance_after_pence)}
-                      </td>
-                      <td className="px-5 py-2.5 text-[var(--color-text-muted)]">{tx.notes ?? ''}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
-      </div>
-
       {ConfirmDialogElement}
-
-      {/* Add/Edit modal */}
       <Modal
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
@@ -356,64 +240,29 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
           onCancel={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
         />
       </Modal>
-
-      {/* Deposit / Withdrawal modal */}
       <Modal
-        isOpen={!!txGoal}
-        onClose={() => { setTxGoal(undefined); setTxAmount(''); setTxNotes(''); setTxError(null); }}
-        title={txType === 'deposit' ? 'Deposit to Savings' : 'Withdraw from Savings'}
+        isOpen={!!withdrawGoal}
+        onClose={() => { setWithdrawGoal(undefined); setWithdrawAmount(''); setWithdrawError(null); }}
+        title="Withdraw from Savings"
       >
-        {txError && (
-          <p className="mb-3 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">{txError}</p>
+        {withdrawError && (
+          <p className="mb-3 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">{withdrawError}</p>
         )}
-        {/* Type toggle */}
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => setTxType('deposit')}
-            className={[
-              'flex-1 py-1.5 rounded text-sm font-medium transition-colors',
-              txType === 'deposit'
-                ? 'bg-[var(--color-success)] text-white'
-                : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]',
-            ].join(' ')}
-          >
-            Deposit
-          </button>
-          <button
-            onClick={() => setTxType('withdrawal')}
-            className={[
-              'flex-1 py-1.5 rounded text-sm font-medium transition-colors',
-              txType === 'withdrawal'
-                ? 'bg-[var(--color-warning)] text-white'
-                : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]',
-            ].join(' ')}
-          >
-            Withdraw
-          </button>
-        </div>
         <p className="text-sm text-[var(--color-text-muted)] mb-3">
-          Current balance: <span className="font-medium text-[var(--color-text)]">{txGoal && formatCurrency(txGoal.current_amount_pence)}</span>
+          Current balance: <span className="font-medium text-[var(--color-text)]">{withdrawGoal && formatCurrency(withdrawGoal.current_amount_pence)}</span>
         </p>
         <Input
           label="Amount (£)"
           type="number"
           step="0.01"
           min="0.01"
-          value={txAmount}
-          onChange={e => setTxAmount(e.target.value)}
+          value={withdrawAmount}
+          onChange={e => setWithdrawAmount(e.target.value)}
           autoFocus
         />
-        <div className="mt-3">
-          <Input
-            label="Notes (optional)"
-            value={txNotes}
-            onChange={e => setTxNotes(e.target.value)}
-            placeholder="e.g. Holiday fund top-up"
-          />
-        </div>
         <div className="flex justify-end gap-2 mt-4">
-          <Button variant="ghost" onClick={() => { setTxGoal(undefined); setTxAmount(''); setTxNotes(''); setTxError(null); }}>Cancel</Button>
-          <Button onClick={handleTxSubmit}>{txType === 'deposit' ? 'Deposit' : 'Withdraw'}</Button>
+          <Button variant="ghost" onClick={() => { setWithdrawGoal(undefined); setWithdrawAmount(''); setWithdrawError(null); }}>Cancel</Button>
+          <Button onClick={handleWithdraw}>Withdraw</Button>
         </div>
       </Modal>
     </PageShell>

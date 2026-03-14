@@ -3,8 +3,6 @@ import type {
   Expense,
   Debt,
   SavingsGoal,
-  SavingsTransaction,
-  SavingsTransactionType,
   Account,
   MonthLock,
   BudgetSummary,
@@ -215,22 +213,6 @@ export const api = {
     request<SavingsGoal>(`/savings-goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteSavingsGoal: (id: string) =>
     request<void>(`/savings-goals/${id}`, { method: 'DELETE' }),
-  getSavingsTransactions: (goalId: string, from?: string, to?: string) => {
-    const params = new URLSearchParams();
-    if (from) params.set('from', from);
-    if (to) params.set('to', to);
-    const qs = params.toString();
-    return request<SavingsTransaction[]>(`/savings-goals/${goalId}/transactions${qs ? `?${qs}` : ''}`);
-  },
-  getAllSavingsTransactions: (from?: string, to?: string) => {
-    const params = new URLSearchParams();
-    if (from) params.set('from', from);
-    if (to) params.set('to', to);
-    const qs = params.toString();
-    return request<SavingsTransaction[]>(`/savings-goals/transactions${qs ? `?${qs}` : ''}`);
-  },
-  createSavingsTransaction: (goalId: string, data: { type: SavingsTransactionType; amount_pence: number; notes?: string | null }) =>
-    request<SavingsTransaction>(`/savings-goals/${goalId}/transactions`, { method: 'POST', body: JSON.stringify(data) }),
 
   // ── Accounts ──
   getAccounts: () => request<Account[]>('/accounts'),
