@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import db from '../db.js';
 import { randomUUID } from 'node:crypto';
-import { filterActiveInMonth, currentYearMonth, type RecurringItem } from '../utils/recurring.js';
+import { filterActiveInMonth, currentYearMonth, isActiveInMonth, type RecurringItem } from '../utils/recurring.js';
 import { filterVisible, canModify } from '../utils/visibility.js';
 import { isMonthLocked } from './months.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -13,6 +13,19 @@ import { expenseSchema, monthParam } from '../validation/schemas.js';
 const router = Router();
 router.use(requireAuth);
 
+/** Generate YYYY-MM strings between from and to (inclusive) */
+function monthRange(from: string, to: string): string[] {
+  const months: string[] = [];
+  let [y, m] = from.split('-').map(Number);
+  const [ey, em] = to.split('-').map(Number);
+  while (y < ey || (y === ey && m <= em)) {
+    months.push(`${y}-${String(m).padStart(2, '0')}`);
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+  return months;
+}
+
 function mapExpense(row: Record<string, unknown>): Expense {
   return {
     ...(row as Omit<Expense, 'is_recurring' | 'is_household'>),
@@ -21,15 +34,65 @@ function mapExpense(row: Record<string, unknown>): Expense {
   };
 }
 
-// GET /api/expenses?month=&category=
+// GET /api/expenses?month=&from=&to=&category=
 router.get('/', (req: Request, res: Response) => {
+  const from = req.query.from as string | undefined;
+  const to = req.query.to as string | undefined;
+  const category = req.query.category as string | undefined;
+
+  if (from || to) {
+    if (!from || !to) {
+      res.status(400).json({ message: 'from and to are required' });
+      return;
+    }
+    const fromResult = monthParam.safeParse(from);
+    const toResult = monthParam.safeParse(to);
+    if (!fromResult.success || !toResult.success) {
+      res.status(400).json({ message: 'Invalid month format' });
+      return;
+    }
+    if (from > to) {
+      res.status(400).json({ message: 'from must be before to' });
+      return;
+    }
+    const months = monthRange(from, to);
+    if (months.length > 120) {
+      res.status(400).json({ message: 'Range too large (max 120 months)' });
+      return;
+    }
+
+    const all = category
+      ? db.prepare('SELECT * FROM expenses WHERE household_id = ? AND category = ? ORDER BY created_at').all(req.householdId!, category) as RecurringItem[]
+      : db.prepare('SELECT * FROM expenses WHERE household_id = ? ORDER BY created_at').all(req.householdId!) as RecurringItem[];
+    const visible = filterVisible(all as Record<string, unknown>[], req.userId!) as RecurringItem[];
+
+    const rangeExpenses = visible.flatMap(item => {
+      let range_full_pence = 0;
+      let range_share_pence = 0;
+      let isActive = false;
+      const splitRatio = (item.split_ratio as number) ?? 1;
+      for (const month of months) {
+        const { active, effectivePence } = isActiveInMonth(item, month);
+        if (!active) continue;
+        isActive = true;
+        const effective = effectivePence ?? item.amount_pence ?? 0;
+        range_full_pence += effective;
+        range_share_pence += Math.round(effective * splitRatio);
+      }
+      if (!isActive) return [];
+      return [{ ...mapExpense(item as Record<string, unknown>), range_full_pence, range_share_pence }];
+    });
+
+    res.json(rangeExpenses);
+    return;
+  }
+
   const month = (req.query.month as string) ?? currentYearMonth();
   const monthResult = monthParam.safeParse(month);
   if (!monthResult.success) {
     res.status(400).json({ message: 'Invalid month format' });
     return;
   }
-  const category = req.query.category as string | undefined;
 
   const all = category
     ? db.prepare('SELECT * FROM expenses WHERE household_id = ? AND category = ? ORDER BY created_at').all(req.householdId!, category) as RecurringItem[]

@@ -11,6 +11,7 @@ import { FilterBar } from '../components/layout/FilterBar';
 import { SortableHeader } from '../components/ui/SortableHeader';
 import { useSortableTable } from '../hooks/useSortableTable';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
+import { useRangeOverview } from '../hooks/useRangeOverview';
 import { formatCurrency, formatOrdinal, formatPercent } from '../utils/formatters';
 import { findDuplicateExpense } from '../utils/duplicates';
 import type { Expense } from '../types';
@@ -19,27 +20,60 @@ interface ExpensesPageProps {
   onMenuClick: () => void;
 }
 
+type ExpenseRow = Expense & {
+  display_full_pence: number;
+  display_share_pence: number;
+};
+
 export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
   const { expenses, accounts, addExpense, updateExpense, deleteExpense } = useBudget();
   const { filterCategory } = useFilter();
+  const { isRangeActive, data: rangeOverview } = useRangeOverview();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | undefined>();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const preFiltered = useMemo(() => {
-    return expenses.filter(e => {
-      if (filterCategory !== 'all' && e.category !== filterCategory) return false;
-      return true;
-    });
-  }, [expenses, filterCategory]);
+  const preFiltered = useMemo<ExpenseRow[]>(() => {
+    return expenses
+      .filter(expense => {
+        if (filterCategory !== 'all' && expense.category !== filterCategory) return false;
+        return true;
+      })
+      .map(expense => {
+        const splitRatio = expense.split_ratio ?? 1;
+        const monthlyShare = Math.round(expense.amount_pence * splitRatio);
+        const display_full_pence = isRangeActive
+          ? expense.range_full_pence ?? expense.amount_pence
+          : expense.amount_pence;
+        const display_share_pence = isRangeActive
+          ? expense.range_share_pence ?? monthlyShare
+          : monthlyShare;
+        return {
+          ...expense,
+          display_full_pence,
+          display_share_pence,
+        };
+      });
+  }, [expenses, filterCategory, isRangeActive]);
 
-  const { sorted: filtered, sortKey, sortDir, toggleSort } = useSortableTable<Expense>(preFiltered, 'name');
+  const { sorted: filtered, sortKey, sortDir, toggleSort } = useSortableTable<ExpenseRow>(preFiltered, 'name');
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const toggleExpand = (id: string) => setExpandedId(prev => prev === id ? null : id);
 
-  const totalEffective = filtered.reduce((sum, e) => sum + Math.round(e.amount_pence * e.split_ratio), 0);
-  const totalAll = expenses.reduce((sum, e) => sum + Math.round(e.amount_pence * e.split_ratio), 0);
+  const tableTotalEffective = filtered.reduce((sum, e) => sum + e.display_share_pence, 0);
+  const tableTotalFull = filtered.reduce((sum, e) => sum + e.display_full_pence, 0);
+  const totalAll = isRangeActive && rangeOverview
+    ? rangeOverview.reduce((sum, row) => sum + row.expenses_pence, 0)
+    : expenses.reduce((sum, e) => sum + Math.round(e.amount_pence * e.split_ratio), 0);
+  const totalEffective = isRangeActive && rangeOverview
+    ? filterCategory === 'all'
+      ? rangeOverview.reduce((sum, row) => sum + row.expenses_pence, 0)
+      : rangeOverview.reduce((sum, row) => {
+        const categoryMatch = row.category_breakdown.find(cat => cat.category === filterCategory);
+        return sum + (categoryMatch?.total_pence ?? 0);
+      }, 0)
+    : tableTotalEffective;
 
   const handleSave = async (data: Omit<Expense, 'id' | 'created_at' | 'updated_at'>) => {
     if (!editing) {
@@ -124,18 +158,18 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
         <div className="px-5 pt-5">
           <CardHeader
             title="Expenses"
-            subtitle={`Showing ${filtered.length} of ${expenses.length} — your share: ${formatCurrency(totalEffective)}`}
+            subtitle={`Showing ${filtered.length} of ${expenses.length} — your share: ${formatCurrency(tableTotalEffective)}`}
           />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-2)] group">
-                <SortableHeader label="Name" sortKey="name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} />
-                <SortableHeader label="Full Amount" sortKey="amount_pence" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} />
+                <SortableHeader label="Name" sortKey="name" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof ExpenseRow)} />
+                <SortableHeader label="Full Amount" sortKey="display_full_pence" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof ExpenseRow)} />
                 <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Your Share</th>
-                <SortableHeader label="Day" sortKey="posting_day" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} />
-                <SortableHeader label="Category" sortKey="category" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof Expense)} />
+                <SortableHeader label="Day" sortKey="posting_day" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof ExpenseRow)} />
+                <SortableHeader label="Category" sortKey="category" activeSortKey={sortKey as string} sortDir={sortDir} onSort={k => toggleSort(k as keyof ExpenseRow)} />
                 <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Account</th>
                 <th className="text-center px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Notes</th>
                 <th className="text-center px-5 py-3 w-24"></th>
@@ -175,10 +209,10 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                         </div>
                       </td>
                       <td className="px-5 py-3 font-mono text-[var(--color-text-muted)] text-center">
-                        {formatCurrency(expense.amount_pence)}
+                        {formatCurrency(expense.display_full_pence)}
                       </td>
                       <td className="px-5 py-3 font-mono font-semibold text-[var(--color-danger)] text-center">
-                        {formatCurrency(Math.round(expense.amount_pence * expense.split_ratio))}
+                        {formatCurrency(expense.display_share_pence)}
                       </td>
                       <td className="px-5 py-3 text-center">
                         <Badge variant="default">{formatOrdinal(expense.posting_day)}</Badge>
@@ -257,10 +291,10 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                     Total ({filtered.length})
                   </td>
                   <td className="px-5 py-3 font-mono text-[var(--color-text-muted)] text-center">
-                    {formatCurrency(filtered.reduce((s, e) => s + e.amount_pence, 0))}
+                    {formatCurrency(tableTotalFull)}
                   </td>
                   <td className="px-5 py-3 font-mono font-bold text-[var(--color-danger)] text-center">
-                    {formatCurrency(totalEffective)}
+                    {formatCurrency(tableTotalEffective)}
                   </td>
                   <td colSpan={6} className="text-center"></td>
                 </tr>

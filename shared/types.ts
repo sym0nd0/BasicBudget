@@ -145,6 +145,8 @@ export interface Expense {
   notes?: string | null;
   created_at?: string;
   updated_at?: string;
+  range_full_pence?: number;
+  range_share_pence?: number;
 }
 
 // ─── Debt ──────────────────────────────────────────────────────────────────────

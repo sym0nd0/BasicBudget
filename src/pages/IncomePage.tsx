@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useBudget } from '../context/BudgetContext';
-import { useFilter } from '../context/FilterContext';
-import { useApi } from '../hooks/useApi';
 import { api } from '../api/client';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
@@ -13,9 +11,10 @@ import { Badge } from '../components/ui/Badge';
 import { SortableHeader } from '../components/ui/SortableHeader';
 import { useSortableTable } from '../hooks/useSortableTable';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
+import { useRangeOverview } from '../hooks/useRangeOverview';
 import { formatCurrency, formatOrdinal } from '../utils/formatters';
 import { findDuplicateIncome } from '../utils/duplicates';
-import type { Income, MonthlyReportRow } from '../types';
+import type { Income } from '../types';
 
 interface IncomePageProps {
   onMenuClick: () => void;
@@ -25,13 +24,8 @@ interface HouseholdMember { user_id: string; display_name: string; email: string
 
 export function IncomePage({ onMenuClick }: IncomePageProps) {
   const { incomes, addIncome, updateIncome, deleteIncome } = useBudget();
-  const { isRangeActive, fromMonth, toMonth } = useFilter();
   const { sorted: sortedIncomes, sortKey, sortDir, toggleSort } = useSortableTable<Income>(incomes, 'name');
-  const { data: rangeOverview } = useApi<MonthlyReportRow[]>(
-    isRangeActive && fromMonth && toMonth
-      ? `/reports/overview?from=${fromMonth}&to=${toMonth}`
-      : null
-  );
+  const { isRangeActive, data: rangeOverview } = useRangeOverview();
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Income | undefined>();

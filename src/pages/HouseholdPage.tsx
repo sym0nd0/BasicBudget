@@ -11,8 +11,9 @@ import { ExpenseDonut } from '../components/charts/ExpenseDonut';
 import { DebtBalanceChart } from '../components/charts/DebtBalanceChart';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { useRangeOverview } from '../hooks/useRangeOverview';
 import { formatCurrency, formatPercent } from '../utils/formatters';
-import type { HouseholdOverview, HouseholdMember, MonthlyReportRow } from '../types';
+import type { HouseholdOverview, HouseholdMember } from '../types';
 
 interface HouseholdPageProps {
   onMenuClick: () => void;
@@ -20,13 +21,9 @@ interface HouseholdPageProps {
 
 export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
   const { householdRole } = useAuth();
-  const { activeMonth, isRangeActive, fromMonth, toMonth } = useFilter();
+  const { activeMonth } = useFilter();
   const { data: overview } = useApi<HouseholdOverview>(`/household/summary?month=${activeMonth}`);
-  const { data: rangeOverview } = useApi<MonthlyReportRow[]>(
-    isRangeActive && fromMonth && toMonth
-      ? `/reports/overview?from=${fromMonth}&to=${toMonth}&household_only=true`
-      : null
-  );
+  const { isRangeActive, data: rangeOverview } = useRangeOverview({ householdOnly: true });
 
   const displayOverview: HouseholdOverview | null = isRangeActive && rangeOverview ? (() => {
     const categoryMap = new Map<string, number>();
