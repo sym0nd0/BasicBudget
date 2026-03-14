@@ -230,6 +230,18 @@ CREATE TABLE IF NOT EXISTS debt_balance_snapshots (
     recorded_at     TEXT NOT NULL DEFAULT (date('now'))
 );
 
+CREATE TABLE IF NOT EXISTS savings_transactions (
+    id                  TEXT PRIMARY KEY,
+    savings_goal_id     TEXT NOT NULL REFERENCES savings_goals(id) ON DELETE CASCADE,
+    household_id        TEXT NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+    user_id             TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type                TEXT NOT NULL CHECK(type IN ('contribution','deposit','withdrawal')),
+    amount_pence        INTEGER NOT NULL,
+    balance_after_pence INTEGER NOT NULL,
+    notes               TEXT,
+    created_at          TEXT DEFAULT (datetime('now'))
+);
+
 -- ─── Indexes ──────────────────────────────────────────────────────────────────
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -253,6 +265,8 @@ CREATE INDEX IF NOT EXISTS idx_debts_household ON debts(household_id);
 CREATE INDEX IF NOT EXISTS idx_deal_periods_debt ON debt_deal_periods(debt_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_sent_debt ON debt_notifications_sent(debt_id);
 CREATE INDEX IF NOT EXISTS idx_savings_goals_household ON savings_goals(household_id);
+CREATE INDEX IF NOT EXISTS idx_savings_transactions_goal_id ON savings_transactions(savings_goal_id);
+CREATE INDEX IF NOT EXISTS idx_savings_transactions_household_id ON savings_transactions(household_id);
 CREATE INDEX IF NOT EXISTS idx_month_locks_household ON month_locks(household_id);
 CREATE INDEX IF NOT EXISTS idx_incomes_contributor ON incomes(contributor_name);
 CREATE INDEX IF NOT EXISTS idx_system_settings_key ON system_settings(key);

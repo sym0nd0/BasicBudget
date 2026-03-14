@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { useSavings } from '../context/SavingsContext';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
+import { useApi } from '../hooks/useApi';
+import { useFilter } from '../context/FilterContext';
 import { PageShell } from '../components/layout/PageShell';
-import { Card } from '../components/ui/Card';
+import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
+import { FilterBar } from '../components/layout/FilterBar';
 import { SavingsGoalForm } from '../components/forms/SavingsGoalForm';
+import { SavingsGrowthChart } from '../components/charts/SavingsGrowthChart';
 import { Badge } from '../components/ui/Badge';
-import { formatCurrency, formatPercent } from '../utils/formatters';
+import { formatCurrency, formatPercent, formatYearMonth } from '../utils/formatters';
 import { findDuplicateSavingsGoal } from '../utils/duplicates';
-import type { SavingsGoal } from '../types';
+import type { SavingsGoal, SavingsTransaction, SavingsTransactionType } from '../types';
 
 interface SavingsPageProps {
   onMenuClick: () => void;
@@ -28,19 +32,45 @@ function progressPercent(goal: SavingsGoal): number {
   return Math.min(100, (goal.current_amount_pence / goal.target_amount_pence) * 100);
 }
 
+const TYPE_LABELS: Record<SavingsTransactionType, string> = {
+  contribution: 'Contribution',
+  deposit: 'Deposit',
+  withdrawal: 'Withdrawal',
+};
+
+const TYPE_COLOURS: Record<SavingsTransactionType, string> = {
+  contribution: 'var(--color-primary)',
+  deposit: 'var(--color-success)',
+  withdrawal: 'var(--color-danger)',
+};
+
 export function SavingsPage({ onMenuClick }: SavingsPageProps) {
-  const { goals, addGoal, updateGoal, deleteGoal } = useSavings();
+  const { goals, addGoal, updateGoal, deleteGoal, createTransaction } = useSavings();
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
+  const { fromMonth, toMonth, isRangeActive } = useFilter();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SavingsGoal | undefined>();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [withdrawGoal, setWithdrawGoal] = useState<SavingsGoal | undefined>();
-  const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [withdrawError, setWithdrawError] = useState<string | null>(null);
+
+  // Combined transaction modal (deposit or withdrawal)
+  const [txGoal, setTxGoal] = useState<SavingsGoal | undefined>();
+  const [txType, setTxType] = useState<'deposit' | 'withdrawal'>('deposit');
+  const [txAmount, setTxAmount] = useState('');
+  const [txNotes, setTxNotes] = useState('');
+  const [txError, setTxError] = useState<string | null>(null);
 
   const totalSaved = goals.reduce((s, g) => s + g.current_amount_pence, 0);
   const totalTarget = goals.reduce((s, g) => s + g.target_amount_pence, 0);
   const totalMonthly = goals.reduce((s, g) => s + g.monthly_contribution_pence, 0);
+
+  // Fetch all transactions scoped to the current filter range
+  const txFrom = isRangeActive ? fromMonth : undefined;
+  const txTo = isRangeActive ? toMonth : undefined;
+  const txQs = new URLSearchParams();
+  if (txFrom) txQs.set('from', txFrom);
+  if (txTo) txQs.set('to', txTo);
+  const txUrl = `/savings-goals/transactions${txQs.toString() ? `?${txQs.toString()}` : ''}`;
+  const { data: transactions, refetch: refetchTransactions } = useApi<SavingsTransaction[]>(txUrl);
 
   const handleSave = async (data: Omit<SavingsGoal, 'id' | 'created_at' | 'updated_at'>) => {
     if (!editing) {
@@ -66,27 +96,39 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
     setModalOpen(true);
   };
 
-  const handleWithdraw = async () => {
-    if (!withdrawGoal) return;
-    const pounds = parseFloat(withdrawAmount);
+  const handleOpenTx = (goal: SavingsGoal, type: 'deposit' | 'withdrawal') => {
+    setTxGoal(goal);
+    setTxType(type);
+    setTxAmount('');
+    setTxNotes('');
+    setTxError(null);
+  };
+
+  const handleSubmitTx = async () => {
+    if (!txGoal) return;
+    const pounds = parseFloat(txAmount);
     if (isNaN(pounds) || pounds <= 0) {
-      setWithdrawError('Please enter a valid amount.');
+      setTxError('Please enter a valid amount.');
       return;
     }
     const pence = Math.round(pounds * 100);
-    if (pence > withdrawGoal.current_amount_pence) {
-      setWithdrawError('Withdrawal amount exceeds current savings.');
+    if (txType === 'withdrawal' && pence > txGoal.current_amount_pence) {
+      setTxError('Withdrawal amount exceeds current savings.');
       return;
     }
     try {
-      await updateGoal(withdrawGoal.id, {
-        current_amount_pence: withdrawGoal.current_amount_pence - pence,
+      await createTransaction(txGoal.id, {
+        type: txType,
+        amount_pence: pence,
+        notes: txNotes.trim() || null,
       });
-      setWithdrawGoal(undefined);
-      setWithdrawAmount('');
-      setWithdrawError(null);
+      refetchTransactions();
+      setTxGoal(undefined);
+      setTxAmount('');
+      setTxNotes('');
+      setTxError(null);
     } catch (err) {
-      setWithdrawError((err as Error).message);
+      setTxError((err as Error).message);
     }
   };
 
@@ -112,6 +154,13 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
         </Button>
       }
     >
+      {/* Filter bar */}
+      <div className="mb-5">
+        <Card>
+          <FilterBar />
+        </Card>
+      </div>
+
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5 items-stretch">
         <Card className="h-full">
@@ -150,6 +199,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-[var(--color-text)]">{goal.name}</h3>
                       {achieved && <Badge variant="success">Achieved!</Badge>}
+                      {goal.auto_contribute && <Badge variant="info">Auto</Badge>}
                     </div>
                     {goal.notes && (
                       <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{goal.notes}</p>
@@ -162,8 +212,17 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                       </svg>
                     </Button>
                     <Button variant="ghost" size="sm"
+                      className="hover:text-[var(--color-success)] hover:bg-[var(--color-success-light)]"
+                      onClick={() => handleOpenTx(goal, 'deposit')}
+                      title="Deposit">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                    </Button>
+                    <Button variant="ghost" size="sm"
                       className="hover:text-[var(--color-warning)] hover:bg-[var(--color-warning-light)]"
-                      onClick={() => { setWithdrawGoal(goal); setWithdrawAmount(''); setWithdrawError(null); }}>
+                      onClick={() => handleOpenTx(goal, 'withdrawal')}
+                      title="Withdraw">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                       </svg>
@@ -216,6 +275,11 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                       </span>
                     </span>
                   )}
+                  {goal.auto_contribute && goal.contribution_day && (
+                    <span className="text-[var(--color-text-muted)]">
+                      Auto on day <span className="font-medium text-[var(--color-text)]">{goal.contribution_day}</span>
+                    </span>
+                  )}
                 </div>
               </Card>
             );
@@ -223,7 +287,78 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
         </div>
       )}
 
+      {/* Savings Growth Chart */}
+      {transactions && transactions.length > 0 && (
+        <div className="mt-5">
+          <Card>
+            <CardHeader
+              title="Savings Balance Over Time"
+              subtitle={isRangeActive ? `${formatYearMonth(fromMonth)} – ${formatYearMonth(toMonth)}` : 'All transactions'}
+            />
+            <SavingsGrowthChart transactions={transactions} />
+          </Card>
+        </div>
+      )}
+
+      {/* Transaction Log */}
+      {transactions && transactions.length > 0 && (
+        <div className="mt-5">
+          <Card padding={false}>
+            <div className="px-5 pt-5">
+              <CardHeader
+                title="Transaction Log"
+                subtitle={`${transactions.length} transaction${transactions.length !== 1 ? 's' : ''}`}
+              />
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-2)]">
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Date</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Goal</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Type</th>
+                    <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Amount</th>
+                    <th className="text-right px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Balance After</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wide">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.map(tx => (
+                    <tr key={tx.id} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)]">
+                      <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs">
+                        {tx.created_at ? new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                      </td>
+                      <td className="px-5 py-3 text-[var(--color-text)]">{tx.goal_name ?? '—'}</td>
+                      <td className="px-5 py-3">
+                        <span
+                          className="text-xs font-medium px-2 py-0.5 rounded"
+                          style={{ color: TYPE_COLOURS[tx.type], backgroundColor: `color-mix(in srgb, ${TYPE_COLOURS[tx.type]} 15%, transparent)` }}
+                        >
+                          {TYPE_LABELS[tx.type]}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-right font-mono font-semibold"
+                        style={{ color: tx.type === 'withdrawal' ? 'var(--color-danger)' : 'var(--color-success)' }}>
+                        {tx.type === 'withdrawal' ? '−' : '+'}{formatCurrency(tx.amount_pence)}
+                      </td>
+                      <td className="px-5 py-3 text-right font-mono text-[var(--color-text)]">
+                        {formatCurrency(tx.balance_after_pence)}
+                      </td>
+                      <td className="px-5 py-3 text-[var(--color-text-muted)] text-xs max-w-[160px] truncate">
+                        {tx.notes ?? '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
+
       {ConfirmDialogElement}
+
+      {/* Add/Edit goal modal */}
       <Modal
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
@@ -240,29 +375,69 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
           onCancel={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
         />
       </Modal>
+
+      {/* Deposit / Withdrawal modal */}
       <Modal
-        isOpen={!!withdrawGoal}
-        onClose={() => { setWithdrawGoal(undefined); setWithdrawAmount(''); setWithdrawError(null); }}
-        title="Withdraw from Savings"
+        isOpen={!!txGoal}
+        onClose={() => { setTxGoal(undefined); setTxAmount(''); setTxNotes(''); setTxError(null); }}
+        title={txGoal?.name ?? 'Transaction'}
       >
-        {withdrawError && (
-          <p className="mb-3 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">{withdrawError}</p>
+        {txError && (
+          <p className="mb-3 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">{txError}</p>
         )}
+        {/* Type selector */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setTxType('deposit')}
+            className={[
+              'flex-1 py-1.5 rounded text-sm font-medium transition-colors',
+              txType === 'deposit'
+                ? 'bg-[var(--color-success)] text-white'
+                : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]',
+            ].join(' ')}
+          >
+            Deposit
+          </button>
+          <button
+            onClick={() => setTxType('withdrawal')}
+            className={[
+              'flex-1 py-1.5 rounded text-sm font-medium transition-colors',
+              txType === 'withdrawal'
+                ? 'bg-[var(--color-warning)] text-white'
+                : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]',
+            ].join(' ')}
+          >
+            Withdraw
+          </button>
+        </div>
         <p className="text-sm text-[var(--color-text-muted)] mb-3">
-          Current balance: <span className="font-medium text-[var(--color-text)]">{withdrawGoal && formatCurrency(withdrawGoal.current_amount_pence)}</span>
+          Current balance: <span className="font-medium text-[var(--color-text)]">{txGoal && formatCurrency(txGoal.current_amount_pence)}</span>
         </p>
         <Input
           label="Amount (£)"
           type="number"
           step="0.01"
           min="0.01"
-          value={withdrawAmount}
-          onChange={e => setWithdrawAmount(e.target.value)}
+          value={txAmount}
+          onChange={e => setTxAmount(e.target.value)}
           autoFocus
         />
+        <div className="mt-3">
+          <Input
+            label="Notes (optional)"
+            value={txNotes}
+            onChange={e => setTxNotes(e.target.value)}
+            placeholder="e.g. Monthly top-up"
+          />
+        </div>
         <div className="flex justify-end gap-2 mt-4">
-          <Button variant="ghost" onClick={() => { setWithdrawGoal(undefined); setWithdrawAmount(''); setWithdrawError(null); }}>Cancel</Button>
-          <Button onClick={handleWithdraw}>Withdraw</Button>
+          <Button variant="ghost" onClick={() => { setTxGoal(undefined); setTxAmount(''); setTxNotes(''); setTxError(null); }}>Cancel</Button>
+          <Button
+            onClick={handleSubmitTx}
+            className={txType === 'withdrawal' ? 'bg-[var(--color-warning)] hover:bg-[var(--color-warning)]' : ''}
+          >
+            {txType === 'deposit' ? 'Deposit' : 'Withdraw'}
+          </Button>
         </div>
       </Modal>
     </PageShell>
