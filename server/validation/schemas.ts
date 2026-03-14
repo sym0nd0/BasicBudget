@@ -72,13 +72,13 @@ export const debtSchema = z.object({
 export const savingsGoalSchema = z.object({
   name: z.string().min(1).max(200),
   contributor_user_id: z.string().max(36).nullable().optional(),
-  is_household: z.boolean().optional(),
+  is_household: z.number().int().min(0).max(1).optional(),
   target_amount_pence: z.number().int().min(0).optional(),
   current_amount_pence: z.number().int().min(0).optional(),
   monthly_contribution_pence: z.number().int().min(0).optional(),
   target_date: dateStr.nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
-  auto_contribute: z.boolean().optional(),
+  auto_contribute: z.number().int().min(0).max(1).optional(),
   contribution_day: z.number().int().min(1).max(28).optional(),
 });
 
