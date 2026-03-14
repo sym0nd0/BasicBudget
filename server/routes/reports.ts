@@ -39,7 +39,7 @@ function resolveRange(range: string): { from: string; to: string } {
   };
 
   switch (range) {
-    case '1w': return { from: addMonths(today, -1), to: addMonths(today, 1) };
+    case '1w': return { from: today, to: today };
     case '1m': return { from: addMonths(today, -1), to: today };
     case '3m': return { from: addMonths(today, -3), to: today };
     case 'ytd': return { from: `${cy}-01`, to: today };
