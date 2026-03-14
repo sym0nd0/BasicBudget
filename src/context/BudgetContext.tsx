@@ -28,7 +28,7 @@ interface BudgetContextValue {
 const BudgetContext = createContext<BudgetContextValue | null>(null);
 
 export function BudgetProvider({ children }: { children: React.ReactNode }) {
-  const { activeMonth } = useFilter();
+  const { activeMonth, fromMonth, toMonth, isRangeActive } = useFilter();
 
   const {
     data: incomes,
@@ -36,11 +36,14 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
     refetch: refetchIncomes,
   } = useApi<Income[]>(`/incomes?month=${activeMonth}`);
 
+  const expensesUrl = isRangeActive && fromMonth && toMonth
+    ? `/expenses?from=${fromMonth}&to=${toMonth}`
+    : `/expenses?month=${activeMonth}`;
   const {
     data: expenses,
     loading: expensesLoading,
     refetch: refetchExpenses,
-  } = useApi<Expense[]>(`/expenses?month=${activeMonth}`);
+  } = useApi<Expense[]>(expensesUrl);
 
   const {
     data: accounts,
