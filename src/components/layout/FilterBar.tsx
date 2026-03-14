@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Select } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
@@ -6,6 +5,7 @@ import { useFilter } from '../../context/FilterContext';
 import { formatYearMonth } from '../../utils/formatters';
 import { useApi } from '../../hooks/useApi';
 import { EXPENSE_CATEGORIES } from '../../types';
+import type { ReportRange } from '../../types';
 
 function generateMonthOptions(count: number = 24): { value: string; label: string }[] {
   const options: { value: string; label: string }[] = [];
@@ -20,6 +20,14 @@ function generateMonthOptions(count: number = 24): { value: string; label: strin
 
 const MONTH_OPTIONS = generateMonthOptions(24);
 
+const PRESET_PILLS: { label: string; value: ReportRange }[] = [
+  { label: '1M', value: '1m' },
+  { label: '3M', value: '3m' },
+  { label: '6M', value: '6m' },
+  { label: '12M', value: '12m' },
+  { label: 'Custom', value: 'custom' },
+];
+
 interface FilterBarProps {
   showCategory?: boolean;
 }
@@ -29,35 +37,39 @@ export function FilterBar({ showCategory = false }: FilterBarProps) {
     activeMonth, setActiveMonth,
     filterCategory, setFilterCategory,
     fromMonth, toMonth, setFromMonth, setToMonth,
-    isRangeActive,
-    rangeMonths,
+    isRangeActive, rangeMonths,
+    rangePreset, setRangePreset,
   } = useFilter();
   const { data: categoriesData } = useApi<string[]>(showCategory ? '/categories' : null);
   const categories = categoriesData ?? [...EXPENSE_CATEGORIES];
-  const [showRange, setShowRange] = useState(false);
-
   const isDefault = filterCategory === 'all';
-  const rangeLabel = isRangeActive && fromMonth && toMonth
-    ? `${formatYearMonth(fromMonth)} to ${formatYearMonth(toMonth)} (${rangeMonths.length} ${rangeMonths.length === 1 ? 'month' : 'months'})`
+
+  const rangeLabel = isRangeActive
+    ? `${formatYearMonth(fromMonth)} – ${formatYearMonth(toMonth)} (${rangeMonths.length} months)`
     : null;
-
-  const handleToggleRange = () => {
-    if (showRange) {
-      setFromMonth(null);
-      setToMonth(null);
-    }
-    setShowRange(prev => !prev);
-  };
-
-  const handleClearRange = () => {
-    setFromMonth(null);
-    setToMonth(null);
-    setShowRange(false);
-  };
 
   return (
     <div className="flex flex-wrap gap-3 items-end">
-      {!isRangeActive && (
+      {/* Preset pills */}
+      <div className="flex gap-1 flex-wrap">
+        {PRESET_PILLS.map(pill => (
+          <button
+            key={pill.value}
+            onClick={() => setRangePreset(pill.value)}
+            className={[
+              'px-2.5 py-1 rounded text-xs font-medium transition-colors',
+              rangePreset === pill.value
+                ? 'bg-[var(--color-primary)] text-white'
+                : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]',
+            ].join(' ')}
+          >
+            {pill.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 1M: show month dropdown */}
+      {rangePreset === '1m' && (
         <div className="min-w-40">
           <Select
             label="Month"
@@ -68,58 +80,37 @@ export function FilterBar({ showCategory = false }: FilterBarProps) {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant={isRangeActive || showRange ? 'secondary' : 'ghost'}
-          size="sm"
-          onClick={handleToggleRange}
-          title="Toggle date range"
-          className={isRangeActive ? 'border-[var(--color-primary)] text-[var(--color-primary)]' : ''}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          Range
-        </Button>
-        {rangeLabel && (
-          <Badge variant="primary">{rangeLabel}</Badge>
-        )}
-        {isRangeActive && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClearRange}
-          >
-            Clear
-          </Button>
-        )}
-      </div>
-
-      {showRange && (
-        <>
-          <div className="flex items-end gap-2">
-            <div>
-              <label className="block text-xs text-[var(--color-text-muted)] mb-1">From</label>
-              <input
-                type="month"
-                value={fromMonth ?? ''}
-                onChange={e => setFromMonth(e.target.value || null)}
-                className="text-sm border border-[var(--color-border)] rounded-lg px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text)]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-[var(--color-text-muted)] mb-1">To</label>
-              <input
-                type="month"
-                value={toMonth ?? ''}
-                onChange={e => setToMonth(e.target.value || null)}
-                className="text-sm border border-[var(--color-border)] rounded-lg px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text)]"
-              />
-            </div>
-          </div>
-        </>
+      {/* 3M/6M/12M: show range badge */}
+      {rangeLabel && rangePreset !== 'custom' && (
+        <Badge variant="primary">{rangeLabel}</Badge>
       )}
 
+      {/* Custom: show from/to inputs */}
+      {rangePreset === 'custom' && (
+        <div className="flex items-end gap-2">
+          <div>
+            <label className="block text-xs text-[var(--color-text-muted)] mb-1">From</label>
+            <input
+              type="month"
+              value={fromMonth}
+              onChange={e => setFromMonth(e.target.value || fromMonth)}
+              className="text-sm border border-[var(--color-border)] rounded-lg px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text)]"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-[var(--color-text-muted)] mb-1">To</label>
+            <input
+              type="month"
+              value={toMonth}
+              onChange={e => setToMonth(e.target.value || toMonth)}
+              className="text-sm border border-[var(--color-border)] rounded-lg px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text)]"
+            />
+          </div>
+          {rangeLabel && <Badge variant="primary">{rangeLabel}</Badge>}
+        </div>
+      )}
+
+      {/* Category filter */}
       {showCategory && (
         <>
           <div className="min-w-40">

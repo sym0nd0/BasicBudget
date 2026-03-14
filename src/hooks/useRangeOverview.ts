@@ -9,7 +9,7 @@ interface UseRangeOverviewOptions {
 export function useRangeOverview(options?: UseRangeOverviewOptions) {
   const { isRangeActive, fromMonth, toMonth } = useFilter();
   const suffix = options?.householdOnly ? '&household_only=true' : '';
-  const url = isRangeActive && fromMonth && toMonth
+  const url = isRangeActive
     ? `/reports/overview?from=${fromMonth}&to=${toMonth}${suffix}`
     : null;
   const { data, loading } = useApi<MonthlyReportRow[]>(url);

@@ -4,16 +4,17 @@ The Reports page provides a historical view of your finances across a configurab
 
 ## Time Range Presets
 
-Select a preset from the dropdown at the top of the page:
+Select a preset from the pill buttons at the top of the page:
 
 | Preset | Period covered |
 |---|---|
-| 1 Week | Last 7 days |
-| 1 Month | Last 30 days |
-| 3 Months | Last 90 days |
-| 6 Months | Last 6 months |
-| 1 Year | Last 12 months |
-| All Time | All available data |
+| 1M | Current month only |
+| 3M | Previous 3 full months (excludes current month) |
+| 6M | Previous 6 full months (excludes current month) |
+| 12M | Previous 12 full months (excludes current month) |
+| Custom | User-defined From/To month range |
+
+When **Custom** is selected, two month picker inputs appear allowing you to set an exact From and To month.
 
 ## Sections
 

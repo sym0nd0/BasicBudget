@@ -331,7 +331,7 @@ export interface PaginatedResponse<T> {
 
 // ─── Reports ──────────────────────────────────────────────────────────────
 
-export type ReportRange = '1w' | '1m' | '3m' | 'ytd' | '1y' | '2y' | '5y' | 'all';
+export type ReportRange = '1m' | '3m' | '6m' | '12m' | 'custom';
 
 export interface MonthlyReportRow {
   month: string;
