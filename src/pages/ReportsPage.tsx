@@ -3,6 +3,7 @@ import { useApi } from '../hooks/useApi';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { DebtBalanceChart } from '../components/charts/DebtBalanceChart';
+import { DebtPayoffTimelineChart } from '../components/charts/DebtPayoffTimelineChart';
 import { TimeRangeSelector } from '../components/ui/TimeRangeSelector';
 import { IncomeExpensesTrend } from '../components/charts/IncomeExpensesTrend';
 import { ExpenseDonut } from '../components/charts/ExpenseDonut';
@@ -290,6 +291,9 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
         <div className="space-y-4">
           {/* Debt projection */}
           <DebtBalanceChart range={range} />
+
+          {/* Debt payoff timeline */}
+          <DebtPayoffTimelineChart householdOnly={false} />
 
           {/* DTI ratio */}
           {overview && overview.length > 0 && (

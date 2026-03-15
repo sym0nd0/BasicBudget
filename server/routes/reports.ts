@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { filterVisible } from '../utils/visibility.js';
 import { filterActiveInMonth, mapDebtToRecurringItem, type RecurringItem } from '../utils/recurring.js';
 import { computeRepayments } from './debts.js';
+import { computePayoffStrategy } from '../utils/debtPayoffStrategy.js';
 import type { Debt, DebtDealPeriod, CategoryBreakdown, MonthlyReportRow, DebtProjectionPoint } from '../../shared/types.js';
 
 const router = Router();
@@ -163,6 +164,31 @@ router.get('/debt-projection', (req: Request, res: Response) => {
   }));
 
   res.json(rows);
+});
+
+// GET /api/reports/debt-payoff-timeline?strategy=snowball|avalanche&household_only=true
+router.get('/debt-payoff-timeline', (req: Request, res: Response) => {
+  const strategyParam = req.query.strategy as string;
+  const strategy: 'snowball' | 'avalanche' =
+    strategyParam === 'snowball' ? 'snowball' : 'avalanche';
+  const householdOnly = req.query.household_only === 'true';
+
+  const rawDebts = db.prepare('SELECT * FROM debts WHERE household_id = ?').all(req.householdId!) as Record<string, unknown>[];
+  const visibleDebts = filterVisible(rawDebts, req.userId!)
+    .filter(row => !householdOnly || Boolean(row.is_household))
+    .map(row => {
+      const debt = row as Omit<Debt, 'is_recurring' | 'is_household'>;
+      const periods = db.prepare('SELECT * FROM debt_deal_periods WHERE debt_id = ? ORDER BY start_date').all(debt.id) as DebtDealPeriod[];
+      return {
+        ...debt,
+        is_recurring: Boolean(row.is_recurring),
+        is_household: Boolean(row.is_household),
+        deal_periods: periods,
+      } as Debt;
+    });
+
+  const result = computePayoffStrategy(visibleDebts, strategy);
+  res.json(result);
 });
 
 export default router;

@@ -41,6 +41,8 @@ export type {
   MonthlyReportRow,
   DebtPerDebtBreakdown,
   DebtProjectionPoint,
+  DebtPayoffTimelinePoint,
+  DebtPayoffStrategyResult,
 } from '../../shared/types';
 
 export { EXPENSE_CATEGORIES } from '../../shared/types';
