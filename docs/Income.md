@@ -15,7 +15,7 @@ Click **Add Income** to open the form. Fill in the fields and click **Save**.
 | **Posting Day** | The day of the month the income is received (1–31). |
 | **Contributor** | The household member this income belongs to. |
 | **Gross / Net** | Toggle whether the amount is gross (before tax) or net (take-home). |
-| **Recurrence** | How often the income occurs: One-off, Monthly, Weekly, or Fortnightly. |
+| **Recurrence** | How often the income occurs: One-off, Monthly, Weekly, Yearly, or Fortnightly. |
 | **Start Date** | The first month this income is active. Leave blank for "always". |
 | **End Date** | The last month this income is active. Leave blank for "ongoing". |
 | **Household Income** | Tick to include this income in Household summary views. |
@@ -28,6 +28,7 @@ Click **Add Income** to open the form. Fill in the fields and click **Save**.
 | **One-off** | Appears only in the month matching its posting date. |
 | **Monthly** | Appears every month within the start/end date range. |
 | **Weekly** | Amount is multiplied by the number of Mondays (or the configured day) in the selected month. |
+| **Yearly** | Appears once per year in the month matching the start date. |
 | **Fortnightly** | Amount is multiplied by the number of fortnightly occurrences in the selected month. |
 
 ## Editing and Deleting
