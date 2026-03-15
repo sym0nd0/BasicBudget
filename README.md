@@ -22,8 +22,8 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 | [Expenses](docs/Expenses.md) | Managing expense entries |
 | [Debt](docs/Debt.md) | Debt tracking and repayment schedules |
 | [Savings](docs/Savings.md) | Savings goals and progress tracking |
-| [Household](docs/Household.md) | Multi-user households |
 | [Reports](docs/Reports.md) | Reports and charts |
+| [Household](docs/Household.md) | Multi-user households |
 | [Settings](docs/Settings.md) | Profile, accounts, CSV import, appearance |
 | [Authentication](docs/Authentication.md) | Login, 2FA, OIDC, sessions |
 | [Admin](docs/Admin.md) | User management, SMTP, OIDC, categories |
@@ -32,13 +32,13 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 
 ### Dark theme
 
-| Dashboard | Expenses |
+| Dashboard | Income |
 |---|---|
-| <img src="docs/screenshots/dashboard-dark.png" alt="Dashboard" width="350"> | <img src="docs/screenshots/expenses-dark.png" alt="Expenses" width="350"> |
+| <img src="docs/screenshots/dashboard-dark.png" alt="Dashboard" width="350"> | <img src="docs/screenshots/income-dark.png" alt="Income" width="350"> |
 
-| Income | Debts |
+| Expenses | Debt |
 |---|---|
-| <img src="docs/screenshots/income-dark.png" alt="Income" width="350"> | <img src="docs/screenshots/debt-dark.png" alt="Debt" width="350"> |
+| <img src="docs/screenshots/expenses-dark.png" alt="Expenses" width="350"> | <img src="docs/screenshots/debt-dark.png" alt="Debt" width="350"> |
 
 | Savings | Reports |
 |---|---|
@@ -46,13 +46,13 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 
 ### Light theme
 
-| Dashboard | Expenses |
+| Dashboard | Income |
 |---|---|
-| <img src="docs/screenshots/dashboard-light.png" alt="Dashboard" width="350"> | <img src="docs/screenshots/expenses-light.png" alt="Expenses" width="350"> |
+| <img src="docs/screenshots/dashboard-light.png" alt="Dashboard" width="350"> | <img src="docs/screenshots/income-light.png" alt="Income" width="350"> |
 
-| Income | Debts |
+| Expenses | Debt |
 |---|---|
-| <img src="docs/screenshots/income-light.png" alt="Income" width="350"> | <img src="docs/screenshots/debt-light.png" alt="Debt" width="350"> |
+| <img src="docs/screenshots/expenses-light.png" alt="Expenses" width="350"> | <img src="docs/screenshots/debt-light.png" alt="Debt" width="350"> |
 
 | Savings | Reports |
 |---|---|

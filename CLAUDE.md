@@ -156,6 +156,18 @@ Examples:
 - The GitHub Release must be separately edited from Draft → Published + Latest (`gh release edit vX.Y.Z --draft=false --latest`).
 - Schema migrations for existing databases are applied inline in `server/db.ts` with bare `try { ALTER TABLE … } catch {}` blocks. New tables (e.g. `system_settings`) are added via `schema.sql` using `CREATE TABLE IF NOT EXISTS`.
 
+### Screenshot ordering convention
+
+All screenshots, documentation tables, and wiki pages must list pages in **sidebar navigation order**, top to bottom:
+
+> Dashboard → Income → Expenses → Debt → Savings → Reports → Household → Settings
+
+This applies to:
+- The screenshot capture order in `scripts/screenshot.ts`
+- The screenshot tables in `README.md` (column pairing within each row)
+- The documentation link table in `README.md`
+- The sections in `docs/Screenshots.md`
+
 ---
 
 ## Coding Guidelines
