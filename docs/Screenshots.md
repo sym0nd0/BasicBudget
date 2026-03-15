@@ -42,6 +42,14 @@ The Savings page tracks progress towards financial goals with visual progress ba
 |---|---|
 | ![Savings Light](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/savings-light.png) | ![Savings Dark](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/savings-dark.png) |
 
+## Reports
+
+The Reports page provides trend analysis across configurable date ranges, including income vs expenses, category breakdowns, and debt projections.
+
+| Light | Dark |
+|---|---|
+| ![Reports Light](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/reports-light.png) | ![Reports Dark](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/reports-dark.png) |
+
 ---
 
 <p>
