@@ -58,18 +58,18 @@ export function DebtPayoffTimelineChart({ householdOnly }: DebtPayoffTimelineCha
       'Total Debt': point.total_balance_pence,
     };
     for (const debt of point.per_debt) {
-      row[debt.name] = debt.balance_pence;
+      row[debt.id] = debt.balance_pence;
     }
     return row;
   });
 
-  const debtNames: string[] = [];
-  const seenDebtNames = new Set<string>();
+  const debtSeries: { id: string; name: string }[] = [];
+  const seenIds = new Set<string>();
   for (const point of data.months) {
     for (const debt of point.per_debt) {
-      if (!seenDebtNames.has(debt.name)) {
-        debtNames.push(debt.name);
-        seenDebtNames.add(debt.name);
+      if (!seenIds.has(debt.id)) {
+        debtSeries.push({ id: debt.id, name: debt.name });
+        seenIds.add(debt.id);
       }
     }
   }
@@ -131,16 +131,16 @@ export function DebtPayoffTimelineChart({ householdOnly }: DebtPayoffTimelineCha
             activeDot={{ r: 5 }}
             name="Total Debt"
           />
-          {debtNames.map((name, idx) => (
+          {debtSeries.map((series, idx) => (
             <Line
-              key={name}
+              key={series.id}
               type="monotone"
-              dataKey={name}
+              dataKey={series.id}
               stroke={COLORS[(idx + 1) % COLORS.length]}
               strokeWidth={1.5}
               dot={false}
               activeDot={{ r: 5 }}
-              name={name}
+              name={series.name}
             />
           ))}
         </LineChart>
@@ -148,18 +148,20 @@ export function DebtPayoffTimelineChart({ householdOnly }: DebtPayoffTimelineCha
       <div className="px-5 pb-5">
         <button
           onClick={() => setShowBreakdown(prev => !prev)}
+          aria-expanded={showBreakdown}
+          aria-controls="breakdown-panel"
           className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] underline cursor-pointer"
         >
           {showBreakdown ? 'Hide breakdown' : 'Show breakdown'}
         </button>
         {showBreakdown && (
-          <div className="mt-3 max-h-64 overflow-y-auto border border-[var(--color-border)] rounded-lg">
+          <div id="breakdown-panel" role="region" aria-label="Monthly breakdown" className="mt-3 max-h-64 overflow-y-auto border border-[var(--color-border)] rounded-lg">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-[var(--color-surface-2)] border-b border-[var(--color-border)]">
                   <th className="text-left px-3 py-2 font-semibold text-[var(--color-text-muted)]">Month</th>
-                  {debtNames.map(name => (
-                    <th key={name} className="text-right px-3 py-2 font-semibold text-[var(--color-text-muted)]">{name}</th>
+                  {debtSeries.map(series => (
+                    <th key={series.id} className="text-right px-3 py-2 font-semibold text-[var(--color-text-muted)]">{series.name}</th>
                   ))}
                   <th className="text-right px-3 py-2 font-semibold text-[var(--color-text-muted)]">Total</th>
                 </tr>
@@ -168,10 +170,10 @@ export function DebtPayoffTimelineChart({ householdOnly }: DebtPayoffTimelineCha
                 {data.months.map((point, idx) => (
                   <tr key={idx} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)]">
                     <td className="px-3 py-1.5 text-[var(--color-text)]">{formatYearMonth(point.month)}</td>
-                    {debtNames.map(name => {
-                      const debt = point.per_debt.find(d => d.name === name);
+                    {debtSeries.map(series => {
+                      const debt = point.per_debt.find(d => d.id === series.id);
                       return (
-                        <td key={name} className="text-right px-3 py-1.5 font-mono text-[var(--color-text)]">
+                        <td key={series.id} className="text-right px-3 py-1.5 font-mono text-[var(--color-text)]">
                           {formatCurrency(debt?.balance_pence ?? 0)}
                         </td>
                       );

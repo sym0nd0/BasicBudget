@@ -377,11 +377,7 @@ export interface DebtPayoffTimelinePoint {
   month: string;
   total_balance_pence: number;
   is_actual: boolean;
-  per_debt: Array<{
-    id: string;
-    name: string;
-    balance_pence: number;
-  }>;
+  per_debt: DebtPerDebtBreakdown[];
 }
 
 export interface DebtPayoffStrategyResult {

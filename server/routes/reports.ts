@@ -11,6 +11,22 @@ import type { Debt, DebtDealPeriod, CategoryBreakdown, MonthlyReportRow, DebtPro
 const router = Router();
 router.use(requireAuth);
 
+function getEnrichedDebts(householdId: string, userId: string, householdOnly: boolean): Debt[] {
+  const rawDebts = db.prepare('SELECT * FROM debts WHERE household_id = ?').all(householdId) as Record<string, unknown>[];
+  return filterVisible(rawDebts, userId)
+    .filter(row => !householdOnly || Boolean(row.is_household))
+    .map(row => {
+      const debt = row as Omit<Debt, 'is_recurring' | 'is_household'>;
+      const periods = db.prepare('SELECT * FROM debt_deal_periods WHERE debt_id = ? ORDER BY start_date').all(debt.id) as DebtDealPeriod[];
+      return {
+        ...debt,
+        is_recurring: Boolean(row.is_recurring),
+        is_household: Boolean(row.is_household),
+        deal_periods: periods,
+      } as Debt;
+    });
+}
+
 /** Generate YYYY-MM strings between from and to (inclusive) */
 function monthRange(from: string, to: string): string[] {
   const months: string[] = [];
@@ -106,19 +122,7 @@ router.get('/debt-projection', (req: Request, res: Response) => {
   const numMonths = Math.min(parseInt(req.query.months as string ?? '12', 10), 600);
   const householdOnly = req.query.household_only === 'true';
 
-  const rawDebts = db.prepare('SELECT * FROM debts WHERE household_id = ?').all(req.householdId!) as Record<string, unknown>[];
-  const visibleDebts = filterVisible(rawDebts, req.userId!)
-    .filter(row => !householdOnly || Boolean(row.is_household))
-    .map(row => {
-      const debt = row as Omit<Debt, 'is_recurring' | 'is_household'>;
-      const periods = db.prepare('SELECT * FROM debt_deal_periods WHERE debt_id = ? ORDER BY start_date').all(debt.id) as DebtDealPeriod[];
-      return {
-        ...debt,
-        is_recurring: Boolean(row.is_recurring),
-        is_household: Boolean(row.is_household),
-        deal_periods: periods,
-      } as Debt;
-    });
+  const visibleDebts = getEnrichedDebts(req.householdId!, req.userId!, householdOnly);
 
   // Today's balance as starting point
   const today = new Date();
@@ -173,19 +177,7 @@ router.get('/debt-payoff-timeline', (req: Request, res: Response) => {
     strategyParam === 'snowball' ? 'snowball' : 'avalanche';
   const householdOnly = req.query.household_only === 'true';
 
-  const rawDebts = db.prepare('SELECT * FROM debts WHERE household_id = ?').all(req.householdId!) as Record<string, unknown>[];
-  const visibleDebts = filterVisible(rawDebts, req.userId!)
-    .filter(row => !householdOnly || Boolean(row.is_household))
-    .map(row => {
-      const debt = row as Omit<Debt, 'is_recurring' | 'is_household'>;
-      const periods = db.prepare('SELECT * FROM debt_deal_periods WHERE debt_id = ? ORDER BY start_date').all(debt.id) as DebtDealPeriod[];
-      return {
-        ...debt,
-        is_recurring: Boolean(row.is_recurring),
-        is_household: Boolean(row.is_household),
-        deal_periods: periods,
-      } as Debt;
-    });
+  const visibleDebts = getEnrichedDebts(req.householdId!, req.userId!, householdOnly);
 
   const result = computePayoffStrategy(visibleDebts, strategy);
   res.json(result);
