@@ -238,10 +238,10 @@ router.put('/:id', (req: Request, res: Response) => {
       body.target_amount_pence ?? existing.target_amount_pence,
       body.current_amount_pence ?? existing.current_amount_pence,
       body.monthly_contribution_pence ?? existing.monthly_contribution_pence,
-      body.is_household !== undefined ? (body.is_household ? 1 : 0) : existing.is_household,
+      body.is_household ?? existing.is_household,
       body.target_date !== undefined ? body.target_date : existing.target_date,
       body.notes !== undefined ? body.notes : existing.notes,
-      body.auto_contribute !== undefined ? (body.auto_contribute ? 1 : 0) : existing.auto_contribute,
+      body.auto_contribute ?? existing.auto_contribute,
       body.contribution_day ?? existing.contribution_day,
       id,
     );

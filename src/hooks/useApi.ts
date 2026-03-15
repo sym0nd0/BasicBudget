@@ -22,6 +22,7 @@ export function useApi<T>(url: string | null, options?: UseApiOptions): UseApiRe
   const [error, setError] = useState<Error | null>(null);
   const [trigger, setTrigger] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
+  const prevUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!url) return;
@@ -30,8 +31,10 @@ export function useApi<T>(url: string | null, options?: UseApiOptions): UseApiRe
     const controller = new AbortController();
     abortRef.current = controller;
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setData(null);
+    if (url !== prevUrlRef.current) {
+      setData(null);
+    }
+    prevUrlRef.current = url;
     setLoading(true);
     setError(null);
 

@@ -264,7 +264,7 @@ try {
 
 // Fix totp_used_tokens.user_id declared type from INTEGER to TEXT (data is ephemeral, 2-min lifetime)
 try {
-  const cols = db.prepare("PRAGMA table_info(totp_used_tokens)").all() as { name: string; type: string }[];
+  const cols = db.prepare("PRAGMA table_info(totp_used_tokens)").all() as unknown as { name: string; type: string }[];
   const uidCol = cols.find(c => c.name === 'user_id');
   if (uidCol?.type === 'INTEGER') {
     db.exec(`

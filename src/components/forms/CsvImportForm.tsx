@@ -49,12 +49,22 @@ export function CsvImportForm({ onSuccess, onCancel }: CsvImportFormProps) {
       formData.append('type', importType);
 
       const csrfToken = await getCsrfToken();
-      const res = await fetch('/api/import/csv', {
+      let res = await fetch('/api/import/csv', {
         method: 'POST',
         credentials: 'include',
         headers: { 'X-CSRF-Token': csrfToken },
         body: formData,
       });
+
+      if (res.status === 403) {
+        const freshToken = await getCsrfToken();
+        res = await fetch('/api/import/csv', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'X-CSRF-Token': freshToken },
+          body: formData,
+        });
+      }
 
       const result = await res.json() as { message: string; imported: number; skipped: number; errors: { row: number; message: string }[] };
 

@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { formatCurrency, formatYearMonth } from '../../utils/formatters';
+import { formatCurrency, formatYearMonth, formatPercent } from '../../utils/formatters';
 import type { MonthlyReportRow } from '../../types';
 
 interface DisposableSavingsRateTrendProps {
@@ -23,7 +23,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <p className="font-semibold text-[var(--color-text)] mb-1">{label}</p>
       {payload.map((entry: any) => (
         <p key={entry.name} style={{ color: entry.color }}>
-          {entry.name}: {entry.name === 'Savings Rate' ? `${entry.value.toFixed(1)}%` : formatCurrency(entry.value)}
+          {entry.name}: {entry.name === 'Savings Rate' ? formatPercent(entry.value) : formatCurrency(entry.value)}
         </p>
       ))}
     </div>
