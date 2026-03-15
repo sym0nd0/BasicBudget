@@ -20,7 +20,7 @@ The [Household summary page](/household) shows only items flagged as household i
 
 ## Inviting Members
 
-1. Go to **Settings → Household** (or the Household page invite section).
+1. Go to the **Household** page.
 2. Enter the email address of the person you want to invite.
 3. Click **Send Invite**.
 

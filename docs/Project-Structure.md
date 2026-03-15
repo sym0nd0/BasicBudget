@@ -17,6 +17,11 @@ BasicBudget/
 │   └── index.ts          # Express app entry point
 ├── shared/
 │   └── types.ts          # Shared TypeScript types (used by both src/ and server/)
+├── .github/
+│   └── workflows/
+│       ├── ci.yml            # CI — test and type-check on pull requests
+│       ├── docker-publish.yml # Docker image build & push (GHCR)
+│       └── trufflehog.yml    # Secret scanning
 ├── docs/                 # Wiki source files
 ├── data/                 # SQLite database (gitignored)
 ├── dist/                 # Compiled frontend (gitignored)

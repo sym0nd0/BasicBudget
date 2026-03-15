@@ -1,6 +1,6 @@
 # Recurring Expenses
 
-BasicBudget supports four recurrence types for income and expense entries. The recurring engine automatically determines which entries are active for a given month.
+BasicBudget supports five recurrence types for income and expense entries. The recurring engine automatically determines which entries are active for a given month.
 
 ## Recurrence Types
 
@@ -9,6 +9,7 @@ BasicBudget supports four recurrence types for income and expense entries. The r
 | **One-off** | Appears only in a single specific month, determined by the posting date. |
 | **Monthly** | Appears every month within the start/end date range. |
 | **Weekly** | Appears every month; the amount is multiplied by the number of occurrences of the posting day in that month. |
+| **Yearly** | Appears once per year in the month matching the start date. |
 | **Fortnightly** | Appears every month; the amount is multiplied by the number of fortnightly occurrences in that month. |
 
 ## Posting Day
@@ -49,7 +50,8 @@ For fortnightly entries, BasicBudget counts occurrences of the fortnightly cycle
 - **Monthly salary or rent** — use Monthly recurrence
 - **Weekly food shop or childcare** — use Weekly recurrence so the monthly total reflects actual weeks
 - **Fortnightly payroll** — use Fortnightly recurrence
-- **One-off bonus or annual insurance payment** — use One-off recurrence with the specific month
+- **One-off bonus** — use One-off recurrence with the specific month
+- **Annual insurance payment** — use Yearly recurrence
 
 ---
 

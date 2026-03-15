@@ -9,8 +9,7 @@ This page provides a detailed reference for the CSV import feature. For an overv
 | `name` | Yes | Expense name |
 | `amount` | Yes | Amount in pounds (e.g. `50.00`) |
 | `category` | Yes | Category name (must match an existing category) |
-| `type` | Yes | `fixed` or `variable` |
-| `recurrence_type` | Yes | `one-off`, `monthly`, `weekly`, or `fortnightly` |
+| `recurrence_type` | Yes | `one-off`, `monthly`, `weekly`, `yearly`, or `fortnightly` |
 | `posting_day` | Yes | Day of month (1–31) |
 | `account` | No | Payment account name (must match an existing account) |
 | `start_date` | No | `YYYY-MM` format |
@@ -24,7 +23,7 @@ This page provides a detailed reference for the CSV import feature. For an overv
 |---|---|---|
 | `name` | Yes | Income name |
 | `amount` | Yes | Amount in pounds |
-| `recurrence_type` | Yes | `one-off`, `monthly`, `weekly`, or `fortnightly` |
+| `recurrence_type` | Yes | `one-off`, `monthly`, `weekly`, `yearly`, or `fortnightly` |
 | `posting_day` | Yes | Day of month (1–31) |
 | `gross_or_net` | No | `gross` or `net` |
 | `start_date` | No | `YYYY-MM` format |

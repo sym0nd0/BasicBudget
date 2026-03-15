@@ -15,7 +15,7 @@ Income entries represent money coming in — salary, freelance work, rental inco
 Expense entries represent money going out — rent, bills, groceries, subscriptions, and any other cost.
 
 - Go to **Expenses** → **Add Expense**
-- Key fields: Name, Amount, Category, Type (Fixed/Variable), Account, Recurrence
+- Key fields: Name, Amount, Category, Account, Recurrence
 - See [[Expenses]] for the full field reference
 
 ## Debts

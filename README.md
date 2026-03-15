@@ -173,7 +173,7 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 |---|---|---|
 | UI Framework | React | 19.x |
 | Language | TypeScript | 5.9 |
-| Build Tool | Vite | 7.x |
+| Build Tool | Vite | 8.x |
 | Styling | Tailwind CSS | v4 |
 | Charts | Recharts | 3.x |
 | Routing | React Router | 7.x |
@@ -382,7 +382,6 @@ interface Income {
   name: string;
   amount_pence: number;
   posting_day: number;
-  contributor_name?: string | null;
   contributor_user_id?: string | null;
   gross_or_net: 'gross' | 'net';
   is_recurring: boolean;
@@ -404,7 +403,6 @@ interface Expense {
   posting_day: number;
   account_id?: string | null;
   contributor_user_id?: string | null;
-  type: 'fixed' | 'variable';
   category: string;
   is_household: boolean;
   split_ratio: number;        // 0.5 for shared costs, 1.0 for sole costs
@@ -443,11 +441,11 @@ interface Debt {
 interface DebtDealPeriod {
   id: string;
   debt_id: string;
+  label?: string | null;
   interest_rate: number;
-  start_month: string;        // YYYY-MM
-  end_month?: string | null;  // YYYY-MM, null = ongoing
-  reminder_months?: number | null;
-  created_at: string;
+  start_date: string;        // YYYY-MM
+  end_date?: string | null;  // YYYY-MM, null = ongoing
+  created_at?: string;
 }
 ```
 
@@ -464,6 +462,8 @@ interface SavingsGoal {
   is_household: boolean;
   target_date?: string | null;
   notes?: string | null;
+  auto_contribute?: number;   // 0 or 1 (SQLite integer)
+  contribution_day?: number;  // 1–28
 }
 ```
 
@@ -517,10 +517,10 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 | PUT | `/api/auth/profile` | Update display name |
 | PUT | `/api/auth/profile/palette` | Set colour blindness palette |
 | PUT | `/api/auth/profile/notify-updates` | Toggle version update notifications |
-| POST | `/api/auth/change-password` | Change password (requires current password) |
-| POST | `/api/auth/change-email` | Request email change |
-| POST | `/api/auth/confirm-email-change` | Confirm email change via token |
-| POST | `/api/auth/resend-verification` | Resend email verification token |
+| POST | `/api/auth/profile/change-password` | Change password (requires current password) |
+| POST | `/api/auth/profile/change-email` | Request email change |
+| POST | `/api/auth/profile/confirm-email-change` | Confirm email change via token |
+| POST | `/api/auth/profile/resend-verification` | Resend email verification token |
 
 #### Sessions
 
@@ -541,6 +541,7 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 | Method | Path | Description |
 |---|---|---|
 | GET/PUT | `/api/household` | Get household details + members / update household name (owner only) |
+| POST | `/api/household/invite` | Send household invite (owner only) |
 | GET | `/api/household/invites` | List active invites (owner only) |
 | DELETE | `/api/household/invites/:id` | Rescind an invite (owner only) |
 | GET | `/api/household/summary` | Household-level budget overview |
@@ -560,11 +561,15 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 | GET | `/api/debts/:id/repayments` | Compute full repayment schedule |
 | GET/POST | `/api/savings-goals` | List / create savings goal |
 | GET/PUT/DELETE | `/api/savings-goals/:id` | Get / update / delete savings goal |
+| GET | `/api/savings-goals/transactions` | List all savings transactions |
+| GET | `/api/savings-goals/:id/transactions` | List transactions for a specific goal |
+| POST | `/api/savings-goals/:id/transactions` | Create a deposit or withdrawal |
 | GET/POST | `/api/accounts` | List / create account |
 | GET/PUT/DELETE | `/api/accounts/:id` | Get / update / delete account |
 | GET | `/api/categories` | Get expense categories |
 | GET | `/api/summary` | Budget summary with category breakdown |
 | GET | `/api/version` | Get current and latest version info |
+| GET | `/api/months` | List locked months |
 | POST | `/api/months/:ym/lock` | Lock a month (prevent edits) |
 | DELETE | `/api/months/:ym/lock` | Unlock a month |
 | POST | `/api/import/csv` | CSV import (expenses, incomes, debts, savings goals) |
@@ -662,6 +667,7 @@ BasicBudget/
 │   │   ├── charts/                    # Chart components (recharts wrapper)
 │   │   ├── forms/                     # Reusable form components
 │   │   ├── layout/                    # Layout wrappers (sidebar, header)
+│   │   ├── reports/                   # Report section components
 │   │   └── ui/                        # Shared UI primitives
 │   │       ├── Badge.tsx              # Badge component
 │   │       ├── Button.tsx             # Button component
@@ -682,6 +688,7 @@ BasicBudget/
 │   │   ├── useApi.ts                  # API client hook
 │   │   ├── useConfirmDialog.ts        # Confirmation dialog state
 │   │   ├── useLocalStorage.ts         # localStorage hook
+│   │   ├── useRangeOverview.ts        # Date-range overview data hook
 │   │   └── useSortableTable.ts        # Table sorting state
 │   ├── pages/
 │   │   ├── AcceptInvitePage.tsx       # Invite acceptance (new user)
@@ -690,6 +697,7 @@ BasicBudget/
 │   │   ├── AdminUsersPage.tsx         # Admin: user management
 │   │   ├── LoginPage.tsx              # Login form
 │   │   ├── RegisterPage.tsx           # Registration form
+│   │   ├── ReportsPage.tsx            # Reports and trends
 │   │   ├── TotpPage.tsx               # 2FA verification
 │   │   ├── ForgotPasswordPage.tsx     # Password reset request
 │   │   ├── ResetPasswordPage.tsx      # Password reset confirmation
@@ -720,6 +728,7 @@ BasicBudget/
 │
 ├── .github/
 │   ├── workflows/
+│   │   ├── ci.yml                     # CI — test and type-check on pull requests
 │   │   ├── docker-publish.yml         # Docker image build & push (GHCR)
 │   │   └── trufflehog.yml             # Secret scanning
 │   └── PULL_REQUEST_TEMPLATE.md       # PR template
