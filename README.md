@@ -40,9 +40,9 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 |---|---|
 | <img src="docs/screenshots/income-dark.png" alt="Income" width="350"> | <img src="docs/screenshots/debt-dark.png" alt="Debt" width="350"> |
 
-| Savings |
-|---|
-| <img src="docs/screenshots/savings-dark.png" alt="Savings" width="350"> |
+| Savings | Reports |
+|---|---|
+| <img src="docs/screenshots/savings-dark.png" alt="Savings" width="350"> | <img src="docs/screenshots/reports-dark.png" alt="Reports" width="350"> |
 
 ### Light theme
 
@@ -54,9 +54,9 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 |---|---|
 | <img src="docs/screenshots/income-light.png" alt="Income" width="350"> | <img src="docs/screenshots/debt-light.png" alt="Debt" width="350"> |
 
-| Savings |
-|---|
-| <img src="docs/screenshots/savings-light.png" alt="Savings" width="350"> |
+| Savings | Reports |
+|---|---|
+| <img src="docs/screenshots/savings-light.png" alt="Savings" width="350"> | <img src="docs/screenshots/reports-light.png" alt="Reports" width="350"> |
 
 ---
 

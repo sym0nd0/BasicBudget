@@ -41,27 +41,25 @@ async function waitForServer(maxAttempts = 30): Promise<void> {
   throw new Error('Server failed to start within timeout');
 }
 
+async function setTheme(page: any, theme: 'dark' | 'light'): Promise<void> {
+  await page.evaluate((t: string) => {
+    localStorage.setItem('bb-theme', JSON.stringify(t));
+  }, theme);
+}
+
 async function captureScreenshot(
   page: any,
   path: string,
   url: string,
-  theme: 'dark' | 'light',
 ): Promise<void> {
-  console.log(`  Capturing ${theme} theme: ${url}`);
+  console.log(`  Capturing: ${url}`);
   await page.goto(url, { waitUntil: 'networkidle' });
 
-  // Set theme via localStorage
-  await page.evaluate((theme: string) => {
-    localStorage.setItem('bb-theme', JSON.stringify(theme));
-  }, theme);
+  if (page.url().includes('/login')) {
+    throw new Error(`Session lost while capturing ${url} — page redirected to login`);
+  }
 
-  // Wait for theme to apply
-  await sleep(500);
-
-  // Trigger a reload to apply theme
-  await page.goto(url, { waitUntil: 'networkidle' });
-
-  // Wait for content to load
+  // Wait for content to settle
   await sleep(1000);
 
   await page.screenshot({ path, fullPage: false });
@@ -182,19 +180,23 @@ async function main(): Promise<void> {
 
     // Capture dark theme screenshots
     console.log('Capturing dark theme screenshots...');
-    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'dashboard-dark.png'), `${BASE_URL}/`, 'dark');
-    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'income-dark.png'), `${BASE_URL}/income`, 'dark');
-    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'expenses-dark.png'), `${BASE_URL}/expenses`, 'dark');
-    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'debt-dark.png'), `${BASE_URL}/debt`, 'dark');
-    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'savings-dark.png'), `${BASE_URL}/savings`, 'dark');
+    await setTheme(page, 'dark');
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'dashboard-dark.png'), `${BASE_URL}/`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'income-dark.png'), `${BASE_URL}/income`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'expenses-dark.png'), `${BASE_URL}/expenses`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'debt-dark.png'), `${BASE_URL}/debt`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'savings-dark.png'), `${BASE_URL}/savings`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'reports-dark.png'), `${BASE_URL}/reports`);
 
     // Capture light theme screenshots
     console.log('\nCapturing light theme screenshots...');
-    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'dashboard-light.png'), `${BASE_URL}/`, 'light');
-    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'income-light.png'), `${BASE_URL}/income`, 'light');
-    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'expenses-light.png'), `${BASE_URL}/expenses`, 'light');
-    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'debt-light.png'), `${BASE_URL}/debt`, 'light');
-    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'savings-light.png'), `${BASE_URL}/savings`, 'light');
+    await setTheme(page, 'light');
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'dashboard-light.png'), `${BASE_URL}/`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'income-light.png'), `${BASE_URL}/income`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'expenses-light.png'), `${BASE_URL}/expenses`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'debt-light.png'), `${BASE_URL}/debt`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'savings-light.png'), `${BASE_URL}/savings`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'reports-light.png'), `${BASE_URL}/reports`);
 
     // Clean up
     console.log('\nCleaning up...');
