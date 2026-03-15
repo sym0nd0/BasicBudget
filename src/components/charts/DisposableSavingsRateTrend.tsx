@@ -73,7 +73,7 @@ export function DisposableSavingsRateTrend({ data }: DisposableSavingsRateTrendP
           tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
           label={{ value: 'Savings Rate (%)', angle: 90, position: 'insideRight' }}
         />
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip content={<CustomTooltip />} cursor={false} />
         <Legend
           formatter={(value) => (
             <span style={{ color: 'var(--color-text)', fontSize: 11 }}>{value}</span>

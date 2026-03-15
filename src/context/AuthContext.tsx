@@ -74,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setHousehold(null);
     setHouseholdRole(undefined);
     setTotpPending(false);
+    localStorage.removeItem('pending_invite_token');
     const palettes = ['palette-deuteranopia', 'palette-protanopia', 'palette-tritanopia'];
     palettes.forEach(p => document.documentElement.classList.remove(p));
   }, []);

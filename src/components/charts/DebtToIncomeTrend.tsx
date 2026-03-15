@@ -60,7 +60,7 @@ export function DebtToIncomeTrend({ data }: DebtToIncomeTrendProps) {
           tickFormatter={v => `${v.toFixed(0)}%`}
           tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
         />
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip content={<CustomTooltip />} cursor={false} />
         <Legend
           formatter={(value) => (
             <span style={{ color: 'var(--color-text)', fontSize: 11 }}>{value}</span>

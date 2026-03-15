@@ -32,6 +32,7 @@ export function LoginPage() {
         // Check for pending invite token after successful login
         const pendingToken = localStorage.getItem('pending_invite_token');
         if (pendingToken) {
+          localStorage.removeItem('pending_invite_token');
           navigate(`/accept-invite?token=${pendingToken}`);
         } else {
           navigate('/');

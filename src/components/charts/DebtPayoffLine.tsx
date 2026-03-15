@@ -98,7 +98,7 @@ export function DebtPayoffChart({ summaries }: DebtPayoffChartProps) {
             tickFormatter={v => `£${(v / 100000).toFixed(1)}k`}
             tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip />} cursor={false} />
           <Legend
             formatter={(value) => (
               <span style={{ color: 'var(--color-text)', fontSize: 11 }}>{value}</span>

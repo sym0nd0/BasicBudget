@@ -210,7 +210,12 @@ router.post('/:id/transactions', (req: Request, res: Response) => {
 // PUT /api/savings-goals/:id
 router.put('/:id', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
-  const body = req.body as Partial<SavingsGoal>;
+  const parseResult = savingsGoalSchema.partial().safeParse(req.body);
+  if (!parseResult.success) {
+    res.status(400).json({ message: 'Validation error' });
+    return;
+  }
+  const body = parseResult.data;
   const existing = db.prepare('SELECT * FROM savings_goals WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!existing) {
     res.status(404).json({ message: 'Savings goal not found' });

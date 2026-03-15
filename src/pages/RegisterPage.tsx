@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
@@ -19,6 +19,13 @@ export function RegisterPage() {
   const [statusChecked, setStatusChecked] = useState(false);
 
   const inviteToken = searchParams.get('token') ?? undefined;
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     api.getRegistrationStatus()
@@ -42,7 +49,7 @@ export function RegisterPage() {
     try {
       await register(email, password, displayName || undefined, inviteToken);
       setSuccess('Registration successful! Please check your email to verify your account.');
-      setTimeout(() => navigate('/login'), 3000);
+      redirectTimerRef.current = setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
       setError((err as Error).message);
     } finally {

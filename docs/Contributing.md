@@ -21,7 +21,8 @@ All work must be on a named branch. Never commit directly to `master`.
 3. Push the branch to origin.
 4. Open a Pull Request with a clear title and description.
 5. Fill in the PR template completely — do not leave placeholder sections blank.
-6. Wait for review before merging.
+6. The CI pipeline will automatically run TypeScript checks and tests on every push and PR. The PR must pass all CI checks before merging.
+7. Wait for review before merging.
 
 ## Pre-Push Checklist
 

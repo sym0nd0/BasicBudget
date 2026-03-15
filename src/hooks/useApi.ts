@@ -30,6 +30,8 @@ export function useApi<T>(url: string | null, options?: UseApiOptions): UseApiRe
     const controller = new AbortController();
     abortRef.current = controller;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setData(null);
     setLoading(true);
     setError(null);
 
