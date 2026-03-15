@@ -63,6 +63,30 @@ When Email Reminder is enabled, BasicBudget sends an email to your registered ad
 
 During an active deal period, the repayment schedule uses the deal's interest rate instead of the standard APR. This is reflected in lower (or zero) interest charges for those months in the projection.
 
+## Payoff Timeline Chart
+
+The **Debt Payoff Timeline** chart on the [[Reports]] page projects all your debts to £0 using either the Snowball or Avalanche strategy. Toggle between strategies using the buttons above the chart.
+
+### Snowball vs Avalanche
+
+| Strategy | Target order | Best for |
+|---|---|---|
+| **Snowball** | Smallest balance first | Motivation — quick early wins reduce the number of debts |
+| **Avalanche** | Highest interest rate first | Minimising total interest paid over the repayment period |
+
+Both strategies use the same total monthly budget (the sum of all your minimum payments and overpayments). When a debt is fully paid off, its freed minimum payment is automatically redirected to the next target debt, accelerating the schedule.
+
+### Reading the Chart
+
+- Each line represents one debt, projected month by month to £0
+- The thick line shows the combined total balance across all debts
+- The vertical dashed line marks the month when all debts reach £0
+- Lines animate when you switch between strategies
+
+### Monthly Breakdown Table
+
+Click **Show breakdown** below the chart to expand a scrollable table showing the projected balance for each debt per month.
+
 ---
 
 <p>

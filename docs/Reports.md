@@ -24,7 +24,7 @@ The Reports page is divided into four sections:
 |---|---|
 | **[[Budget Performance\|Budget-Performance]]** | Overview cards with trend indicators, income vs expenses bar chart, disposable income trend, savings rate |
 | **[[Spending Reports\|Spending-Reports]]** | Expense breakdown donut, category trends stacked area chart |
-| **[[Debt Charts\|Debt-Charts]]** | Debt projection line chart, debt-to-income ratio chart |
+| **[[Debt Charts\|Debt-Charts]]** | Debt projection line chart, debt payoff timeline (snowball/avalanche), debt-to-income ratio chart |
 | **Monthly Detail Table** | Sortable per-month breakdown |
 
 ## Monthly Detail Table

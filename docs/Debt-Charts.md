@@ -1,6 +1,6 @@
 # Debt Charts
 
-BasicBudget includes two charts focused on debt tracking, available on the [[Reports]] page.
+BasicBudget includes three charts focused on debt tracking, available on the [[Reports]] page.
 
 ## Debt Projection Line Chart
 
@@ -32,9 +32,19 @@ Debt-to-Income Ratio = (Total outstanding debt ÷ Annual income) × 100
 
 Where annual income is estimated from the monthly income total for each period multiplied by 12.
 
+## Debt Payoff Timeline Chart
+
+The Debt Payoff Timeline chart projects all your debts to £0 using either the **Snowball** (smallest balance first) or **Avalanche** (highest interest rate first) strategy. Toggle between strategies with the buttons above the chart.
+
+- A thick line shows the combined total balance; thinner lines show individual debts
+- A dashed vertical line marks the month when all debts reach £0
+- Click **Show breakdown** to expand a month-by-month table of per-debt balances
+
+See [[Debt Payoff Strategies|Debt-Payoff-Strategies]] for a full explanation of how freed minimum payments are reallocated between debts.
+
 ## Accessing Debt Charts
 
-Both charts are on the **Reports** page, in the **Debt** section. Select a time range from the dropdown at the top of the page to adjust the period shown in the Debt-to-Income chart.
+All three charts are on the **Reports** page, in the **Debt** section. Select a time range from the dropdown at the top of the page to adjust the period shown in the Debt-to-Income chart.
 
 ---
 
