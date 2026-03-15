@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { getCsrfToken } from '../../api/client';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Input';
 
@@ -47,10 +48,23 @@ export function CsvImportForm({ onSuccess, onCancel }: CsvImportFormProps) {
       formData.append('file', file);
       formData.append('type', importType);
 
-      const res = await fetch('/api/import/csv', {
+      const csrfToken = await getCsrfToken();
+      let res = await fetch('/api/import/csv', {
         method: 'POST',
+        credentials: 'include',
+        headers: { 'X-CSRF-Token': csrfToken },
         body: formData,
       });
+
+      if (res.status === 403) {
+        const freshToken = await getCsrfToken();
+        res = await fetch('/api/import/csv', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'X-CSRF-Token': freshToken },
+          body: formData,
+        });
+      }
 
       const result = await res.json() as { message: string; imported: number; skipped: number; errors: { row: number; message: string }[] };
 

@@ -10,4 +10,5 @@ coverage/
 .DS_Store
 Thumbs.db
 *.log
+*.stackdump
 public/assets/

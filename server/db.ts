@@ -262,6 +262,28 @@ try {
   // Migration already applied or no matching users, ignore
 }
 
+// Fix totp_used_tokens.user_id declared type from INTEGER to TEXT (data is ephemeral, 2-min lifetime)
+try {
+  const cols = db.prepare("PRAGMA table_info(totp_used_tokens)").all() as unknown as { name: string; type: string }[];
+  const uidCol = cols.find(c => c.name === 'user_id');
+  if (uidCol?.type === 'INTEGER') {
+    db.exec(`
+      CREATE TABLE totp_used_tokens_v2 (
+        user_id   TEXT    NOT NULL,
+        token     TEXT    NOT NULL,
+        period    INTEGER NOT NULL,
+        used_at   INTEGER NOT NULL DEFAULT (CAST(strftime('%s','now') AS INTEGER)),
+        PRIMARY KEY (user_id, token, period)
+      );
+      DROP TABLE totp_used_tokens;
+      ALTER TABLE totp_used_tokens_v2 RENAME TO totp_used_tokens;
+    `);
+    dbLog('Migrated totp_used_tokens.user_id from INTEGER to TEXT.');
+  }
+} catch {
+  // Migration failed or not needed, ignore
+}
+
 // Encrypt existing plaintext SMTP/OIDC secrets at rest
 try {
   migrateEncryptedSettings();

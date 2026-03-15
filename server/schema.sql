@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS recovery_codes (
 );
 
 CREATE TABLE IF NOT EXISTS totp_used_tokens (
-    user_id   INTEGER NOT NULL,
+    user_id   TEXT    NOT NULL,
     token     TEXT    NOT NULL,
     period    INTEGER NOT NULL,
     used_at   INTEGER NOT NULL DEFAULT (CAST(strftime('%s','now') AS INTEGER)),

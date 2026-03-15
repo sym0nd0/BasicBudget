@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { requireAuth } from '../middleware/auth.js';
 import { canModify } from '../utils/visibility.js';
 import type { Account } from '../../shared/types.js';
+import { accountSchema } from '../validation/schemas.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -24,11 +25,12 @@ router.get('/', (req: Request, res: Response) => {
 
 // POST /api/accounts
 router.post('/', (req: Request, res: Response) => {
-  const { name, sort_order = 0, is_joint = false } = req.body as { name: string; sort_order?: number; is_joint?: boolean };
-  if (!name?.trim()) {
-    res.status(400).json({ message: 'name is required' });
+  const parseResult = accountSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    res.status(400).json({ message: 'Validation error' });
     return;
   }
+  const { name, sort_order = 0, is_joint = false } = parseResult.data;
   const duplicate = db.prepare('SELECT id FROM accounts WHERE name = ? AND household_id = ?').get(name.trim(), req.householdId!);
   if (duplicate) {
     res.status(409).json({ message: `Account named '${name.trim()}' already exists` });
@@ -50,7 +52,12 @@ router.post('/', (req: Request, res: Response) => {
 // PUT /api/accounts/:id
 router.put('/:id', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
-  const { name, sort_order, is_joint } = req.body as { name?: string; sort_order?: number; is_joint?: boolean };
+  const parseResult = accountSchema.partial().safeParse(req.body);
+  if (!parseResult.success) {
+    res.status(400).json({ message: 'Validation error' });
+    return;
+  }
+  const { name, sort_order, is_joint } = parseResult.data;
   const existing = db.prepare('SELECT * FROM accounts WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!existing) {
     res.status(404).json({ message: 'Account not found' });

@@ -68,7 +68,7 @@ export function ExpenseDonut({ breakdown }: ExpenseDonutProps) {
             <Cell key={`cell-${idx}`} fill={entry.fill} />
           ))}
         </Pie>
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip content={<CustomTooltip />} cursor={false} />
         <Legend
           formatter={(value) => (
             <span style={{ color: 'var(--color-text)', fontSize: 11 }}>{value}</span>

@@ -46,12 +46,21 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
   }
 
   const imported: string[] = [];
-  const errors: { row: number; message: string }[] = [];
   let skipped = 0;
 
   if (importType === 'expenses') {
     const existingExpenses = db.prepare('SELECT name, amount_pence, type FROM expenses WHERE household_id = ?').all(req.householdId!) as
       { name: string; amount_pence: number; type: string }[];
+
+    // Phase 1 — validation pass (no DB writes)
+    type ExpenseRow = {
+      name: string; amount: number; day: number; category: string; type: string;
+      isHousehold: boolean; splitRatio: number; recurrenceType: string; isRecurring: number;
+      startDate: string | null; endDate: string | null; notes: string | null;
+      accountName: string | null;
+    };
+    const validRows: ExpenseRow[] = [];
+    const validationErrors: { row: number; message: string }[] = [];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -61,9 +70,7 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
         const amount = poundsStrToPence(row.amount ?? '');
         if (amount <= 0) throw new Error('amount must be > 0');
         const day = parseInt(row.day ?? '1', 10);
-        const category = isValidCategory(row.category?.trim())
-          ? row.category.trim()
-          : 'Other';
+        const category = isValidCategory(row.category?.trim()) ? row.category.trim() : 'Other';
         const type = row.type?.trim() === 'variable' ? 'variable' : 'fixed';
         const isHousehold = /^(yes|true|1)$/i.test(row.household ?? '');
         const splitRatioRaw = row.split_ratio ? parseFloat(row.split_ratio) : null;
@@ -74,19 +81,35 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
         const isRecurring = parseIsRecurring(row.is_recurring);
         const startDate = row.start_date ? (parseUkDate(row.start_date) ?? row.start_date) : null;
         const endDate = row.end_date ? (parseUkDate(row.end_date) ?? row.end_date) : null;
+        validRows.push({
+          name, amount, day: isNaN(day) ? 1 : day, category, type, isHousehold,
+          splitRatio, recurrenceType, isRecurring, startDate, endDate,
+          notes: row.notes ?? null, accountName: row.account?.trim() ?? null,
+        });
+      } catch (err) {
+        validationErrors.push({ row: i + 2, message: (err as Error).message });
+      }
+    }
 
-        // Account lookup by name
-        let accountId: string | null = null;
-        if (row.account?.trim()) {
-          const acct = db.prepare('SELECT id FROM accounts WHERE household_id = ? AND LOWER(name) = LOWER(?)').get(req.householdId!, row.account.trim()) as { id: string } | undefined;
-          accountId = acct?.id ?? null;
-        }
+    if (validationErrors.length > 0) {
+      res.status(400).json({ message: 'Validation failed', errors: validationErrors });
+      return;
+    }
 
+    // Phase 2 — atomic insert
+    db.transaction(() => {
+      for (const r of validRows) {
         const isDup = existingExpenses.some(
-          ex => ex.name.toLowerCase() === name.toLowerCase()
-            && ex.amount_pence === amount && ex.type === type
+          ex => ex.name.toLowerCase() === r.name.toLowerCase()
+            && ex.amount_pence === r.amount && ex.type === r.type
         );
         if (isDup) { skipped++; continue; }
+
+        let accountId: string | null = null;
+        if (r.accountName) {
+          const acct = db.prepare('SELECT id FROM accounts WHERE household_id = ? AND LOWER(name) = LOWER(?)').get(req.householdId!, r.accountName) as { id: string } | undefined;
+          accountId = acct?.id ?? null;
+        }
 
         const id = randomUUID();
         db.prepare(`
@@ -96,20 +119,27 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
              start_date, end_date, notes)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
-          id, req.householdId!, req.userId!, name, amount, isNaN(day) ? 1 : day,
-          accountId, type, category, isHousehold ? 1 : 0, splitRatio,
-          isRecurring, recurrenceType,
-          startDate, endDate, row.notes ?? null,
+          id, req.householdId!, req.userId!, r.name, r.amount, r.day,
+          accountId, r.type, r.category, r.isHousehold ? 1 : 0, r.splitRatio,
+          r.isRecurring, r.recurrenceType,
+          r.startDate, r.endDate, r.notes,
         );
         imported.push(id);
-        existingExpenses.push({ name, amount_pence: amount, type });
-      } catch (err) {
-        errors.push({ row: i + 2, message: (err as Error).message });
+        existingExpenses.push({ name: r.name, amount_pence: r.amount, type: r.type });
       }
-    }
+    })();
   } else if (importType === 'incomes') {
     const existingIncomes = db.prepare('SELECT name, amount_pence FROM incomes WHERE household_id = ?').all(req.householdId!) as
       { name: string; amount_pence: number }[];
+
+    // Phase 1 — validation pass
+    type IncomeRow = {
+      name: string; amount: number; day: number; contributorName: string | null;
+      grossOrNet: string; isRecurring: number; recurrenceType: string;
+      startDate: string | null; endDate: string | null; notes: string | null;
+    };
+    const validRows: IncomeRow[] = [];
+    const validationErrors: { row: number; message: string }[] = [];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -123,9 +153,27 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
         const isRecurring = parseIsRecurring(row.is_recurring);
         const startDate = row.start_date ? (parseUkDate(row.start_date) ?? row.start_date) : null;
         const endDate = row.end_date ? (parseUkDate(row.end_date) ?? row.end_date) : null;
+        validRows.push({
+          name, amount, day: isNaN(day) ? 28 : day,
+          contributorName: row.contributor?.trim() ?? null,
+          grossOrNet: row.gross_or_net?.trim() === 'gross' ? 'gross' : 'net',
+          isRecurring, recurrenceType, startDate, endDate, notes: row.notes ?? null,
+        });
+      } catch (err) {
+        validationErrors.push({ row: i + 2, message: (err as Error).message });
+      }
+    }
 
+    if (validationErrors.length > 0) {
+      res.status(400).json({ message: 'Validation failed', errors: validationErrors });
+      return;
+    }
+
+    // Phase 2 — atomic insert
+    db.transaction(() => {
+      for (const r of validRows) {
         const isDup = existingIncomes.some(
-          ex => ex.name.toLowerCase() === name.toLowerCase() && ex.amount_pence === amount
+          ex => ex.name.toLowerCase() === r.name.toLowerCase() && ex.amount_pence === r.amount
         );
         if (isDup) { skipped++; continue; }
 
@@ -136,21 +184,28 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
              gross_or_net, is_recurring, recurrence_type, start_date, end_date, notes)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
-          id, req.householdId!, req.userId!, name, amount, isNaN(day) ? 28 : day,
-          row.contributor?.trim() ?? null,
-          row.gross_or_net?.trim() === 'gross' ? 'gross' : 'net',
-          isRecurring, recurrenceType,
-          startDate, endDate, row.notes ?? null,
+          id, req.householdId!, req.userId!, r.name, r.amount, r.day,
+          r.contributorName, r.grossOrNet,
+          r.isRecurring, r.recurrenceType,
+          r.startDate, r.endDate, r.notes,
         );
         imported.push(id);
-        existingIncomes.push({ name, amount_pence: amount });
-      } catch (err) {
-        errors.push({ row: i + 2, message: (err as Error).message });
+        existingIncomes.push({ name: r.name, amount_pence: r.amount });
       }
-    }
+    })();
   } else if (importType === 'debts') {
     const existingDebts = db.prepare('SELECT name, balance_pence FROM debts WHERE household_id = ?').all(req.householdId!) as
       { name: string; balance_pence: number }[];
+
+    // Phase 1 — validation pass
+    type DebtRow = {
+      name: string; balance: number; interestRate: number; minimumPayment: number;
+      overpayment: number; compoundingFrequency: string; day: number;
+      isHousehold: boolean; splitRatio: number; isRecurring: number; recurrenceType: string;
+      startDate: string | null; endDate: string | null; notes: string | null;
+    };
+    const validRows: DebtRow[] = [];
+    const validationErrors: { row: number; message: string }[] = [];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -161,7 +216,6 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
         if (balance <= 0) throw new Error('balance must be > 0');
         const interestRateRaw = parseFloat(row.interest_rate ?? '0');
         if (isNaN(interestRateRaw)) throw new Error('interest_rate must be a number');
-        const interestRate = interestRateRaw;
         const minimumPayment = poundsStrToPence(row.minimum_payment ?? '0');
         const overpayment = row.overpayment ? poundsStrToPence(row.overpayment) : 0;
         const compoundingFrequency = row.compounding_frequency?.trim() || 'monthly';
@@ -175,9 +229,26 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
         const isRecurring = parseIsRecurring(row.is_recurring);
         const startDate = row.start_date ? (parseUkDate(row.start_date) ?? row.start_date) : null;
         const endDate = row.end_date ? (parseUkDate(row.end_date) ?? row.end_date) : null;
+        validRows.push({
+          name, balance, interestRate: interestRateRaw, minimumPayment, overpayment,
+          compoundingFrequency, day: isNaN(day) ? 1 : day, isHousehold, splitRatio,
+          isRecurring, recurrenceType, startDate, endDate, notes: row.notes ?? null,
+        });
+      } catch (err) {
+        validationErrors.push({ row: i + 2, message: (err as Error).message });
+      }
+    }
 
+    if (validationErrors.length > 0) {
+      res.status(400).json({ message: 'Validation failed', errors: validationErrors });
+      return;
+    }
+
+    // Phase 2 — atomic insert
+    db.transaction(() => {
+      for (const r of validRows) {
         const isDup = existingDebts.some(
-          ex => ex.name.toLowerCase() === name.toLowerCase() && ex.balance_pence === balance
+          ex => ex.name.toLowerCase() === r.name.toLowerCase() && ex.balance_pence === r.balance
         );
         if (isDup) { skipped++; continue; }
 
@@ -190,20 +261,27 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
              is_recurring, recurrence_type, start_date, end_date, notes)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
-          id, req.householdId!, req.userId!, name, balance,
-          interestRate, minimumPayment, overpayment,
-          compoundingFrequency, isNaN(day) ? 1 : day, isHousehold ? 1 : 0, splitRatio,
-          isRecurring, recurrenceType, startDate, endDate, row.notes ?? null,
+          id, req.householdId!, req.userId!, r.name, r.balance,
+          r.interestRate, r.minimumPayment, r.overpayment,
+          r.compoundingFrequency, r.day, r.isHousehold ? 1 : 0, r.splitRatio,
+          r.isRecurring, r.recurrenceType, r.startDate, r.endDate, r.notes,
         );
         imported.push(id);
-        existingDebts.push({ name, balance_pence: balance });
-      } catch (err) {
-        errors.push({ row: i + 2, message: (err as Error).message });
+        existingDebts.push({ name: r.name, balance_pence: r.balance });
       }
-    }
+    })();
   } else if (importType === 'savings') {
     const existingSavings = db.prepare('SELECT name, target_amount_pence FROM savings_goals WHERE household_id = ?').all(req.householdId!) as
       { name: string; target_amount_pence: number }[];
+
+    // Phase 1 — validation pass
+    type SavingsRow = {
+      name: string; targetAmount: number; currentAmount: number;
+      monthlyContribution: number; isHousehold: boolean;
+      targetDate: string | null; notes: string | null;
+    };
+    const validRows: SavingsRow[] = [];
+    const validationErrors: { row: number; message: string }[] = [];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -216,9 +294,22 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
         const monthlyContribution = row.monthly_contribution ? poundsStrToPence(row.monthly_contribution) : 0;
         const isHousehold = /^(yes|true|1)$/i.test(row.is_household ?? '');
         const targetDate = row.target_date ? (parseUkDate(row.target_date) ?? row.target_date) : null;
+        validRows.push({ name, targetAmount, currentAmount, monthlyContribution, isHousehold, targetDate, notes: row.notes ?? null });
+      } catch (err) {
+        validationErrors.push({ row: i + 2, message: (err as Error).message });
+      }
+    }
 
+    if (validationErrors.length > 0) {
+      res.status(400).json({ message: 'Validation failed', errors: validationErrors });
+      return;
+    }
+
+    // Phase 2 — atomic insert
+    db.transaction(() => {
+      for (const r of validRows) {
         const isDup = existingSavings.some(
-          ex => ex.name.toLowerCase() === name.toLowerCase() && ex.target_amount_pence === targetAmount
+          ex => ex.name.toLowerCase() === r.name.toLowerCase() && ex.target_amount_pence === r.targetAmount
         );
         if (isDup) { skipped++; continue; }
 
@@ -230,22 +321,20 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
              is_household, target_date, notes)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
-          id, req.householdId!, req.userId!, name, targetAmount,
-          currentAmount, monthlyContribution,
-          isHousehold ? 1 : 0, targetDate, row.notes ?? null,
+          id, req.householdId!, req.userId!, r.name, r.targetAmount,
+          r.currentAmount, r.monthlyContribution,
+          r.isHousehold ? 1 : 0, r.targetDate, r.notes,
         );
         imported.push(id);
-        existingSavings.push({ name, target_amount_pence: targetAmount });
-      } catch (err) {
-        errors.push({ row: i + 2, message: (err as Error).message });
+        existingSavings.push({ name: r.name, target_amount_pence: r.targetAmount });
       }
-    }
+    })();
   }
 
-  logger.info('Data import completed', { userId: req.userId, imported: imported.length, skipped, errors: errors.length });
+  logger.info('Data import completed', { userId: req.userId, imported: imported.length, skipped });
   res.json({
-    imported: imported.length, skipped, errors,
-    message: `Imported ${imported.length} rows${skipped ? `, skipped ${skipped} duplicate(s)` : ''}${errors.length ? ` with ${errors.length} error(s)` : ''}`,
+    imported: imported.length, skipped, errors: [],
+    message: `Imported ${imported.length} rows${skipped ? `, skipped ${skipped} duplicate(s)` : ''}`,
   });
 });
 

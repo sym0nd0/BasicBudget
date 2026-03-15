@@ -117,7 +117,7 @@ export function DebtBalanceChart({ range: externalRange, householdOnly }: DebtBa
               <span style={{ color: 'var(--color-text)', fontSize: 11 }}>{value}</span>
             )}
           />
-          <Tooltip content={<CustomTooltip />} wrapperStyle={{ zIndex: 20 }} />
+          <Tooltip content={<CustomTooltip />} cursor={false} wrapperStyle={{ zIndex: 20 }} />
           {/* Total debt line (thick) */}
           <Line
             type="monotone"
