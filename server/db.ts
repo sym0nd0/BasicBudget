@@ -22,12 +22,24 @@ try {
   db.pragma('journal_mode = WAL');
 } catch {
   // WAL mode requires shared memory (.db-shm) support — some Docker volume
-  // backends (e.g. certain overlay filesystems) do not support it. Fall back
-  // to the default DELETE journal mode, which works on any filesystem.
+  // backends (e.g. certain overlay filesystems, NFS mounts) do not support it.
+  // Try MEMORY mode next: the journal is held entirely in RAM, so no auxiliary
+  // files are created on disk. This works on any filesystem that supports basic
+  // reads and writes to the main database file.
+  let fallbackMode = 'delete';
+  try {
+    db.pragma('journal_mode = MEMORY');
+    fallbackMode = 'memory';
+  } catch {
+    // MEMORY mode also failed — filesystem may not support SQLite write
+    // operations at all. Continue; the next write will surface a clearer error.
+  }
   process.stderr.write(JSON.stringify({
     timestamp: new Date().toISOString(),
     level: 'warn',
-    message: 'WAL journal mode unavailable on this filesystem — falling back to DELETE mode. Performance may be reduced.',
+    message: fallbackMode === 'memory'
+      ? 'WAL journal mode unavailable on this filesystem — using MEMORY journal mode. Data is safe within a session but the journal is not persisted to disk.'
+      : 'WAL and MEMORY journal modes both unavailable — falling back to DELETE mode. If writes fail, the filesystem may not support SQLite.',
     meta: { source: 'db-init' },
   }) + '\n');
 }
