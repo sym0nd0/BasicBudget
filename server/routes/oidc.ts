@@ -6,6 +6,7 @@ import { config } from '../config.js';
 import { requireAuth } from '../middleware/auth.js';
 import { auditLog } from '../services/audit.js';
 import { getOidcConfig } from '../services/settings.js';
+import { logger } from '../services/logger.js';
 
 const router = Router();
 
@@ -16,19 +17,21 @@ let oidcClient: Awaited<ReturnType<typeof buildOidcClient>> | null | undefined =
 async function buildOidcClient() {
   const oidcConfig = getOidcConfig();
   if (!oidcConfig) return null;
-  try {
-    const { discovery } = await import('openid-client');
-    const issuerUrl = new URL(oidcConfig.issuer_url);
-    const clientConfig = await discovery(issuerUrl, oidcConfig.client_id, oidcConfig.client_secret || undefined);
-    return clientConfig;
-  } catch {
-    return null;
-  }
+  // Let discovery errors propagate — caller decides whether to cache the result
+  const { discovery } = await import('openid-client');
+  const issuerUrl = new URL(oidcConfig.issuer_url);
+  return discovery(issuerUrl, oidcConfig.client_id, oidcConfig.client_secret || undefined);
 }
 
 async function getClient() {
   if (oidcClient === undefined) {
-    oidcClient = await buildOidcClient();
+    try {
+      oidcClient = await buildOidcClient();
+    } catch (err) {
+      // Discovery failed transiently — do not cache, allow retry on next request
+      logger.warn('OIDC discovery failed — will retry on next login attempt', { error: String(err) });
+      return null;
+    }
   }
   return oidcClient;
 }
