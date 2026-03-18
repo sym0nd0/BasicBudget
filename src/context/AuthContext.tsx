@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { api } from '../api/client';
+import { api, clearCsrfToken } from '../api/client';
 import type { User, Household, HouseholdRole, AuthStatusResponse } from '../types';
 
 interface AuthContextValue {
@@ -60,6 +60,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const result = await api.login(email, password);
+    // Session was regenerated on the server — discard the cached CSRF token so
+    // the next mutating request fetches a fresh one bound to the new session ID.
+    clearCsrfToken();
     if (!result.totp_required) {
       await refreshAuth();
     } else {
