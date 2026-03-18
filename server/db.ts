@@ -15,31 +15,50 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-const db = new Database(DB_FILE);
+let db: Database.Database = new Database(DB_FILE);
 
-// Performance pragmas
+// Performance pragmas — try each journal mode in order of preference.
+// WAL is ideal (concurrent reads) but requires shared-memory file support.
+// On some Docker volume backends (NFS, overlay2) the shared-memory or journal
+// files cannot be created, causing SQLITE_IOERR. When WAL fails the connection
+// itself may enter a broken state, so we close and reopen before trying the
+// next mode.
+let journalMode = 'delete';
 try {
   db.pragma('journal_mode = WAL');
+  journalMode = 'wal';
 } catch {
-  // WAL mode requires shared memory (.db-shm) support — some Docker volume
-  // backends (e.g. certain overlay filesystems, NFS mounts) do not support it.
-  // Try MEMORY mode next: the journal is held entirely in RAM, so no auxiliary
-  // files are created on disk. This works on any filesystem that supports basic
-  // reads and writes to the main database file.
-  let fallbackMode = 'delete';
+  // Close the potentially broken connection and clean up WAL auxiliary files.
+  try { db.close(); } catch { /* ignore close errors */ }
+  for (const ext of ['-wal', '-shm']) {
+    try { fs.unlinkSync(DB_FILE + ext); } catch { /* file may not exist */ }
+  }
+
+  // Reopen with a fresh connection, then try progressively more permissive modes.
+  db = new Database(DB_FILE);
+
   try {
     db.pragma('journal_mode = MEMORY');
-    fallbackMode = 'memory';
+    journalMode = 'memory';
   } catch {
-    // MEMORY mode also failed — filesystem may not support SQLite write
-    // operations at all. Continue; the next write will surface a clearer error.
+    try {
+      db.pragma('journal_mode = OFF');
+      journalMode = 'off';
+    } catch {
+      // All modes failed — DELETE is the implicit SQLite default.
+      journalMode = 'delete';
+    }
   }
+
+  const modeMessages: Record<string, string> = {
+    memory: 'WAL journal mode unavailable on this filesystem — using MEMORY journal mode. Data is safe within a session but the journal is not persisted to disk.',
+    off:    'WAL and MEMORY journal modes both unavailable — using OFF journal mode. Transactions are not crash-safe; data may be lost if the process is killed mid-write.',
+    delete: 'WAL, MEMORY, and OFF journal modes all unavailable — falling back to DELETE mode. Writes may fail on this filesystem.',
+  };
   process.stderr.write(JSON.stringify({
     timestamp: new Date().toISOString(),
     level: 'warn',
-    message: fallbackMode === 'memory'
-      ? 'WAL journal mode unavailable on this filesystem — using MEMORY journal mode. Data is safe within a session but the journal is not persisted to disk.'
-      : 'WAL and MEMORY journal modes both unavailable — falling back to DELETE mode. If writes fail, the filesystem may not support SQLite.',
+    message: modeMessages[journalMode] ?? 'Journal mode fallback — unknown mode.',
     meta: { source: 'db-init' },
   }) + '\n');
 }
