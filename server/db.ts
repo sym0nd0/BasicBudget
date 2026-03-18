@@ -18,7 +18,19 @@ if (!fs.existsSync(DATA_DIR)) {
 const db = new Database(DB_FILE);
 
 // Performance pragmas
-db.pragma('journal_mode = WAL');
+try {
+  db.pragma('journal_mode = WAL');
+} catch {
+  // WAL mode requires shared memory (.db-shm) support — some Docker volume
+  // backends (e.g. certain overlay filesystems) do not support it. Fall back
+  // to the default DELETE journal mode, which works on any filesystem.
+  process.stderr.write(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level: 'warn',
+    message: 'WAL journal mode unavailable on this filesystem — falling back to DELETE mode. Performance may be reduced.',
+    meta: { source: 'db-init' },
+  }) + '\n');
+}
 db.pragma('foreign_keys = ON');
 
 // Apply schema
