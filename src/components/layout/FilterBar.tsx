@@ -7,6 +7,17 @@ import { useApi } from '../../hooks/useApi';
 import { EXPENSE_CATEGORIES } from '../../types';
 import type { ReportRange } from '../../types';
 
+function currentYearMonth(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function stepMonth(ym: string, delta: 1 | -1): string {
+  const [y, m] = ym.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 function generateMonthOptions(count: number = 24): { value: string; label: string }[] {
   const options: { value: string; label: string }[] = [];
   const now = new Date();
@@ -68,15 +79,49 @@ export function FilterBar({ showCategory = false }: FilterBarProps) {
         ))}
       </div>
 
-      {/* 1M: show month dropdown */}
+      {/* 1M: show month dropdown with prev/next navigation */}
       {rangePreset === '1m' && (
-        <div className="min-w-40">
-          <Select
-            label="Month"
-            value={activeMonth}
-            onChange={e => setActiveMonth(e.target.value)}
-            options={MONTH_OPTIONS}
-          />
+        <div className="flex items-end gap-1">
+          {/* Prev month */}
+          <button
+            onClick={() => setActiveMonth(stepMonth(activeMonth, -1))}
+            disabled={activeMonth <= MONTH_OPTIONS[0].value}
+            className="px-2 py-1.5 rounded text-sm font-medium transition-colors bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-label="Previous month"
+          >
+            ‹
+          </button>
+
+          {/* Month dropdown */}
+          <div className="min-w-40">
+            <Select
+              label="Month"
+              value={activeMonth}
+              onChange={e => setActiveMonth(e.target.value)}
+              options={MONTH_OPTIONS}
+            />
+          </div>
+
+          {/* Next month */}
+          <button
+            onClick={() => setActiveMonth(stepMonth(activeMonth, 1))}
+            disabled={activeMonth >= MONTH_OPTIONS[MONTH_OPTIONS.length - 1].value}
+            className="px-2 py-1.5 rounded text-sm font-medium transition-colors bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-label="Next month"
+          >
+            ›
+          </button>
+
+          {/* Today button — only shown when not on the current month */}
+          {activeMonth !== currentYearMonth() && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setActiveMonth(currentYearMonth())}
+            >
+              Today
+            </Button>
+          )}
         </div>
       )}
 
