@@ -64,6 +64,30 @@ function RepaymentPanel({ debtId }: { debtId: string }) {
   );
 }
 
+function isDebtActiveThisMonth(debt: Debt): boolean {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  const parseDate = (d: string | null | undefined): Date | null => {
+    if (!d) return null;
+    const [y, m, day] = d.split('-').map(Number);
+    return new Date(y, m - 1, day);
+  };
+
+  const startDate = parseDate(debt.start_date);
+  const endDate = parseDate(debt.end_date);
+
+  if (!debt.is_recurring) {
+    if (!startDate) return false;
+    return startDate >= monthStart && startDate <= monthEnd;
+  }
+
+  if (startDate && startDate > monthEnd) return false;
+  if (endDate && endDate < monthStart) return false;
+  return true;
+}
+
 export function DebtPage({ onMenuClick }: DebtPageProps) {
   const { debts, addDebt, updateDebt, deleteDebt } = useDebt();
   const { sorted: sortedDebts, sortKey, sortDir, toggleSort } = useSortableTable<Debt>(debts, 'name');
@@ -74,7 +98,9 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const totalBalance = debts.reduce((s, d) => s + d.balance_pence, 0);
-  const totalPayments = debts.reduce((s, d) => s + Math.round((d.minimum_payment_pence + d.overpayment_pence) * d.split_ratio), 0);
+  const totalPayments = debts
+    .filter(isDebtActiveThisMonth)
+    .reduce((s, d) => s + Math.round((d.minimum_payment_pence + d.overpayment_pence) * d.split_ratio), 0);
   const totalInterestDebts = debts.filter(d => d.interest_rate > 0).length;
 
   const handleSave = async (data: Omit<Debt, 'id' | 'created_at' | 'updated_at'>) => {
@@ -190,11 +216,12 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
               )}
               {sortedDebts.map(debt => {
                 const isExpanded = expandedId === debt.id;
+                const isActive = isDebtActiveThisMonth(debt);
 
                 return (
                   <Fragment key={debt.id}>
                     <tr
-                      className="border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-2)] cursor-pointer"
+                      className={`border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-2)] cursor-pointer${!isActive ? ' opacity-50' : ''}`}
                       onClick={() => toggleExpand(debt.id)}
                     >
                       <td className="px-5 py-3 font-medium text-[var(--color-text)] text-center">
