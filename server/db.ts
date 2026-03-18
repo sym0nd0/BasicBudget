@@ -18,25 +18,55 @@ if (!fs.existsSync(DATA_DIR)) {
 let db: Database.Database = new Database(DB_FILE);
 
 // Performance pragmas — try each journal mode in order of preference.
-// WAL is ideal (concurrent reads) but requires shared-memory file support.
-// On some Docker volume backends (NFS, overlay2) the shared-memory or journal
-// files cannot be created, causing SQLITE_IOERR. When WAL fails the connection
-// itself may enter a broken state, so we close and reopen before trying the
-// next mode.
-let journalMode = 'delete';
+// WAL is ideal but requires shared-memory auxiliary files (-wal, -shm) that
+// some Docker volume backends (NFS, certain overlay2 variants) cannot create.
+//
+// When WAL fails we take the following recovery steps:
+//   1. Close the broken connection.
+//   2. Delete any stale WAL auxiliary files.
+//   3. Patch the SQLite file header: bytes 18–19 record the file-format
+//      write/read version (0x02 = WAL, 0x01 = legacy). If left as 0x02,
+//      re-opening the file triggers WAL recovery, which also fails on the
+//      same filesystem and poisons the fresh connection before any pragma
+//      can run. Resetting to 0x01 bypasses WAL recovery entirely.
+//      MEMORY and OFF modes are per-connection settings not stored in the
+//      header, so this one-time write is sufficient.
+//   4. Open a fresh connection (no WAL recovery triggered).
+//   5. Try MEMORY mode (journal in RAM — no new files needed).
+//   6. Try OFF mode (no journal — direct writes to the main DB file).
+//   7. Fall back to DELETE (implicit default — may still fail on some
+//      filesystems if a .db-journal file cannot be created).
+let journalMode = 'wal';
 try {
   db.pragma('journal_mode = WAL');
-  journalMode = 'wal';
 } catch {
-  // Close the potentially broken connection and clean up WAL auxiliary files.
-  try { db.close(); } catch { /* ignore close errors */ }
+  // Step 1 — close the broken connection.
+  try { db.close(); } catch { /* ignore */ }
+
+  // Step 2 — remove stale WAL auxiliary files.
   for (const ext of ['-wal', '-shm']) {
-    try { fs.unlinkSync(DB_FILE + ext); } catch { /* file may not exist */ }
+    try { fs.unlinkSync(DB_FILE + ext); } catch { /* may not exist */ }
   }
 
-  // Reopen with a fresh connection, then try progressively more permissive modes.
+  // Step 3 — patch the database header to clear the WAL format indicator.
+  try {
+    const SQLITE_MAGIC = Buffer.from('SQLite format 3\0');
+    const fd = fs.openSync(DB_FILE, 'r+');
+    const buf = Buffer.alloc(20);
+    fs.readSync(fd, buf, 0, 20, 0);
+    if (buf.subarray(0, 16).equals(SQLITE_MAGIC) && (buf[18] === 2 || buf[19] === 2)) {
+      buf[18] = 1;
+      buf[19] = 1;
+      fs.writeSync(fd, buf, 18, 2, 18);
+    }
+    fs.closeSync(fd);
+  } catch { /* new database, read-only fs, or header already correct */ }
+
+  // Step 4 — fresh connection (WAL recovery will not be triggered).
   db = new Database(DB_FILE);
 
+  // Steps 5–7 — progressively more permissive journal modes.
+  journalMode = 'delete';
   try {
     db.pragma('journal_mode = MEMORY');
     journalMode = 'memory';
@@ -45,20 +75,19 @@ try {
       db.pragma('journal_mode = OFF');
       journalMode = 'off';
     } catch {
-      // All modes failed — DELETE is the implicit SQLite default.
-      journalMode = 'delete';
+      // DELETE is the implicit SQLite default.
     }
   }
 
   const modeMessages: Record<string, string> = {
-    memory: 'WAL journal mode unavailable on this filesystem — using MEMORY journal mode. Data is safe within a session but the journal is not persisted to disk.',
-    off:    'WAL and MEMORY journal modes both unavailable — using OFF journal mode. Transactions are not crash-safe; data may be lost if the process is killed mid-write.',
-    delete: 'WAL, MEMORY, and OFF journal modes all unavailable — falling back to DELETE mode. Writes may fail on this filesystem.',
+    memory: 'WAL journal mode unavailable on this filesystem — using MEMORY journal mode (journal held in RAM; no auxiliary disk files required).',
+    off:    'WAL and MEMORY journal modes both unavailable — using OFF journal mode (no journal; writes go directly to the database file; not crash-safe).',
+    delete: 'WAL, MEMORY, and OFF journal modes all unavailable — falling back to DELETE mode. Writes requiring a journal file may fail on this filesystem.',
   };
   process.stderr.write(JSON.stringify({
     timestamp: new Date().toISOString(),
     level: 'warn',
-    message: modeMessages[journalMode] ?? 'Journal mode fallback — unknown mode.',
+    message: modeMessages[journalMode] ?? 'Journal mode fallback active.',
     meta: { source: 'db-init' },
   }) + '\n');
 }
@@ -72,8 +101,28 @@ try {
   );
   db.exec(schema);
 } catch (err) {
-  process.stderr.write(`Failed to load schema.sql: ${err}\n`);
-  process.exit(1);
+  // Schema exec may fail on Docker filesystems that cannot create auxiliary
+  // journal files (required by DELETE journal mode for write transactions).
+  // If the database was previously initialised the tables already exist and
+  // the app can continue — individual writes will surface errors rather than
+  // crashing the process in a restart loop.
+  let isInitialised = false;
+  try {
+    isInitialised = !!db.prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='users'",
+    ).get();
+  } catch { /* cannot query — treat as uninitialised */ }
+
+  if (!isInitialised) {
+    process.stderr.write(`Failed to load schema.sql: ${err}\n`);
+    process.exit(1);
+  }
+  process.stderr.write(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level: 'warn',
+    message: `Schema exec failed on an already-initialised database — continuing with existing schema. Error: ${err}`,
+    meta: { source: 'db-init' },
+  }) + '\n');
 }
 
 // DB logging helper (local to avoid circular imports with logger.ts)
