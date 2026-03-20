@@ -358,7 +358,8 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   };
 
   const handleUnlockMonth = async (ym: string) => {
-    if (!await confirm('Unlock Month', `Unlock ${ym} and allow edits again?`, 'danger')) return;
+    const formattedMonth = new Date(`${ym}-01`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    if (!await confirm('Unlock Month', `Unlock ${formattedMonth} and allow edits again?`, 'danger')) return;
     setLockMonthMsg('');
     try {
       await api.unlockMonth(ym);
@@ -810,7 +811,7 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
                   <input
                     type="month"
                     value={lockMonthInput}
-                    max={(() => { const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 7); })()}
+                    max={(() => { const now = new Date(); const m = now.getMonth(); const y = now.getFullYear(); return m === 0 ? `${y - 1}-12` : `${y}-${String(m).padStart(2, '0')}`; })()}
                     onChange={e => setLockMonthInput(e.target.value)}
                     className="border border-[var(--color-border)] rounded px-2 py-1.5 text-sm bg-[var(--color-surface)] text-[var(--color-text)]"
                   />
