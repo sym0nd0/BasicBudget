@@ -15,6 +15,11 @@ interface SettingsPageProps {
   onMenuClick: () => void;
 }
 
+function formatYearMonthLocal(ym: string): string {
+  const [y, m] = ym.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+}
+
 export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   const { accounts, addAccount, updateAccount, deleteAccount } = useBudget();
   const { user, household, householdRole, refreshAuth } = useAuth();
@@ -358,7 +363,7 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   };
 
   const handleUnlockMonth = async (ym: string) => {
-    const formattedMonth = new Date(`${ym}-01`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    const formattedMonth = formatYearMonthLocal(ym);
     if (!await confirm('Unlock Month', `Unlock ${formattedMonth} and allow edits again?`, 'danger')) return;
     setLockMonthMsg('');
     try {
@@ -788,7 +793,7 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
                   {monthLocks.map(lock => (
                     <tr key={lock.year_month} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)]">
                       <td className="py-3 font-medium">
-                        {new Date(`${lock.year_month}-01`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+                        {formatYearMonthLocal(lock.year_month)}
                       </td>
                       <td className="py-3 text-[var(--color-text-muted)] text-xs">
                         Locked {new Date(lock.locked_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -807,8 +812,9 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
             {monthLocks !== null && (
               <div className="flex gap-2 items-end mt-2">
                 <div>
-                  <label className="text-xs font-medium text-[var(--color-text-muted)] block mb-1">Lock a month</label>
+                  <label htmlFor="lock-month-input" className="text-xs font-medium text-[var(--color-text-muted)] block mb-1">Lock a month</label>
                   <input
+                    id="lock-month-input"
                     type="month"
                     value={lockMonthInput}
                     max={(() => { const now = new Date(); const m = now.getMonth(); const y = now.getFullYear(); return m === 0 ? `${y - 1}-12` : `${y}-${String(m).padStart(2, '0')}`; })()}
