@@ -17,6 +17,8 @@ services:
       # SMTP and OIDC are now configured via the Admin Panel (/admin/settings).
       # To migrate an existing deployment, set these vars once and they will be
       # seeded into the database automatically on first startup, then remove them.
+      # Set COOKIE_SECURE=false if running without an HTTPS reverse proxy (e.g. direct HTTP on port 8080)
+      # - COOKIE_SECURE=false
     restart: unless-stopped
 
 volumes:
