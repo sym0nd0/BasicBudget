@@ -53,7 +53,7 @@ logger.info(`v${getVersionInfo().current}  |  ${config.NODE_ENV}`);
 // Warn operators if production cookies will be Secure=true but no HTTPS override is set.
 // Without HTTPS (or a proxy forwarding X-Forwarded-Proto: https), browsers silently drop
 // Secure cookies over plain HTTP, causing all sessions to fail immediately after creation.
-if (config.NODE_ENV === 'production' && !config.COOKIE_SECURE) {
+if (config.NODE_ENV === 'production' && !config.COOKIE_SECURE && config.APP_URL.startsWith('http://')) {
   logger.warn(
     'COOKIE_SECURE is not set. Session and CSRF cookies use Secure=true in production. ' +
     'If this instance is not behind an HTTPS reverse proxy, sessions will fail. ' +
