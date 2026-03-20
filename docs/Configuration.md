@@ -6,18 +6,19 @@ BasicBudget is configured through environment variables. Set these in your `dock
 
 | Variable | Description |
 |---|---|
-| `SESSION_SECRET` | Secret used to sign session cookies. Use a long random string (32+ characters). Generate with `openssl rand -base64 48`. |
+| `SESSION_SECRET` | Secret used to sign session cookies. Use a long random string (32+ characters). Generate with `openssl rand -hex 32`. |
 | `TOTP_ENCRYPTION_KEY` | 64-character hex string used to encrypt TOTP secrets at rest. Generate with `openssl rand -hex 32`. |
-| `APP_URL` | Public URL of the application (e.g. `https://budget.example.com`). Used in email links and OIDC redirects. |
 
 ## Optional Variables
 
 | Variable | Default | Description |
 |---|---|---|
+| `APP_URL` | `http://localhost:5173` | Public URL of the application (e.g. `https://budget.example.com`). Used in email links and OIDC redirects. No trailing slash. |
 | `CORS_ORIGIN` | Same as `APP_URL` | Allowed CORS origin. Override if your frontend is served from a different URL. |
 | `DB_PATH` | `data/basicbudget.db` | Path to the SQLite database file. |
-| `PORT` | `3000` | Port the Express server listens on. |
+| `PORT` | `3001` | Port the Express server listens on. |
 | `NODE_ENV` | `development` | Set to `production` for production deployments. Enables production optimisations and stricter security. |
+| `COOKIE_SECURE` | `true` in production, `false` otherwise | Override cookie security. Set to `false` when `APP_URL` is `http://` — a startup warning fires if this may be needed. |
 
 ## SMTP and OIDC
 

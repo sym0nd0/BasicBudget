@@ -262,7 +262,7 @@ Compiles the frontend to `dist/` and the server to `dist-server/`. Run with `npm
 | `DB_PATH` | No | Path to SQLite file (default `data/basicbudget.db`) |
 | `PORT` | No | Server port (default `3001`; Docker uses `3000`) |
 | `NODE_ENV` | No | Execution environment: `development`, `production`, or `test` (default `development`) |
-| `COOKIE_SECURE` | No | Override secure cookie flag (`true`/`false`); defaults based on `NODE_ENV` |
+| `COOKIE_SECURE` | No | Set to `false` when `APP_URL` is `http://` (a startup warning fires if this may be needed); defaults to `true` in production, `false` in development |
 
 > **SMTP and OIDC** are configured through the **Admin Panel** (`/admin/settings`) at runtime — no environment variables or restarts needed. If `SMTP_HOST` / `OIDC_ISSUER_URL` are present in the environment on first startup, they are automatically migrated into the database for backwards compatibility with existing deployments.
 

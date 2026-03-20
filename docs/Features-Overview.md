@@ -8,6 +8,8 @@ A comprehensive list of everything BasicBudget can do.
 - **Income tracking** — add recurring and one-off income entries with gross/net toggle, contributor attribution, and recurrence type
 - **Expense tracking** — fixed and variable expenses with categories, payment accounts, recurrence type, and household split ratio
 - **Month locking** — lock past months to prevent accidental edits to historical data
+- **Duplicate detection** — warns before saving an entry identical to an existing one
+- **Filter bar** — filter entries by contributor, account, category, or recurrence type; toggle a date range picker to cycle through a from/to month window
 
 ## Debt Tracking
 
@@ -19,6 +21,9 @@ A comprehensive list of everything BasicBudget can do.
 ## Savings Goals
 
 - **Goal tracking** — name, target amount, current amount, monthly contribution, and optional target date
+- **Deposits and withdrawals** — record ad-hoc deposits and withdrawals against each goal
+- **Auto-contributions** — monthly contributions applied automatically to the goal balance
+- **Transaction history** — per-goal log of all deposits, withdrawals, and auto-contributions
 - **Progress bars** — visual progress towards each goal with months-to-goal calculation
 - **Household goals** — share savings goals across household members
 
@@ -30,7 +35,7 @@ A comprehensive list of everything BasicBudget can do.
 
 ## Reports & Analytics
 
-- **Time-range selection** — 1 week, 1 month, 3 months, 6 months, 1 year, or all time
+- **Time-range selection** — 1 week, 1 month, 3 months, YTD, 1 year, 2 years, 5 years, or all time
 - **Overview cards** — total income, expenses, disposable income, savings rate, and total debt with trend indicators
 - **Income vs expenses chart** — grouped bar chart comparing monthly income and expenses
 - **Disposable income trend** — line chart of monthly disposable income
@@ -71,6 +76,7 @@ A comprehensive list of everything BasicBudget can do.
 
 - **Light / Dark / System theme** — follows OS preference or manual selection
 - **Colour blindness palettes** — Deuteranopia, Protanopia, and Tritanopia optimised chart palettes
+- **Version update notifications** — opt-in sidebar badge notifying admins when a new release is available on GitHub
 
 ---
 
