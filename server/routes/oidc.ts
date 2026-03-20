@@ -20,7 +20,13 @@ async function buildOidcClient() {
   // Let discovery errors propagate — caller decides whether to cache the result
   const { discovery } = await import('openid-client');
   const issuerUrl = new URL(oidcConfig.issuer_url);
-  return discovery(issuerUrl, oidcConfig.client_id, oidcConfig.client_secret || undefined);
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error(`OIDC discovery timed out after 10 s — check network access to ${issuerUrl.origin}`)), 10_000),
+  );
+  return Promise.race([
+    discovery(issuerUrl, oidcConfig.client_id, oidcConfig.client_secret || undefined),
+    timeout,
+  ]);
 }
 
 async function getClient() {
@@ -29,7 +35,7 @@ async function getClient() {
       oidcClient = await buildOidcClient();
     } catch (err) {
       // Discovery failed transiently — do not cache, allow retry on next request
-      logger.warn('OIDC discovery failed — will retry on next login attempt', { error: String(err) });
+      logger.warn('OIDC discovery failed — will retry on next login attempt', { issuer: getOidcConfig()?.issuer_url, error: String(err) });
       return null;
     }
   }
