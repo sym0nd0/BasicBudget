@@ -8,8 +8,6 @@ After installing BasicBudget (see [[Docker Setup\|Docker-Setup]] or [[Manual Set
 2. Click **Register** and create an account with your email address, display name, and a password.
 3. The **first user to register** is automatically assigned the **Admin** role.
 
-> If the application is already configured with registration disabled, you will need an invitation link.
-
 ## First Login
 
 1. Enter your email and password on the login page.
