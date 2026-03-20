@@ -47,7 +47,7 @@ The `./data:/app/data` volume mount stores the SQLite database on your host mach
 Generate a secure `SESSION_SECRET`:
 
 ```bash
-openssl rand -base64 48
+openssl rand -hex 32
 ```
 
 Generate the `TOTP_ENCRYPTION_KEY` (must be exactly 64 hex characters):
