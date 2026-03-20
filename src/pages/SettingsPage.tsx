@@ -9,7 +9,7 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { CsvImportForm } from '../components/forms/CsvImportForm';
 import { api } from '../api/client';
-import type { Account, TotpSetupResponse, SessionInfo, HouseholdMember } from '../types';
+import type { Account, TotpSetupResponse, SessionInfo, HouseholdMember, MonthLock } from '../types';
 
 interface SettingsPageProps {
   onMenuClick: () => void;
@@ -78,6 +78,12 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
 
   // Active invites
   const [invites, setInvites] = useState<Array<{ id: string; invitee_email: string; created_at: string; expires_at: string }> | null>(null);
+
+  // Month locks
+  const [monthLocks, setMonthLocks] = useState<MonthLock[] | null>(null);
+  const [monthLocksLoading, setMonthLocksLoading] = useState(false);
+  const [lockMonthInput, setLockMonthInput] = useState('');
+  const [lockMonthMsg, setLockMonthMsg] = useState('');
 
   // ─── Account management handlers ────────────────────────────────────────────
 
@@ -317,6 +323,48 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
       await loadInvites();
     } catch (err) {
       setInviteMsg((err as Error).message);
+    }
+  };
+
+  const loadMonthLocks = async () => {
+    setMonthLocksLoading(true);
+    setLockMonthMsg('');
+    try {
+      const data = await api.getMonths();
+      setMonthLocks(data);
+    } catch (err) {
+      setLockMonthMsg((err as Error).message);
+    } finally {
+      setMonthLocksLoading(false);
+    }
+  };
+
+  const handleLockMonth = async () => {
+    if (!lockMonthInput) return;
+    const now = new Date();
+    const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    if (lockMonthInput >= currentYM) {
+      setLockMonthMsg('Only past months can be locked.');
+      return;
+    }
+    setLockMonthMsg('');
+    try {
+      await api.lockMonth(lockMonthInput);
+      setLockMonthInput('');
+      await loadMonthLocks();
+    } catch (err) {
+      setLockMonthMsg((err as Error).message);
+    }
+  };
+
+  const handleUnlockMonth = async (ym: string) => {
+    if (!await confirm('Unlock Month', `Unlock ${ym} and allow edits again?`, 'danger')) return;
+    setLockMonthMsg('');
+    try {
+      await api.unlockMonth(ym);
+      await loadMonthLocks();
+    } catch (err) {
+      setLockMonthMsg((err as Error).message);
     }
   };
 
@@ -719,6 +767,63 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
           </div>
         )}
       </Card>
+
+      {/* Locked Months (owner only) */}
+      {householdRole === 'owner' && (
+        <Card padding={false} className="mt-5">
+          <div className="px-5 pt-5">
+            <CardHeader title="Locked Months" subtitle="Prevent accidental edits to historical data" />
+          </div>
+          <div className="px-5 pb-5 mt-4 border-t border-[var(--color-border)] pt-4">
+            {monthLocks === null ? (
+              <Button size="sm" variant="secondary" onClick={loadMonthLocks} disabled={monthLocksLoading}>
+                {monthLocksLoading ? 'Loading…' : 'View locked months'}
+              </Button>
+            ) : monthLocks.length === 0 ? (
+              <p className="text-sm text-[var(--color-text-muted)] mb-4">No months are currently locked.</p>
+            ) : (
+              <table className="w-full text-sm mb-4">
+                <tbody>
+                  {monthLocks.map(lock => (
+                    <tr key={lock.year_month} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)]">
+                      <td className="py-3 font-medium">
+                        {new Date(`${lock.year_month}-01`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
+                      </td>
+                      <td className="py-3 text-[var(--color-text-muted)] text-xs">
+                        Locked {new Date(lock.locked_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </td>
+                      <td className="py-3 text-right">
+                        <Button size="sm" variant="ghost" className="hover:text-[var(--color-danger)]"
+                          onClick={() => handleUnlockMonth(lock.year_month)}>
+                          Unlock
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {monthLocks !== null && (
+              <div className="flex gap-2 items-end mt-2">
+                <div>
+                  <label className="text-xs font-medium text-[var(--color-text-muted)] block mb-1">Lock a month</label>
+                  <input
+                    type="month"
+                    value={lockMonthInput}
+                    max={(() => { const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().slice(0, 7); })()}
+                    onChange={e => setLockMonthInput(e.target.value)}
+                    className="border border-[var(--color-border)] rounded px-2 py-1.5 text-sm bg-[var(--color-surface)] text-[var(--color-text)]"
+                  />
+                </div>
+                <Button size="sm" onClick={handleLockMonth} disabled={!lockMonthInput}>
+                  Lock
+                </Button>
+              </div>
+            )}
+            {lockMonthMsg && <p className="text-xs text-[var(--color-danger)] mt-2">{lockMonthMsg}</p>}
+          </div>
+        </Card>
+      )}
 
       {ConfirmDialogElement}
       {/* Account modal */}
