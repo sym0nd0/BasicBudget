@@ -109,7 +109,7 @@ router.post('/', (req: Request, res: Response) => {
         .run(randomUUID(), id, req.householdId!, body.balance_pence, today);
     })();
   } catch (err) {
-    logger.error('Failed to save debt', { error: (err as Error).message });
+    logger.error('Failed to save debt', { error: err });
     res.status(500).json({ message: 'Failed to save debt' });
     return;
   }
@@ -218,7 +218,7 @@ router.put('/:id', (req: Request, res: Response) => {
       }
     })();
   } catch (err) {
-    logger.error('Failed to save debt', { error: (err as Error).message });
+    logger.error('Failed to save debt', { error: err });
     res.status(500).json({ message: 'Failed to save debt' });
     return;
   }

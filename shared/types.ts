@@ -201,10 +201,10 @@ export interface SavingsGoal {
   target_amount_pence: number;
   current_amount_pence: number;
   monthly_contribution_pence: number;
-  is_household: number; // 0 = personal, 1 = joint (split equally among all household members)
+  is_household: 0 | 1; // 0 = personal, 1 = joint (split equally among all household members)
   target_date?: string | null;
   notes?: string | null;
-  auto_contribute?: number; // 0 or 1 (SQLite integer)
+  auto_contribute?: 0 | 1; // SQLite integer boolean
   contribution_day?: number; // 1–28
   created_at?: string;
   updated_at?: string;
