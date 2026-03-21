@@ -47,8 +47,7 @@ router.post('/setup', requireAuth, async (req: Request, res: Response) => {
   const userRow = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId!) as Record<string, unknown> | undefined;
   if (!userRow) { res.status(404).json({ message: 'User not found' }); return; }
   if (!userRow.password_hash) { res.status(400).json({ message: 'TOTP requires a local account with a password' }); return; }
-  // eslint-disable-next-line no-extra-boolean-cast
-  if (!Boolean(userRow.email_verified)) { res.status(400).json({ message: 'Email must be verified before enabling 2FA' }); return; }
+  if (!userRow.email_verified) { res.status(400).json({ message: 'Email must be verified before enabling 2FA' }); return; }
 
   const { totp, base32 } = generateTotpSecret(userRow.email as string);
   const { encrypted_secret, iv, auth_tag } = encryptSecret(base32);

@@ -146,8 +146,7 @@ router.get('/callback', async (req: Request, res: Response) => {
 
       userRow = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as Record<string, unknown>;
       auditLog(userId, 'oidc_register', { issuer, email }, req.ip, req.get('user-agent'));
-    // eslint-disable-next-line no-extra-boolean-cast
-    } else if (!Boolean(userRow.email_verified)) {
+    } else if (!userRow.email_verified) {
       db.prepare("UPDATE users SET email_verified = 1, updated_at = datetime('now') WHERE id = ?").run(userRow.id);
     }
 

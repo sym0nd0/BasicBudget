@@ -46,7 +46,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
 
   const total = isRangeActive && rangeOverview
     ? rangeOverview.reduce((s, r) => s + r.income_pence, 0)
-    : incomes.reduce((s, i) => s + i.amount_pence, 0);
+    : incomes.reduce((s, i) => s + ((i as Income & { effective_pence?: number }).effective_pence ?? i.amount_pence), 0);
 
   const handleSave = async (data: Omit<Income, 'id' | 'created_at' | 'updated_at'>) => {
     if (!editing) {
@@ -69,13 +69,11 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
 
   const handleEdit = (income: Income) => {
     setEditing(income);
-    setErrorMsg(null);
     setModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
     if (!await confirm('Delete Income', 'Delete this income entry?', 'danger')) return;
-    setErrorMsg(null);
     try {
       await deleteIncome(id);
     } catch (err) {
@@ -85,7 +83,6 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
 
   const handleAdd = () => {
     setEditing(undefined);
-    setErrorMsg(null);
     setModalOpen(true);
   };
 
@@ -108,12 +105,6 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
           <FilterBar />
         </Card>
       </div>
-
-      {errorMsg && !modalOpen && (
-        <p role="alert" aria-live="polite" className="mb-4 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">
-          {errorMsg}
-        </p>
-      )}
 
       {/* Summary card */}
       <div className="mb-5">
