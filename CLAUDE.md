@@ -340,3 +340,155 @@ If a release contains any breaking changes, they **must** appear at the very top
 ```
 
 If there are no breaking changes, omit this section entirely — do not include it with "None" or similar.
+
+---
+
+## Tech Stack
+
+| Layer | Library / Tool | Version | Purpose |
+|---|---|---|---|
+| UI framework | React | 19 | Component model, hooks, concurrent rendering |
+| Build tool | Vite | 8 | Dev server, HMR, production bundling |
+| Styling | Tailwind CSS | 4 | Utility-first CSS via Vite plugin (`@tailwindcss/vite`) |
+| Routing | React Router | 7 | Client-side navigation, loaders |
+| Charts | Recharts | 3 | SVG charts; `cursor={false}` on all Tooltips |
+| HTTP server | Express | 5 | REST API, static file serving in production |
+| Database | better-sqlite3 | 12 | Synchronous SQLite driver; all rows returned as `Record<string, unknown>` |
+| Password hashing | argon2 (Argon2id) | 0.44 | Secure password storage |
+| TOTP | otpauth | 9 | Time-based one-time passwords; secrets encrypted at rest |
+| OIDC / SSO | openid-client | 6 | OpenID Connect provider integration |
+| Input validation | Zod | 4 | Schema validation for all request bodies |
+| Testing | Vitest + Supertest | 4 / 7 | Unit and integration tests; real SQLite (`:memory:`) in integration tests |
+| E2E | Playwright | 1 | End-to-end browser tests |
+| Containerisation | Docker (multi-stage) | — | GHCR image; no secrets in layers |
+| CI | GitHub Actions | — | `docker-publish.yml` — triggers on `master` and `v*` tags |
+| Language | TypeScript | 5.9 | Strict mode; three tsconfig split (app / node / server) |
+
+---
+
+## Universal Rules
+
+These rules apply to every file in the project without exception.
+
+1. **No `any` types** — use `unknown` with a type guard, or a typed interface. Cast through `unknown` when narrowing SQLite rows (`row as unknown as MyInterface`).
+2. **Immutability by default** — prefer `const` over `let`; use `readonly` on interface properties where mutation is not intended; favour non-mutating array methods (`map`, `filter`, `reduce`) over `push`/`splice`.
+3. **Explicit error handling** — never write an empty `catch {}` block unless the comment explains why swallowing the error is intentional. Always log or rethrow.
+4. **No hardcoded secrets** — all secrets and environment-specific values must come from environment variables accessed via `server/config.ts` (server) or `import.meta.env` (client). Never commit real secrets.
+5. **80 % test coverage target** — new server routes need at least one integration test using Supertest against real SQLite; new utility functions need unit tests in `tests/unit/`.
+
+---
+
+## Stack-Specific Rules
+
+### React
+
+- Do **not** use `useCallback` or `useMemo` pre-emptively; add them only after profiling identifies a real performance problem.
+- Do **not** manipulate the DOM directly (`document.querySelector`, `ref.current.style` assignment, etc.). Use React state and props.
+- Use React Context only for genuinely global state (auth user, theme, household). Do not reach for context for component-tree-local state.
+- Keep side effects in `useEffect`; clean up subscriptions and timers in the return function.
+
+### Vite / Frontend
+
+- Never use `process.env` in `src/` — it does not exist at runtime. Use `import.meta.env.VITE_*` for any client-exposed variables.
+- Vite's dev proxy forwards `/api/*` to Express on `:3001`; production Express serves the built `dist/` directly. Do not add proxy logic to application code.
+
+### Tailwind CSS
+
+- Use utility classes exclusively. Do not add custom CSS unless there is genuinely no utility equivalent.
+- Do not create new CSS files or add rules to existing ones without explicit approval.
+- The Vite plugin (`@tailwindcss/vite`) replaces the PostCSS approach — there is no `tailwind.config.js`.
+
+### Express
+
+- All async route handlers must propagate errors via `next(err)`, not `throw`. Example:
+  ```typescript
+  router.get('/foo', async (req, res, next) => {
+    try {
+      const data = await someAsyncOperation();
+      res.json(data);
+    } catch (err) {
+      next(err);
+    }
+  });
+  ```
+- Never call `res.send()` or `res.json()` after you have already called `res.json()` or `next()`.
+- Use `req.params['key'] as string` — `@types/express` v5 types params as `string | string[]`.
+- All routes under `/api/admin` require both `requireAuth` and `requireAdmin` middleware.
+
+### SQLite / better-sqlite3
+
+- **Always use parameterised statements** — never concatenate user input into a query string.
+  ```typescript
+  // ✓ Good
+  db.prepare('SELECT * FROM incomes WHERE household_id = ?').all(req.householdId!);
+
+  // ✗ Bad — SQL injection risk
+  db.prepare(`SELECT * FROM incomes WHERE household_id = '${req.householdId}'`).all();
+  ```
+- Coerce boolean columns immediately in the row-mapping function: `Boolean(row.is_recurring)`.
+- All money is integer pence — never store or compute with floating-point pounds.
+- Schema migrations for existing databases go in `server/db.ts` as `try { ALTER TABLE … } catch {}` blocks. New tables go in `schema.sql` as `CREATE TABLE IF NOT EXISTS`.
+
+### Zod
+
+- Define all request-body schemas in `server/validation/schemas.ts`.
+- Use `.safeParse()` in route handlers so you can return a `400` without throwing:
+  ```typescript
+  const result = incomeSchema.safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json({ message: 'Validation error' });
+    return;
+  }
+  const body = result.data;
+  ```
+- Share types between server and client via `shared/types.ts`, not by re-exporting Zod schemas to `src/`.
+
+### Vitest + Supertest
+
+- Unit tests live in `tests/unit/`, integration tests in `tests/integration/`, security tests in `tests/security/`.
+- Integration tests use a real SQLite `:memory:` database spun up in `tests/setup.ts` — do not mock the database.
+- Use `supertest.agent(app)` (not `supertest(app)`) when a test needs to preserve cookies across multiple requests.
+- Run with `npm test` (executes `vitest run`).
+
+### Docker
+
+- The image uses a multi-stage build — builder stage compiles TypeScript; runner stage copies only `dist/`, `dist-server/`, and `node_modules`.
+- Never copy `.env` files, secrets, or credentials into the image. Pass secrets at runtime via environment variables.
+- The `latest` tag is published only on `master` pushes; tag pushes (`v*`) produce a versioned tag only.
+
+---
+
+## Skill Files
+
+> **Local-only — not checked into the repository.** `.claude/` is listed in `.gitignore`. These files exist on the developer's machine for Claude Code to use and will not be present in a fresh clone.
+
+The per-tool skill files live in `.claude/skills/` and provide detailed best-practice guides with code examples drawn from this project:
+
+| File | Purpose |
+|---|---|
+| `typescript.md` | No-`any` rule, `unknown` pattern, NodeNext `.js` imports, three-tsconfig split, cast pattern |
+| `react.md` | Hooks rules, context pattern, no DOM mutation, performance notes |
+| `express.md` | Async error handling, middleware order, `req.params` typing |
+| `sqlite.md` | Parameterised queries, boolean coercion, pence rule, migrations pattern |
+| `zod.md` | Schema location, `safeParse` usage, error shape |
+| `tailwind.md` | Utility-first, Vite plugin, no-custom-CSS rule |
+| `vitest.md` | Test structure, real DB in integration tests, coverage target |
+| `docker.md` | Multi-stage build, GHCR workflow, env secrets |
+| `recharts.md` | `cursor={false}` on Tooltip, pence-to-display conversion, household filter |
+| `auth.md` | Session cookie config, TOTP encryption, OIDC client cache reset |
+
+---
+
+## Slash Commands
+
+> **Local-only — not checked into the repository.** `.claude/` is listed in `.gitignore`. These command files exist on the developer's machine for Claude Code to use and will not be present in a fresh clone.
+
+The slash commands live in `.claude/commands/` and are available via `/command-name`:
+
+| Command | Purpose |
+|---|---|
+| `/plan` | Structured planning before coding — reads relevant files, lists risks, asks clarifying questions |
+| `/adr` | Creates a new ADR in `docs/decisions/` using the standard template |
+| `/architecture` | Reads key source files and regenerates / updates `ARCHITECTURE.md` |
+| `/code-review` | Reviews staged changes for type safety, test coverage, and CLAUDE.md rule compliance |
+| `/build-fix` | Runs TypeScript + lint checks, diagnoses errors, and proposes minimal fixes |
