@@ -166,7 +166,8 @@ router.get('/callback', async (req: Request, res: Response) => {
     auditLog(userRow.id as string, 'oidc_login', { issuer }, req.ip, req.get('user-agent'));
     await new Promise<void>((resolve, reject) => req.session.save((err) => (err ? reject(err) : resolve())));
     res.redirect(config.APP_URL);
-  } catch {
+  } catch (err) {
+    logger.error('OIDC callback error', { error: err });
     res.redirect(`${config.APP_URL}/login?error=oidc_failed`);
   }
 });

@@ -69,11 +69,13 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
 
   const handleEdit = (income: Income) => {
     setEditing(income);
+    setErrorMsg(null);
     setModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
     if (!await confirm('Delete Income', 'Delete this income entry?', 'danger')) return;
+    setErrorMsg(null);
     try {
       await deleteIncome(id);
     } catch (err) {
@@ -83,6 +85,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
 
   const handleAdd = () => {
     setEditing(undefined);
+    setErrorMsg(null);
     setModalOpen(true);
   };
 
@@ -215,6 +218,11 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
       </Card>
 
       {ConfirmDialogElement}
+      {errorMsg && !modalOpen && (
+        <p role="alert" aria-live="polite" className="mb-4 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">
+          {errorMsg}
+        </p>
+      )}
       <Modal
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
