@@ -60,12 +60,18 @@ const CHART_COLORS = [
   'var(--color-chart-8)',
 ];
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{ name?: string; value?: number; color?: string }>;
+  label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg p-3 text-sm max-w-xs">
       <p className="font-semibold text-[var(--color-text)] mb-1">Month {label}</p>
-      {payload.map((entry: any) => (
+      {payload.map((entry) => (
         <p key={entry.name} style={{ color: entry.color }} className="text-xs">
           {entry.name}: {formatCurrency(entry.value as number)}
         </p>

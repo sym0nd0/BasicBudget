@@ -126,6 +126,7 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
                   <input
                     type="month"
                     value={fromMonth}
+                    max={toMonth}
                     onChange={e => setFromMonth(e.target.value || fromMonth)}
                     className="text-sm border border-[var(--color-border)] rounded-lg px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text)]"
                   />
@@ -135,6 +136,7 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
                   <input
                     type="month"
                     value={toMonth}
+                    min={fromMonth}
                     onChange={e => setToMonth(e.target.value || toMonth)}
                     className="text-sm border border-[var(--color-border)] rounded-lg px-2 py-1.5 bg-[var(--color-surface)] text-[var(--color-text)]"
                   />

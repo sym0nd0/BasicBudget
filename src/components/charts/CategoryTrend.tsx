@@ -15,7 +15,13 @@ interface CategoryTrendProps {
   data: MonthlyReportRow[];
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{ name?: string; value?: number; color?: string }>;
+  label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg p-3 text-sm max-w-xs">
@@ -23,9 +29,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       {payload
         .slice()
         .reverse()
-        .map((entry: any) => (
+        .map((entry) => (
           <p key={entry.name} style={{ color: entry.color }}>
-            {entry.name}: {formatCurrency(entry.value)}
+            {entry.name}: {formatCurrency(entry.value as number)}
           </p>
         ))}
     </div>
@@ -56,7 +62,7 @@ export function CategoryTrend({ data }: CategoryTrendProps) {
 
   // Pivot: for each month, sum spending by category
   const chartData = data.map(row => {
-    const month_data: any = { month: formatYearMonth(row.month) };
+    const month_data: Record<string, string | number> = { month: formatYearMonth(row.month) };
     const categorySpending = new Map<string, number>();
 
     for (const cat of row.category_breakdown) {

@@ -13,6 +13,11 @@ interface ExpenseDonutProps {
   breakdown: CategoryBreakdown[];
 }
 
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{ name?: string; value?: number; payload?: { fill: string; percentage: number } }>;
+}
+
 const CHART_COLORS = [
   'var(--color-chart-1)',
   'var(--color-chart-2)',
@@ -24,14 +29,15 @@ const CHART_COLORS = [
   'var(--color-chart-8)',
 ];
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
   if (!active || !payload?.length) return null;
   const entry = payload[0];
+  const p = entry.payload ?? { fill: '', percentage: 0 };
   return (
     <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg p-3 text-sm">
       <p className="font-semibold text-[var(--color-text)]">{entry.name}</p>
-      <p style={{ color: entry.payload.fill }}>{formatCurrency(entry.value)}</p>
-      <p className="text-[var(--color-text-muted)]">{formatPercent(entry.payload.percentage)}</p>
+      <p style={{ color: p.fill }}>{formatCurrency(entry.value as number)}</p>
+      <p className="text-[var(--color-text-muted)]">{formatPercent(p.percentage)}</p>
     </div>
   );
 };

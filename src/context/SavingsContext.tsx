@@ -46,6 +46,7 @@ export function SavingsProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSavings(): SavingsContextValue {
   const ctx = useContext(SavingsContext);
   if (!ctx) throw new Error('useSavings must be used within SavingsProvider');

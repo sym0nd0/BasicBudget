@@ -43,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [applyStatus]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     refreshAuth().finally(() => setLoading(false));
   }, [refreshAuth]);
@@ -93,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider');

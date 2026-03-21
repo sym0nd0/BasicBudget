@@ -50,6 +50,7 @@ export function DebtProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useDebt(): DebtContextValue {
   const ctx = useContext(DebtContext);
   if (!ctx) throw new Error('useDebt must be used within DebtProvider');

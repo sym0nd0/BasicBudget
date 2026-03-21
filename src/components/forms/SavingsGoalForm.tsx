@@ -21,7 +21,7 @@ export function SavingsGoalForm({ initial, onSave, onCancel }: SavingsGoalFormPr
   const [monthlyContribution, setMonthlyContribution] = useState(
     initial ? penceToPoundsStr(initial.monthly_contribution_pence) : '0',
   );
-  const [isHousehold, setIsHousehold] = useState(Boolean(initial?.is_household) ?? false);
+  const [isHousehold, setIsHousehold] = useState(Boolean(initial?.is_household));
   const [targetDate, setTargetDate] = useState(initial?.target_date ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
   const [autoContribute, setAutoContribute] = useState(Boolean(initial?.auto_contribute));

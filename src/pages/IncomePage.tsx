@@ -46,7 +46,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
 
   const total = isRangeActive && rangeOverview
     ? rangeOverview.reduce((s, r) => s + r.income_pence, 0)
-    : incomes.reduce((s, i) => s + ((i as any).effective_pence ?? i.amount_pence), 0);
+    : incomes.reduce((s, i) => s + ((i as Income & { effective_pence?: number }).effective_pence ?? i.amount_pence), 0);
 
   const handleSave = async (data: Omit<Income, 'id' | 'created_at' | 'updated_at'>) => {
     if (!editing) {
@@ -77,7 +77,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
     try {
       await deleteIncome(id);
     } catch (err) {
-      alert((err as Error).message);
+      setErrorMsg((err as Error).message);
     }
   };
 

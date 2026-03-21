@@ -32,6 +32,7 @@ export function useApi<T>(url: string | null, options?: UseApiOptions): UseApiRe
     abortRef.current = controller;
 
     if (url !== prevUrlRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setData(null);
     }
     prevUrlRef.current = url;
