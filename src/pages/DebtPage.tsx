@@ -126,6 +126,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
 
   const handleEdit = (debt: Debt) => {
     setEditing(debt);
+    setErrorMsg(null);
     setModalOpen(true);
   };
 
@@ -141,6 +142,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
 
   const handleAdd = () => {
     setEditing(undefined);
+    setErrorMsg(null);
     setModalOpen(true);
   };
 
@@ -352,7 +354,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
 
       {ConfirmDialogElement}
       {errorMsg && !modalOpen && (
-        <p className="mb-4 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">
+        <p role="alert" aria-live="polite" className="mb-4 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">
           {errorMsg}
         </p>
       )}
