@@ -36,4 +36,4 @@ React Router v7 is used for declarative route definitions and `<Link>` / `useNav
 | Next.js | Mandates a Node.js server (conflicts with existing Express); SSR not needed for an authenticated tool |
 | Remix | Same concern as Next.js; also adds complexity with its own server conventions |
 | Vue / Svelte | React was chosen for ecosystem familiarity and component library availability |
-| No client-side routing (traditional MPA) | Would require full page reloads and loss of application state; poor UX for a dashboard app |
+| No client-side routing (traditional MPA) | Would require full-page reloads and loss of application state; poor UX for a dashboard app |

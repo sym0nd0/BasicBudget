@@ -460,7 +460,9 @@ These rules apply to every file in the project without exception.
 
 ## Skill Files
 
-The following per-tool skill files live in `.claude/skills/` and provide detailed best-practice guides with code examples drawn from this project:
+> **Local-only — not checked into the repository.** `.claude/` is listed in `.gitignore`. These files exist on the developer's machine for Claude Code to use and will not be present in a fresh clone.
+
+The per-tool skill files live in `.claude/skills/` and provide detailed best-practice guides with code examples drawn from this project:
 
 | File | Purpose |
 |---|---|
@@ -479,7 +481,9 @@ The following per-tool skill files live in `.claude/skills/` and provide detaile
 
 ## Slash Commands
 
-The following slash commands live in `.claude/commands/` and are available via `/command-name`:
+> **Local-only — not checked into the repository.** `.claude/` is listed in `.gitignore`. These command files exist on the developer's machine for Claude Code to use and will not be present in a fresh clone.
+
+The slash commands live in `.claude/commands/` and are available via `/command-name`:
 
 | Command | Purpose |
 |---|---|
