@@ -29,7 +29,7 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
       <p className="font-semibold text-[var(--color-text)] mb-1">{label}</p>
       {payload.map((entry) => (
         <p key={entry.name} style={{ color: entry.color }}>
-          {entry.name}: {formatPercent(entry.value as number)}
+          {entry.name}: {typeof entry.value === 'number' && Number.isFinite(entry.value) ? formatPercent(entry.value) : '-'}
         </p>
       ))}
     </div>

@@ -33,4 +33,16 @@ export default defineConfig([
       globals: globals.node,
     },
   },
+  // Tests: Node + Vitest globals
+  {
+    files: ['tests/**/*.ts'],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+    ],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: { ...globals.node, ...globals.vitest },
+    },
+  },
 ])

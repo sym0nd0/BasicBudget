@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import supertest from 'supertest';
-import { TOTP } from 'otpauth';
 import { getApp, makeTestUser } from '../helpers.js';
 
 let app: Awaited<ReturnType<typeof getApp>>;
