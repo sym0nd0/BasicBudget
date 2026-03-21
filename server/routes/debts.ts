@@ -102,6 +102,11 @@ router.post('/', (req: Request, res: Response) => {
           VALUES (?, ?, ?, ?, ?, ?)
         `).run(periodId, id, label, period.interest_rate, period.start_date, period.end_date ?? null);
       }
+
+      // Record initial balance snapshot (inside transaction so debt + snapshot are atomic)
+      const today = new Date().toISOString().slice(0, 10);
+      db.prepare('INSERT INTO debt_balance_snapshots (id, debt_id, household_id, balance_pence, recorded_at) VALUES (?, ?, ?, ?, ?)')
+        .run(randomUUID(), id, req.householdId!, body.balance_pence, today);
     })();
   } catch (err) {
     logger.error('Failed to save debt', { error: (err as Error).message });
@@ -109,11 +114,6 @@ router.post('/', (req: Request, res: Response) => {
     return;
   }
   const row = db.prepare('SELECT * FROM debts WHERE id = ?').get(id) as Record<string, unknown>;
-
-  // Record initial balance snapshot
-  const today = new Date().toISOString().slice(0, 10);
-  db.prepare('INSERT INTO debt_balance_snapshots (id, debt_id, household_id, balance_pence, recorded_at) VALUES (?, ?, ?, ?, ?)')
-    .run(randomUUID(), id, req.householdId!, body.balance_pence, today);
 
   logger.info('Debt created', { id, userId: req.userId, name: nameValue });
   res.status(201).json(enrichDebtWithPeriods(mapDebt(row)));

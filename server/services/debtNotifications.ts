@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import db from '../db.js';
 import { sendDealPeriodReminder } from './email.js';
 import { logger } from './logger.js';
-import type { Debt, DebtDealPeriod } from '../../shared/types.js';
+import type { DebtDealPeriod } from '../../shared/types.js';
 
 function diffInMonths(from: Date, to: Date): number {
   const yearDiff = to.getFullYear() - from.getFullYear();

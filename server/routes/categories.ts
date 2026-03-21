@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { getSetting, setSetting } from '../services/settings.js';
+import { getSetting } from '../services/settings.js';
 
 const router = Router();
 router.use(requireAuth);
