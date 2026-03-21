@@ -109,6 +109,12 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
         </Card>
       </div>
 
+      {errorMsg && !modalOpen && (
+        <p role="alert" aria-live="polite" className="mb-4 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">
+          {errorMsg}
+        </p>
+      )}
+
       {/* Summary card */}
       <div className="mb-5">
         <Card>
@@ -218,11 +224,6 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
       </Card>
 
       {ConfirmDialogElement}
-      {errorMsg && !modalOpen && (
-        <p role="alert" aria-live="polite" className="mb-4 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">
-          {errorMsg}
-        </p>
-      )}
       <Modal
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
