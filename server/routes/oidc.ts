@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { randomUUID, randomBytes } from 'node:crypto';
 import db from '../db.js';
 import { config } from '../config.js';
@@ -53,7 +53,7 @@ router.get('/enabled', (_req: Request, res: Response) => {
 });
 
 // GET /api/auth/oidc/login
-router.get('/login', async (req: Request, res: Response) => {
+router.get('/login', async (req: Request, res: Response, next: NextFunction) => {
   const client = await getClient();
   if (!client) { res.status(404).json({ message: 'OIDC is not configured' }); return; }
 
@@ -79,7 +79,7 @@ router.get('/login', async (req: Request, res: Response) => {
     res.redirect(authUrl.toString());
   } catch (err) {
     logger.error('OIDC auth initiation error', { error: err });
-    res.status(500).json({ message: 'OIDC error' });
+    next(err);
   }
 });
 
