@@ -131,6 +131,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
 
   const handleDelete = async (id: string) => {
     if (!await confirm('Delete Debt', 'Delete this debt?', 'danger')) return;
+    setErrorMsg(null);
     try {
       await deleteDebt(id);
     } catch (err) {
