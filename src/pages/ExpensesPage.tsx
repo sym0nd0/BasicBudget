@@ -305,6 +305,11 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
       </Card>
 
       {ConfirmDialogElement}
+      {errorMsg && !modalOpen && (
+        <p className="mb-4 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">
+          {errorMsg}
+        </p>
+      )}
       <Modal
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}

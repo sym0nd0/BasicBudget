@@ -32,5 +32,8 @@ jobs:
       - name: TypeScript check — server
         run: node node_modules/typescript/bin/tsc --project tsconfig.server.json --noEmit
 
+      - name: Lint
+        run: node node_modules/eslint/bin/eslint.js src server shared
+
       - name: Tests
         run: npm test

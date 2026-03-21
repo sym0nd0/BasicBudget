@@ -23,7 +23,7 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
       <p className="font-semibold text-[var(--color-text)] mb-1">{label}</p>
       {payload.map((entry) => (
         <p key={entry.name} style={{ color: entry.color }} className="text-xs">
-          {entry.name}: {formatCurrency(entry.value as number)}
+          {entry.name}: {typeof entry.value === 'number' && Number.isFinite(entry.value) ? formatCurrency(entry.value) : '-'}
         </p>
       ))}
     </div>

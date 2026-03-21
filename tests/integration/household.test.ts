@@ -29,7 +29,7 @@ describe('household isolation', () => {
     const { agent: agentB } = await registerAndLogin('hh_b');
 
     // User A creates an income
-    let csrf = await csrfToken(agentA);
+    const csrf = await csrfToken(agentA);
     const createRes = await agentA
       .post('/api/incomes')
       .set('X-CSRF-Token', csrf)

@@ -40,7 +40,7 @@ beforeAll(async () => {
 describe('Entry visibility and permissions', () => {
   describe('expenses: cross-household isolation', () => {
     it('User A expense is NOT visible to User B in a different household', async () => {
-      let csrf = await csrfToken(agentA);
+      const csrf = await csrfToken(agentA);
       const createRes = await agentA
         .post('/api/expenses')
         .set('X-CSRF-Token', csrf)
@@ -62,7 +62,7 @@ describe('Entry visibility and permissions', () => {
     });
 
     it('User A household expense is NOT visible to User B in a different household', async () => {
-      let csrf = await csrfToken(agentA);
+      const csrf = await csrfToken(agentA);
       const createRes = await agentA
         .post('/api/expenses')
         .set('X-CSRF-Token', csrf)
@@ -103,7 +103,7 @@ describe('Entry visibility and permissions', () => {
 
   describe('incomes: cross-household isolation', () => {
     it('User A income is NOT visible to User B in a different household', async () => {
-      let csrf = await csrfToken(agentA);
+      const csrf = await csrfToken(agentA);
       const createRes = await agentA
         .post('/api/incomes')
         .set('X-CSRF-Token', csrf)
@@ -142,7 +142,7 @@ describe('Entry visibility and permissions', () => {
 
   describe('debts: cross-household isolation', () => {
     it('User A debt is NOT visible to User B in a different household', async () => {
-      let csrf = await csrfToken(agentA);
+      const csrf = await csrfToken(agentA);
       const createRes = await agentA
         .post('/api/debts')
         .set('X-CSRF-Token', csrf)
@@ -166,7 +166,7 @@ describe('Entry visibility and permissions', () => {
 
   describe('savings goals: cross-household isolation', () => {
     it('User A savings goal is NOT visible to User B in a different household', async () => {
-      let csrf = await csrfToken(agentA);
+      const csrf = await csrfToken(agentA);
       const createRes = await agentA
         .post('/api/savings-goals')
         .set('X-CSRF-Token', csrf)
@@ -190,7 +190,7 @@ describe('Entry visibility and permissions', () => {
 
   describe('dashboard summary: per-user visibility', () => {
     it('User A summary includes their own expense', async () => {
-      let csrf = await csrfToken(agentA);
+      const csrf = await csrfToken(agentA);
       await agentA
         .post('/api/expenses')
         .set('X-CSRF-Token', csrf)
@@ -220,7 +220,7 @@ describe('Entry visibility and permissions', () => {
     });
 
     it('User A summary includes their income', async () => {
-      let csrf = await csrfToken(agentA);
+      const csrf = await csrfToken(agentA);
       await agentA
         .post('/api/incomes')
         .set('X-CSRF-Token', csrf)
@@ -242,7 +242,7 @@ describe('Entry visibility and permissions', () => {
 
   describe('export respects visibility', () => {
     it('User export does not include other users\' private entries', async () => {
-      let csrf = await csrfToken(agentA);
+      const csrf = await csrfToken(agentA);
       await agentA
         .post('/api/expenses')
         .set('X-CSRF-Token', csrf)
