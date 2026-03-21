@@ -161,7 +161,7 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
                     const isPositive = delta >= 0;
                     return (
                       <div className={`text-xs mt-2 ${isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
-                        {isPositive ? '↑' : '↓'} {Math.abs(percentage).toFixed(1)}%
+                        {isPositive ? '↑' : '↓'} {formatPercent(Math.abs(percentage))}
                       </div>
                     );
                   })()
@@ -177,7 +177,7 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
                     const isPositive = delta >= 0; // For expenses, positive is bad
                     return (
                       <div className={`text-xs mt-2 ${!isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
-                        {isPositive ? '↑' : '↓'} {Math.abs(percentage).toFixed(1)}%
+                        {isPositive ? '↑' : '↓'} {formatPercent(Math.abs(percentage))}
                       </div>
                     );
                   })()
@@ -193,7 +193,7 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
                     const isPositive = delta >= 0; // For debt, positive is bad
                     return (
                       <div className={`text-xs mt-2 ${!isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
-                        {isPositive ? '↑' : '↓'} {Math.abs(percentage).toFixed(1)}%
+                        {isPositive ? '↑' : '↓'} {formatPercent(Math.abs(percentage))}
                       </div>
                     );
                   })()
@@ -209,7 +209,7 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
                     const isPositive = delta >= 0;
                     return (
                       <div className={`text-xs mt-2 ${isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
-                        {isPositive ? '↑' : '↓'} {Math.abs(percentage).toFixed(1)}%
+                        {isPositive ? '↑' : '↓'} {formatPercent(Math.abs(percentage))}
                       </div>
                     );
                   })()
@@ -227,7 +227,7 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
                     const isPositive = delta >= 0;
                     return (
                       <div className={`text-xs mt-2 ${isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
-                        {isPositive ? '↑' : '↓'} {Math.abs(percentage).toFixed(1)}%
+                        {isPositive ? '↑' : '↓'} {formatPercent(Math.abs(percentage))}
                       </div>
                     );
                   })()

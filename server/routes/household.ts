@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import db from '../db.js';
 import { requireAuth, requireOwner } from '../middleware/auth.js';
@@ -181,7 +180,6 @@ router.get('/summary', (req: Request, res: Response) => {
   const activeExpenses = filterActiveInMonth(allExpenses, month);
 
   const totalIncomePence = activeIncomes.reduce((s, i) => s + (i.effective_pence ?? 0), 0);
-  const totalExpensesPence = activeExpenses.reduce((s, e) => s + (e.effective_pence ?? 0), 0);
   const sharedExpensesPence = activeExpenses.filter(e => Boolean(e.is_household)).reduce((s, e) => s + (e.effective_pence ?? 0), 0);
   const soleExpensesPence = activeExpenses.filter(e => !e.is_household).reduce((s, e) => s + (e.effective_pence ?? 0), 0);
   const allDebtItems = allDebts.map(mapDebtToRecurringItem);

@@ -77,7 +77,7 @@ router.get('/login', async (req: Request, res: Response) => {
 
     await new Promise<void>((resolve, reject) => req.session.save((err) => (err ? reject(err) : resolve())));
     res.redirect(authUrl.toString());
-  } catch (err) {
+  } catch {
     res.status(500).json({ message: 'OIDC error' });
   }
 });
@@ -97,7 +97,6 @@ router.get('/callback', async (req: Request, res: Response) => {
       return;
     }
 
-    const redirectUri = `${config.APP_URL}/api/auth/oidc/callback`;
     const tokens = await authorizationCodeGrant(client, new URL(req.url, config.APP_URL), {
       pkceCodeVerifier: codeVerifier,
       expectedState: state,
@@ -146,7 +145,7 @@ router.get('/callback', async (req: Request, res: Response) => {
 
       userRow = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as Record<string, unknown>;
       auditLog(userId, 'oidc_register', { issuer, email }, req.ip, req.get('user-agent'));
-    } else if (!Boolean(userRow.email_verified)) {
+    } else if (!userRow.email_verified) {
       db.prepare("UPDATE users SET email_verified = 1, updated_at = datetime('now') WHERE id = ?").run(userRow.id);
     }
 

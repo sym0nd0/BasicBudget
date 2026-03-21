@@ -136,6 +136,7 @@ if (config.NODE_ENV === 'production') {
 }
 
 // 12. Global error handler
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: Error & { status?: number; code?: string }, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (config.NODE_ENV !== 'production') {
     logger.error('Unhandled request error', { error: err instanceof Error ? err.message : String(err) });

@@ -162,7 +162,7 @@ router.post('/confirm-email-change', (req: Request, res: Response) => {
 router.post('/resend-verification', async (req: Request, res: Response) => {
   const userRow = db.prepare('SELECT email, email_verified FROM users WHERE id = ?').get(req.userId!) as { email: string; email_verified: number } | undefined;
   if (!userRow) { res.status(404).json({ message: 'User not found' }); return; }
-  if (Boolean(userRow.email_verified)) { res.status(400).json({ message: 'Email is already verified' }); return; }
+  if (userRow.email_verified) { res.status(400).json({ message: 'Email is already verified' }); return; }
 
   const verifyToken = createToken(req.userId!, 'email_verify');
   try { await sendEmailVerification(userRow.email, verifyToken); } catch { /* ignore */ }

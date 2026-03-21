@@ -36,7 +36,7 @@ let db: Database.Database = new Database(DB_FILE);
 //   6. Try OFF mode (no journal — direct writes to the main DB file).
 //   7. Fall back to DELETE (implicit default — may still fail on some
 //      filesystems if a .db-journal file cannot be created).
-let journalMode = 'wal';
+let journalMode: string;
 try {
   db.pragma('journal_mode = WAL');
 } catch {

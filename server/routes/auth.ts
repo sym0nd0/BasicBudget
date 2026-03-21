@@ -9,7 +9,6 @@ import { sendEmailVerification, sendPasswordReset } from '../services/email.js';
 import { auditLog } from '../services/audit.js';
 import { deviceFingerprint, isNewDevice, recordDevice } from '../auth/device.js';
 import { sendLoginAlert } from '../services/email.js';
-import { requireAuth } from '../middleware/auth.js';
 import { loginLimiter, passwordResetLimiter, registrationLimiter } from '../middleware/rate-limit.js';
 import { generateCsrfToken } from '../middleware/csrf.js';
 import type { User, AuthStatusResponse } from '../../shared/types.js';

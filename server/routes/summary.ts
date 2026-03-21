@@ -48,7 +48,7 @@ router.get('/', (req: Request, res: Response) => {
   let totalSavingsPence = 0;
   for (const savings of allSavings) {
     const contribution = (savings.monthly_contribution_pence as number) ?? 0;
-    if (Boolean(savings.is_household)) {
+    if (savings.is_household) {
       totalSavingsPence += Math.ceil(contribution / memberCount);
     } else {
       totalSavingsPence += contribution;
