@@ -13,7 +13,7 @@ export interface UseSortableTableResult<T> {
   toggleSort: (key: keyof T) => void;
 }
 
-export function useSortableTable<T extends Record<string, any>>(
+export function useSortableTable<T extends object>(
   items: T[],
   defaultSortKey?: keyof T | UseSortableTableOptions<T>
 ): UseSortableTableResult<T> {
@@ -37,7 +37,7 @@ export function useSortableTable<T extends Record<string, any>>(
       if (aVal === null || aVal === undefined) return sortDir === 'asc' ? 1 : -1;
       if (bVal === null || bVal === undefined) return sortDir === 'asc' ? -1 : 1;
 
-      let cmp = 0;
+      let cmp: number;
       if (typeof aVal === 'string' && typeof bVal === 'string') {
         cmp = aVal.localeCompare(bVal);
       } else if (typeof aVal === 'number' && typeof bVal === 'number') {

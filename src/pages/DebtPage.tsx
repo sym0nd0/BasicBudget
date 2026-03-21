@@ -132,7 +132,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
     try {
       await deleteDebt(id);
     } catch (err) {
-      alert((err as Error).message);
+      setErrorMsg((err as Error).message);
     }
   };
 

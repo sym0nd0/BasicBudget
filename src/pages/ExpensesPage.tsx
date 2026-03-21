@@ -104,7 +104,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
     try {
       await deleteExpense(id);
     } catch (err) {
-      alert((err as Error).message);
+      setErrorMsg((err as Error).message);
     }
   };
 

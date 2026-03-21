@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Debt, HouseholdMember } from '../../types';
+import type { Debt, DebtDealPeriod, HouseholdMember } from '../../types';
 import { useApi } from '../../hooks/useApi';
 import { Input, Select } from '../ui/Input';
 import { Button } from '../ui/Button';
@@ -117,7 +117,7 @@ export function DebtForm({ initial, onSave, onCancel }: DebtFormProps) {
       split_ratio: isHousehold ? 0.5 : 1.0,
       notes: notes.trim() || null,
       reminder_months: parseInt(reminderMonths) || 0,
-      deal_periods: convertedPeriods as any,
+      deal_periods: convertedPeriods as unknown as DebtDealPeriod[],
     });
   };
 

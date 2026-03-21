@@ -123,6 +123,7 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useBudget(): BudgetContextValue {
   const ctx = useContext(BudgetContext);
   if (!ctx) throw new Error('useBudget must be used within BudgetProvider');
