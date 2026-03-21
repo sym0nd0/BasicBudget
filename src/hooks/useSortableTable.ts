@@ -27,7 +27,7 @@ export function useSortableTable<T extends object>(
   const [sortDir, setSortDir] = useState<SortDirection>('asc');
 
   const sorted = useMemo(() => {
-    if (!sortKey) return items;
+    if (sortKey == null) return items;
 
     const copy = [...items];
     copy.sort((a, b) => {
@@ -37,14 +37,12 @@ export function useSortableTable<T extends object>(
       if (aVal === null || aVal === undefined) return sortDir === 'asc' ? 1 : -1;
       if (bVal === null || bVal === undefined) return sortDir === 'asc' ? -1 : 1;
 
-      let cmp: number;
-      if (typeof aVal === 'string' && typeof bVal === 'string') {
-        cmp = aVal.localeCompare(bVal);
-      } else if (typeof aVal === 'number' && typeof bVal === 'number') {
-        cmp = aVal - bVal;
-      } else {
-        cmp = String(aVal).localeCompare(String(bVal));
-      }
+      const cmp =
+        typeof aVal === 'string' && typeof bVal === 'string'
+          ? aVal.localeCompare(bVal)
+          : typeof aVal === 'number' && typeof bVal === 'number'
+            ? aVal - bVal
+            : String(aVal).localeCompare(String(bVal));
 
       return sortDir === 'asc' ? cmp : -cmp;
     });

@@ -86,12 +86,14 @@ router.get('/overview', (req: Request, res: Response) => {
     let savings_pence = 0;
     for (const s of allSavings) {
       const c = (s.monthly_contribution_pence as number) ?? 0;
-      savings_pence += s.is_household ? Math.ceil(c / memberCount) : c;
+      // eslint-disable-next-line no-extra-boolean-cast
+      savings_pence += Boolean(s.is_household) ? Math.ceil(c / memberCount) : c;
     }
 
     const categoryMap = new Map<string, number>();
     for (const e of activeExpenses) {
-      if (householdOnly && !e.is_household) continue;
+      // eslint-disable-next-line no-extra-boolean-cast
+      if (householdOnly && !Boolean(e.is_household)) continue;
       const cat = (e.category as string) ?? 'Other';
       const share = householdOnly
         ? (e.effective_pence ?? 0)

@@ -6,6 +6,7 @@ import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { DebtForm } from '../components/forms/DebtForm';
+import type { DebtDealPeriodInput } from '../components/forms/DebtForm';
 import { Badge } from '../components/ui/Badge';
 import { SortableHeader } from '../components/ui/SortableHeader';
 import { useSortableTable } from '../hooks/useSortableTable';
@@ -103,16 +104,17 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
     .reduce((s, d) => s + Math.round((d.minimum_payment_pence + d.overpayment_pence) * d.split_ratio), 0);
   const totalInterestDebts = debts.filter(d => d.interest_rate > 0).length;
 
-  const handleSave = async (data: Omit<Debt, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleSave = async (data: Omit<Debt, 'id' | 'created_at' | 'updated_at' | 'deal_periods'> & { deal_periods?: DebtDealPeriodInput[] }) => {
     if (!editing) {
-      const dup = findDuplicateDebt(debts, data);
+      const dup = findDuplicateDebt(debts, data as Omit<Debt, 'id' | 'created_at' | 'updated_at'>);
       if (dup && !await confirm('Duplicate Debt', 'A debt with identical details already exists. Add anyway?')) return;
     }
+    const apiData = data as Omit<Debt, 'id' | 'created_at' | 'updated_at'>;
     try {
       if (editing) {
-        await updateDebt(editing.id, data);
+        await updateDebt(editing.id, apiData);
       } else {
-        await addDebt(data);
+        await addDebt(apiData);
       }
       setModalOpen(false);
       setEditing(undefined);
@@ -348,6 +350,11 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
       </Card>
 
       {ConfirmDialogElement}
+      {errorMsg && !modalOpen && (
+        <p className="mb-4 text-sm text-[var(--color-danger)] bg-[var(--color-danger-light)] rounded-lg px-3 py-2">
+          {errorMsg}
+        </p>
+      )}
       <Modal
         isOpen={modalOpen}
         onClose={() => { setModalOpen(false); setEditing(undefined); setErrorMsg(null); }}
