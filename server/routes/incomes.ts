@@ -70,7 +70,7 @@ router.post('/', (req: Request, res: Response) => {
       body.notes ?? null,
     );
   } catch (err) {
-    logger.error('Failed to save income', { error: (err as Error).message });
+    logger.error('Failed to save income', { error: err });
     res.status(500).json({ message: 'Failed to save income' });
     return;
   }
@@ -131,7 +131,7 @@ router.put('/:id', (req: Request, res: Response) => {
       id,
     );
   } catch (err) {
-    logger.error('Failed to save income', { error: (err as Error).message });
+    logger.error('Failed to save income', { error: err });
     res.status(500).json({ message: 'Failed to save income' });
     return;
   }
@@ -163,7 +163,7 @@ router.delete('/:id', (req: Request, res: Response) => {
   try {
     db.prepare('DELETE FROM incomes WHERE id = ?').run(id);
   } catch (err) {
-    logger.error('Failed to delete income', { error: (err as Error).message });
+    logger.error('Failed to delete income', { error: err });
     res.status(500).json({ message: 'Failed to delete income' });
     return;
   }

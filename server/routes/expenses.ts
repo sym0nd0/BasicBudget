@@ -140,7 +140,7 @@ router.post('/', (req: Request, res: Response) => {
       body.notes ?? null,
     );
   } catch (err) {
-    logger.error('Failed to save expense', { error: (err as Error).message });
+    logger.error('Failed to save expense', { error: err });
     res.status(500).json({ message: 'Failed to save expense' });
     return;
   }
@@ -207,7 +207,7 @@ router.put('/:id', (req: Request, res: Response) => {
       id,
     );
   } catch (err) {
-    logger.error('Failed to save expense', { error: (err as Error).message });
+    logger.error('Failed to save expense', { error: err });
     res.status(500).json({ message: 'Failed to save expense' });
     return;
   }
@@ -239,7 +239,7 @@ router.delete('/:id', (req: Request, res: Response) => {
   try {
     db.prepare('DELETE FROM expenses WHERE id = ?').run(id);
   } catch (err) {
-    logger.error('Failed to delete expense', { error: (err as Error).message });
+    logger.error('Failed to delete expense', { error: err });
     res.status(500).json({ message: 'Failed to delete expense' });
     return;
   }
