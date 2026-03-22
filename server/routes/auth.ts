@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import db from '../db.js';
@@ -361,15 +361,28 @@ router.get('/registration-status', (_req: Request, res: Response) => {
 });
 
 // GET /api/auth/csrf-token — public (needed before login/register)
-router.get('/csrf-token', (req: Request, res: Response) => {
-  // With saveUninitialized: false, we must modify the session to ensure it's persisted
-  // This is required for CSRF tokens to bind to a persistent sessionID
+router.get('/csrf-token', async (req: Request, res: Response, next: NextFunction) => {
+  // With saveUninitialized: false, we must modify the session to ensure it's persisted.
+  // This is required for CSRF tokens to bind to a persistent sessionID.
   const hasExistingData = Object.keys(req.session).some(k => k !== 'cookie');
   if (!hasExistingData) {
-    // Mark as CSRF-initialized to trigger session save
     req.session._csrfInitialized = true;
   }
-  const token = generateCsrfToken(req, res);
+  // Explicitly persist the session before issuing the token.
+  // If the save fails, the token would be bound to a session ID that is not
+  // in the store — the next request would get a new session ID and CSRF would fail.
+  try {
+    await new Promise<void>((resolve, reject) => {
+      req.session.save((err) => (err ? reject(err) : resolve()));
+    });
+  } catch (err) {
+    next(err);
+    return;
+  }
+  // overwrite: true ensures the token is always freshly bound to the current
+  // session ID, avoiding any possibility of returning a stale token from a
+  // previous session that may still be in the bb.csrf cookie.
+  const token = generateCsrfToken(req, res, { overwrite: true });
   res.json({ token });
 });
 
