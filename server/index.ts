@@ -147,14 +147,12 @@ if (config.NODE_ENV === 'production') {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: Error & { status?: number; code?: string }, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   // Handle CSRF errors — always log at warn level regardless of environment
-  if (err.code === 'EBADCSRFTOKEN' || (err as { statusCode?: number }).statusCode === 403) {
+  if (err.code === 'EBADCSRFTOKEN') {
     logger.warn('CSRF token validation failed', { error: err instanceof Error ? err.message : String(err) });
     res.status(403).json({ message: 'Invalid CSRF token' });
     return;
   }
-  if (config.NODE_ENV !== 'production') {
-    logger.error('Unhandled request error', { error: err instanceof Error ? err.message : String(err) });
-  }
+  logger.error('Unhandled request error', { error: err instanceof Error ? err : String(err) });
   const status = err.status ?? 500;
   const message = config.NODE_ENV === 'production' && status === 500
     ? 'Internal server error'

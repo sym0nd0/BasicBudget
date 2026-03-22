@@ -51,7 +51,7 @@ environment:
 This removes the `Secure` flag from cookies so they work over both HTTP and HTTPS without affecting other security settings.
 
 **Confirm the cause:** Check server logs for:
-```
+```text
 APP_URL is HTTPS but COOKIE_SECURE is not set — direct HTTP access will fail.
 ```
 
