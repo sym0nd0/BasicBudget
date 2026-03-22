@@ -1,5 +1,28 @@
 # Backup and Restore
 
+BasicBudget offers two approaches to backup and restore: the built-in **Admin UI** (recommended for most users) and **file-level SQLite backup** (for server administrators who need lower-level access).
+
+## Admin UI Backup and Restore
+
+> **Requires Admin role.** Available from **Admin → System Settings → Database Backup**.
+
+### Downloading a Backup
+
+Click **Download Backup** to download a JSON file (`basicbudget-backup-YYYY-MM-DD.json`) containing all users, households, budget data, and system settings. The backup covers all 19 persistent tables; ephemeral data (sessions, OTP tokens, password reset tokens) is excluded.
+
+### Restoring from a Backup
+
+1. Select the backup JSON file using the file picker.
+2. Click **Restore Backup** and confirm the warning dialog.
+3. The restore is atomic — either everything succeeds or nothing changes.
+4. All active sessions are invalidated after a successful restore. All users are logged out automatically.
+
+> **Encrypted secrets note:** TOTP secrets, the SMTP password, and the OIDC client secret are encrypted with the `TOTP_ENCRYPTION_KEY` environment variable. Restoring on an instance with a different key makes these secrets unrecoverable. Affected users will need to re-enrol 2FA and the admin will need to re-enter SMTP/OIDC credentials.
+
+---
+
+## File-Level SQLite Backup
+
 BasicBudget stores all data in a single SQLite database file. Backing it up is straightforward.
 
 ## Database Location
