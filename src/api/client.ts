@@ -261,6 +261,25 @@ export const api = {
   // ── Export ──
   exportJson: () => fetch('/api/export/json', { credentials: 'include' }),
 
+  // ── Admin — Backup ──
+  backupDatabase: () => fetch('/api/admin/backup', { credentials: 'include' }),
+  restoreDatabase: async (file: File) => {
+    const csrf = await getCsrfToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    const r = await fetch('/api/admin/backup/restore', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'X-CSRF-Token': csrf },
+      body: formData,
+    });
+    if (!r.ok) {
+      const body = await r.json().catch(() => ({})) as { message?: string };
+      throw new Error(body.message ?? `HTTP ${r.status}`);
+    }
+    return r.json() as Promise<{ message: string; tables: Record<string, number> }>;
+  },
+
   // ── Admin — Users ──
   getAdminUsers: (page = 1, limit = 20) =>
     request<PaginatedResponse<AdminUser>>(`/admin/users?page=${page}&limit=${limit}`),
