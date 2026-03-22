@@ -1,13 +1,13 @@
 services:
   basicbudget:
     image: ghcr.io/sym0nd0/basicbudget:latest
+    container_name: basicbudget
     ports:
-      - "8080:${PORT:-3000}"
+      - "${PORT:-8080}:3000"
     volumes:
       - bb-data:/app/data
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=${PORT:-3000}
       # Required secrets — set these in your environment or a .env file
       - SESSION_SECRET=${SESSION_SECRET}
       - TOTP_ENCRYPTION_KEY=${TOTP_ENCRYPTION_KEY}
