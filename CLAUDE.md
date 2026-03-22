@@ -175,6 +175,37 @@ Examples:
 - The GitHub Release must be separately edited from Draft → Published + Latest (`gh release edit vX.Y.Z --draft=false --latest`).
 - Schema migrations for existing databases are applied inline in `server/db.ts` with bare `try { ALTER TABLE … } catch {}` blocks. New tables (e.g. `system_settings`) are added via `schema.sql` using `CREATE TABLE IF NOT EXISTS`.
 
+### Docker Compose — port mapping
+
+`compose.yml` maps the host port dynamically and always pins the container to port 3000:
+
+```yaml
+ports:
+  - "${PORT:-8080}:3000"
+```
+
+- **Host port** — controlled by `PORT` in `.env` (default `8080`). Setting `PORT=8089` makes the app reachable at `host:8089`.
+- **Container port** — always 3000. The Dockerfile sets `ENV PORT=3000`; Express reads this and binds to 3000 inside the container.
+- **Do not add `PORT` to the compose `environment` block** — doing so overrides the Dockerfile's `ENV PORT=3000` with the user's host-port value, causing a mismatch where Express listens on the wrong port and requests return `Cannot GET /`.
+
+`container_name: basicbudget` is set so Docker assigns a predictable name rather than a random one.
+
+### Changelog notices for user-facing config files
+
+If any commit modifies `compose.yml` or `.env.example`, the commit message and release notes **must** include a prominent notice that users need to pull the latest versions of those files from the repository. Use this format in the release notes:
+
+```
+> ⚠️ **Action required:** `compose.yml` has been updated. Pull the latest version from the repository before restarting your container.
+```
+
+or for `.env.example`:
+
+```
+> ⚠️ **Action required:** `.env.example` has been updated. Review the changes and update your `.env` file accordingly before restarting.
+```
+
+Both notices may appear together if both files changed. Never omit this notice — users running Docker deployments rely on these files and will not see changes unless explicitly told to pull them.
+
 ### Screenshot ordering convention
 
 All screenshots, documentation tables, and wiki pages must list pages in **sidebar navigation order**, top to bottom:
