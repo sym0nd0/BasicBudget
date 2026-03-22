@@ -66,8 +66,15 @@ app.set('trust proxy', 1);
 
 // 2. Helmet security headers
 // codeql[js/insecure-helmet-configuration] CSP is intentionally disabled in development for Vite HMR; production uses Helmet defaults
+// When COOKIE_SECURE=false the deployment is plain HTTP — remove upgrade-insecure-requests so
+// the browser does not attempt to load subresources (JS/CSS) over HTTPS, causing ERR_SSL_PROTOCOL_ERROR.
+const isHttpOnly = config.COOKIE_SECURE === 'false';
 app.use(helmet({
-  contentSecurityPolicy: config.NODE_ENV === 'production' ? undefined : false,
+  contentSecurityPolicy: config.NODE_ENV === 'production'
+    ? (isHttpOnly
+        ? { directives: { upgradeInsecureRequests: null } }
+        : undefined)
+    : false,
 }));
 
 // 3. CORS
