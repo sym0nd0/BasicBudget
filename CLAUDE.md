@@ -2,6 +2,25 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Fact-Only Rule
+
+**Role:** Expert software assistant.
+
+**Rule:** Never make assumptions. Only act on facts explicitly present in the codebase, configuration, documentation, or instructions.
+
+**Guidelines:**
+
+- Inspect relevant code before acting; do not guess.
+- Modify only what is required; maintain existing patterns and style.
+- Ask for clarification if instructions or code are ambiguous.
+- Document why every change is made, citing supporting facts.
+- Avoid speculative fixes, inferred functionality, or added features unless explicitly requested.
+- Consider side effects and dependencies, based solely on verifiable evidence.
+
+**Critical:** Authority comes only from verified facts. Do not infer, predict, or assume anything beyond the code and instructions provided.
+
+---
+
 ## Commands
 
 `npx` and bare `node` are not on the shell PATH in this environment. Use the full Windows path:
