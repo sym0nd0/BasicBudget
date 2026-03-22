@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
@@ -57,6 +57,15 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
   const [regSaving, setRegSaving] = useState(false);
   const [regMsg, setRegMsg] = useState('');
   const [regError, setRegError] = useState('');
+
+  // ── Backup ──
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [backupMsg, setBackupMsg] = useState('');
+  const [backupError, setBackupError] = useState('');
+  const [restoreMsg, setRestoreMsg] = useState('');
+  const [restoreError, setRestoreError] = useState('');
+  const restoreFileRef = useRef<HTMLInputElement>(null);
 
   // ── Logging ──
   const [logLevel, setLogLevel] = useState<LoggingConfig['level']>('info');
@@ -184,6 +193,62 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
     }
   };
 
+  const handleBackup = async () => {
+    setBackupLoading(true);
+    setBackupMsg('');
+    setBackupError('');
+    try {
+      const res = await api.backupDatabase();
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { message?: string };
+        throw new Error(body.message ?? `HTTP ${res.status}`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const filename = res.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1]
+        ?? `basicbudget-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setBackupMsg('Backup downloaded successfully.');
+    } catch (e) {
+      setBackupError(e instanceof Error ? e.message : 'Failed to download backup');
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    const file = restoreFileRef.current?.files?.[0];
+    if (!file) {
+      setRestoreError('Please select a backup file first.');
+      return;
+    }
+    const confirmed = await confirm(
+      'Restore Database Backup',
+      'This will permanently replace ALL existing data — every user, household, and setting — with the contents of this backup file. All active sessions will be invalidated and everyone will need to log in again. This action cannot be undone.',
+      'danger',
+    );
+    if (!confirmed) return;
+
+    setRestoreLoading(true);
+    setRestoreMsg('');
+    setRestoreError('');
+    try {
+      const result = await api.restoreDatabase(file);
+      setRestoreMsg(result.message);
+      // Session is destroyed — redirect to login after a brief delay
+      setTimeout(() => { window.location.href = '/login'; }, 3000);
+    } catch (e) {
+      setRestoreError(e instanceof Error ? e.message : 'Restore failed');
+    } finally {
+      setRestoreLoading(false);
+      if (restoreFileRef.current) restoreFileRef.current.value = '';
+    }
+  };
+
   const smtpConfigured = !!smtp.host;
   const oidcConfigured = !!(oidc.issuer_url && oidc.client_id);
 
@@ -191,6 +256,48 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
     <PageShell title="Admin — System Settings" onMenuClick={onMenuClick}>
       {ConfirmDialogElement}
       <div className="space-y-5">
+
+        {/* Database Backup Card */}
+        <Card>
+          <CardHeader title="Database Backup" subtitle="Export or restore a full backup of all users, households, budget data, and system settings." />
+          <div className="mt-4 space-y-5">
+            {/* Download section */}
+            <div className="space-y-2">
+              <p className="text-sm text-[var(--color-text-muted)]">
+                Download a complete backup of the database as a JSON file. This includes all users, households, budget data, and system settings.
+              </p>
+              <Button onClick={handleBackup} disabled={backupLoading} variant="secondary">
+                {backupLoading ? 'Downloading…' : 'Download Backup'}
+              </Button>
+              {backupMsg && <p className="text-sm text-[var(--color-success)]">{backupMsg}</p>}
+              {backupError && <p className="text-sm text-[var(--color-danger)]">{backupError}</p>}
+            </div>
+
+            {/* Divider */}
+            <hr className="border-[var(--color-border)]" />
+
+            {/* Restore section */}
+            <div className="space-y-2">
+              <p className="text-sm text-[var(--color-text-muted)]">
+                Restore from a previously downloaded backup file. This will <strong>permanently replace all existing data</strong>.
+              </p>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                Note: encrypted secrets (TOTP 2FA, SMTP password, OIDC client secret) are tied to the TOTP_ENCRYPTION_KEY environment variable. If restoring on an instance with a different key, those secrets will be unrecoverable and affected users will need to re-enrol.
+              </p>
+              <input
+                ref={restoreFileRef}
+                type="file"
+                accept=".json,application/json"
+                className="block w-full text-sm text-[var(--color-text)] file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[var(--color-surface-2)] file:text-[var(--color-text)] hover:file:bg-[var(--color-border)]"
+              />
+              <Button onClick={handleRestore} disabled={restoreLoading} variant="danger">
+                {restoreLoading ? 'Restoring…' : 'Restore Backup'}
+              </Button>
+              {restoreMsg && <p className="text-sm text-[var(--color-success)]">{restoreMsg}</p>}
+              {restoreError && <p className="text-sm text-[var(--color-danger)]">{restoreError}</p>}
+            </div>
+          </div>
+        </Card>
 
         {/* Categories Card */}
         <Card>
