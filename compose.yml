@@ -2,7 +2,7 @@ services:
   basicbudget:
     image: ghcr.io/sym0nd0/basicbudget:latest
     ports:
-      - "8080:3000"
+      - "8080:${PORT:-3000}"
     volumes:
       - bb-data:/app/data
     environment:
