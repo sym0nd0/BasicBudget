@@ -18,7 +18,7 @@ services:
       # To migrate an existing deployment, set these vars once and they will be
       # seeded into the database automatically on first startup, then remove them.
       # Set COOKIE_SECURE=false if running without an HTTPS reverse proxy (e.g. direct HTTP on port 8080)
-      # - COOKIE_SECURE=false
+      - COOKIE_SECURE=${COOKIE_SECURE}
     restart: unless-stopped
 
 volumes:

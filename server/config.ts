@@ -24,7 +24,11 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
 
   // Cookie security override (overrides NODE_ENV-based default when set)
-  COOKIE_SECURE: z.enum(['true', 'false']).optional(),
+  // z.preprocess converts empty string (Docker passthrough when var is unset) to undefined.
+  COOKIE_SECURE: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.enum(['true', 'false']).optional(),
+  ),
 
 });
 
