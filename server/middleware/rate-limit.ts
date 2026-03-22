@@ -1,14 +1,10 @@
 import rateLimit from 'express-rate-limit';
 
-// Skip rate limiting in test mode so integration tests don't exhaust request budgets
-const skipInTest = () => process.env.NODE_ENV === 'test';
-
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: skipInTest,
   message: { message: 'Too many login attempts. Please try again in 15 minutes.' },
 });
 
@@ -17,7 +13,6 @@ export const otpLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: skipInTest,
   message: { message: 'Too many OTP attempts. Please try again in 15 minutes.' },
 });
 
@@ -26,7 +21,6 @@ export const passwordResetLimiter = rateLimit({
   max: 3,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: skipInTest,
   message: { message: 'Too many password reset requests. Please try again in an hour.' },
 });
 
@@ -35,7 +29,6 @@ export const inviteLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: skipInTest,
   message: { message: 'Too many invite requests. Please try again in an hour.' },
 });
 
@@ -44,7 +37,6 @@ export const totpResetLimiter = rateLimit({
   max: 3,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: skipInTest,
   message: { message: 'Too many 2FA reset requests. Please try again in 24 hours.' },
 });
 
@@ -53,7 +45,6 @@ export const registrationLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: skipInTest,
   message: { message: 'Too many registration attempts from this IP. Please try again later.' },
 });
 
@@ -62,16 +53,18 @@ export const generalApiLimiter = rateLimit({
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: skipInTest,
   message: { message: 'Too many requests. Please slow down.' },
 });
 
+// Skip in test mode — backup/restore integration tests make more than 5 requests to these
+// endpoints in a single run. All other limiters remain active in tests (security tests
+// verify loginLimiter still triggers 429 as expected).
 export const sensitiveActionLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: skipInTest,
+  skip: () => process.env.NODE_ENV === 'test',
   message: { message: 'Too many attempts. Please try again in 15 minutes.' },
 });
 
@@ -80,6 +73,5 @@ export const staticLimiter = rateLimit({
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
-  skip: skipInTest,
   message: 'Too many requests. Please slow down.',
 });
