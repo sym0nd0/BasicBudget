@@ -33,6 +33,28 @@ Sessions expire after a period of inactivity. If you are being logged out unexpe
 - Ensure your browser allows cookies for the BasicBudget domain.
 - Check for reverse proxy configurations that may be stripping or modifying session cookies.
 
+### "Invalid CSRF token" on login
+
+This error means the session or CSRF cookie was not sent with the request. The most common cause is a mismatch between `APP_URL` and how you are accessing the app.
+
+**Symptom:** Login returns 403 "Invalid CSRF token" immediately on submit.
+
+**Cause:** `APP_URL` is set to an `https://` domain (e.g. for a reverse proxy), but you are accessing the app directly via a plain HTTP address (e.g. `http://192.168.1.x:8089`). Browsers reject cookies marked `Secure` on plain HTTP, so the session and CSRF cookies are never sent back to the server.
+
+**Fix:** Add `COOKIE_SECURE=false` to your Docker environment variables and restart the container:
+
+```yaml
+environment:
+  - COOKIE_SECURE=false
+```
+
+This removes the `Secure` flag from cookies so they work over both HTTP and HTTPS without affecting other security settings.
+
+**Confirm the cause:** Check server logs for:
+```
+APP_URL is HTTPS but COOKIE_SECURE is not set — direct HTTP access will fail.
+```
+
 ## CORS Errors
 
 If you see `Access-Control-Allow-Origin` errors in the browser console:
