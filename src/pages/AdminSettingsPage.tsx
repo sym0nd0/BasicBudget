@@ -288,6 +288,7 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
                 ref={restoreFileRef}
                 type="file"
                 accept=".json,application/json"
+                aria-label="Select backup file to restore"
                 className="block w-full text-sm text-[var(--color-text)] file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[var(--color-surface-2)] file:text-[var(--color-text)] hover:file:bg-[var(--color-border)]"
               />
               <Button onClick={handleRestore} disabled={restoreLoading} variant="danger">
