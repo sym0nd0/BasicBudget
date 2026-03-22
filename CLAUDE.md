@@ -378,6 +378,78 @@ These rules apply to every file in the project without exception.
 
 ---
 
+## Global Engineering Rules
+
+These rules apply to ALL code in this repository. Follow them on every task, without exception.
+
+### General Behaviour
+
+- Prioritise production safety over speed
+
+### API & Payments
+
+- All API routes must implement rate limiting
+- Expensive or AI endpoints must have strict usage limits
+- Payment webhooks must verify signatures
+- Reject any unsigned or invalid webhook events
+
+### Authentication & Sessions
+
+- Do NOT store tokens in `localStorage`
+- Use secure, `httpOnly` cookies for authentication
+- All sessions must have an expiration
+- Implement session invalidation (logout/revoke)
+
+### Database & Performance
+
+- Add indexes for frequently queried fields
+- All list endpoints must implement pagination
+- Ensure queries scale beyond small datasets
+
+### Reliability & Operations
+
+- Implement a `/health` endpoint
+- Enable production logging (errors and key events)
+- Validate environment variables at startup (fail fast)
+- Return safe, non-sensitive error messages to clients
+
+### Backups & Recovery
+
+- Ensure automated database backups exist
+- Ensure backups can be restored
+- Migrations must be reversible
+- Repository must be version controlled
+
+### Access Control
+
+- Enforce role-based access control (RBAC)
+- Do NOT rely on "authenticated" checks alone — always verify role explicitly
+
+### CORS & Network Security
+
+- Restrict CORS to specific trusted origins
+- Do NOT allow wildcard (`*`) CORS in production
+
+### Code Quality
+
+- Ensure critical paths are predictable and safe
+
+### Deployment Safety
+
+Before completing any task, ensure:
+
+- Environment variables are present and validated
+- Authentication and rate limiting are enforced on all sensitive endpoints
+- Changes are safe for production use
+
+### Enforcement
+
+- If any rule is violated, fix it as part of the task
+- If it cannot be fixed, clearly explain what is missing and why
+- Do NOT ignore these rules, even if not explicitly asked
+
+---
+
 ## Stack-Specific Rules
 
 ### React
