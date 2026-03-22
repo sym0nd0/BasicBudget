@@ -18,7 +18,7 @@ BasicBudget is configured through environment variables. Set these in your `dock
 | `DB_PATH` | `data/basicbudget.db` | Path to the SQLite database file. |
 | `PORT` | `3001` | Port the Express server listens on. |
 | `NODE_ENV` | `development` | Set to `production` for production deployments. Enables production optimisations and stricter security. |
-| `COOKIE_SECURE` | `true` in production, `false` otherwise | Override cookie security. Set to `false` when `APP_URL` is `http://` — a startup warning fires if this may be needed. |
+| `COOKIE_SECURE` | auto-detected from `APP_URL` | Controls whether session and CSRF cookies carry the `Secure` flag. Automatically `true` when `APP_URL` starts with `https://` in production, `false` otherwise. **Set to `false` if your `APP_URL` is an `https://` domain but you also access the app over plain HTTP** (e.g. `http://192.168.1.x:8089`). Without this, browsers silently discard session and CSRF cookies on HTTP, causing login to fail with "Invalid CSRF token". A startup warning is logged when this mismatch is detected. |
 
 ## SMTP and OIDC
 

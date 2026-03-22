@@ -50,6 +50,20 @@ const BANNER = [
 for (const line of BANNER) logger.info(line);
 logger.info(`v${getVersionInfo().current}  |  ${config.NODE_ENV}`);
 
+// Warn when APP_URL is HTTPS but COOKIE_SECURE is not explicitly overridden.
+// In this state, cookies are marked secure: true — browsers will reject them over
+// plain HTTP (e.g. direct LAN access). Set COOKIE_SECURE=false to allow HTTP.
+if (
+  config.NODE_ENV === 'production' &&
+  config.APP_URL.startsWith('https://') &&
+  config.COOKIE_SECURE === undefined
+) {
+  logger.warn(
+    'APP_URL is HTTPS but COOKIE_SECURE is not set — direct HTTP access will fail. ' +
+    'Set COOKIE_SECURE=false if you access the app over plain HTTP (e.g. a local IP address).',
+  );
+}
+
 // 1. Trust proxy (for rate-limit IP tracking behind reverse proxy)
 app.set('trust proxy', 1);
 
@@ -132,14 +146,13 @@ if (config.NODE_ENV === 'production') {
 // 12. Global error handler
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: Error & { status?: number; code?: string }, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  if (config.NODE_ENV !== 'production') {
-    logger.error('Unhandled request error', { error: err instanceof Error ? err.message : String(err) });
-  }
-  // Handle CSRF errors
-  if (err.code === 'EBADCSRFTOKEN' || (err as { statusCode?: number }).statusCode === 403) {
+  // Handle CSRF errors — always log at warn level regardless of environment
+  if (err.code === 'EBADCSRFTOKEN') {
+    logger.warn('CSRF token validation failed', { error: err instanceof Error ? err.message : String(err) });
     res.status(403).json({ message: 'Invalid CSRF token' });
     return;
   }
+  logger.error('Unhandled request error', { error: err instanceof Error ? err : String(err) });
   const status = err.status ?? 500;
   const message = config.NODE_ENV === 'production' && status === 500
     ? 'Internal server error'
