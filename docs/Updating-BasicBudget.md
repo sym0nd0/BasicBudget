@@ -13,7 +13,7 @@ This downloads the newest `latest` tag from GHCR and restarts the container. You
 
 ## Pinning to a Specific Version
 
-To pin to a specific release instead of `latest`, update your `docker-compose.yml`:
+To pin to a specific release instead of `latest`, update your `compose.yml`:
 
 ```yaml
 image: ghcr.io/sym0nd0/basicbudget:v2.23.0

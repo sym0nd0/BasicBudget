@@ -2,21 +2,18 @@ services:
   basicbudget:
     image: ghcr.io/sym0nd0/basicbudget:latest
     ports:
-      - "8080:3000"
+      - "8080:${PORT:-3000}"
     volumes:
       - bb-data:/app/data
     environment:
-      - NODE_ENV=production
-      - PORT=3000
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=${PORT:-3000}
       # Required secrets — set these in your environment or a .env file
       - SESSION_SECRET=${SESSION_SECRET}
       - TOTP_ENCRYPTION_KEY=${TOTP_ENCRYPTION_KEY}
       # Application URLs
       - APP_URL=${APP_URL:-http://localhost:8080}
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:8080}
-      # SMTP and OIDC are now configured via the Admin Panel (/admin/settings).
-      # To migrate an existing deployment, set these vars once and they will be
-      # seeded into the database automatically on first startup, then remove them.
       # Set COOKIE_SECURE=false if running without an HTTPS reverse proxy (e.g. direct HTTP on port 8080)
       - COOKIE_SECURE=${COOKIE_SECURE}
     restart: unless-stopped
