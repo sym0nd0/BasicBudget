@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import supertest from 'supertest';
-import { getApp, makeTestUser } from '../helpers.js';
+import { getApp, makeTestUser, createTestUser, loginTestUser } from '../helpers.js';
 import type { TestUser } from '../helpers.js';
 
 let app: Awaited<ReturnType<typeof getApp>>;
 let adminAgent: ReturnType<typeof supertest.agent>;
 let adminUser: TestUser;
+let nonAdminAgent: ReturnType<typeof supertest.agent>;
 
 async function csrfToken(agent: ReturnType<typeof supertest.agent>): Promise<string> {
   const r = await agent.get('/api/auth/csrf-token');
@@ -24,6 +25,12 @@ beforeAll(async () => {
   csrf = await csrfToken(adminAgent);
   await adminAgent.post('/api/auth/login').set('X-CSRF-Token', csrf)
     .send({ email: adminUser.email, password: adminUser.password });
+
+  // Register a second user — they will NOT be admin
+  nonAdminAgent = supertest.agent(app);
+  const regularUser = makeTestUser('regular');
+  await createTestUser(nonAdminAgent, regularUser);
+  await loginTestUser(nonAdminAgent, regularUser);
 });
 
 describe('GET /api/admin/backup', () => {
@@ -31,6 +38,11 @@ describe('GET /api/admin/backup', () => {
     const agent = supertest.agent(app);
     const res = await agent.get('/api/admin/backup');
     expect(res.status).toBe(401);
+  });
+
+  it('returns 403 for authenticated non-admin', async () => {
+    const res = await nonAdminAgent.get('/api/admin/backup');
+    expect(res.status).toBe(403);
   });
 
   it('returns valid backup JSON for admin', async () => {
@@ -45,6 +57,7 @@ describe('GET /api/admin/backup', () => {
     expect(res.body.tables).not.toHaveProperty('sessions');
     expect(res.body.tables).not.toHaveProperty('totp_used_tokens');
     expect(res.body.tables).not.toHaveProperty('reset_tokens');
+    expect(res.headers['cache-control']).toBe('no-store');
   });
 
   it('includes created data in backup', async () => {
@@ -69,6 +82,16 @@ describe('POST /api/admin/backup/restore', () => {
       .set('X-CSRF-Token', csrf)
       .attach('file', Buffer.from(JSON.stringify(data)), 'backup.json');
     expect(res.status).toBe(401);
+  });
+
+  it('returns 403 for authenticated non-admin', async () => {
+    const csrf = await csrfToken(nonAdminAgent);
+    const data = { backup_type: 'full', backup_schema_version: 1, tables: {} };
+    const res = await nonAdminAgent
+      .post('/api/admin/backup/restore')
+      .set('X-CSRF-Token', csrf)
+      .attach('file', Buffer.from(JSON.stringify(data)), 'backup.json');
+    expect(res.status).toBe(403);
   });
 
   it('returns 400 without file', async () => {
