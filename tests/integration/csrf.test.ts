@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import supertest from 'supertest';
-import { getApp, makeTestUser } from '../helpers.js';
+import { getApp, makeTestUser, getCsrfToken } from '../helpers.js';
 
 let app: Awaited<ReturnType<typeof getApp>>;
 
@@ -34,5 +34,28 @@ describe('CSRF protection', () => {
     const agent = supertest.agent(app);
     const res = await agent.get('/api/auth/status');
     expect(res.status).toBe(200);
+  });
+
+  it('login with valid CSRF token succeeds', async () => {
+    const agent = supertest.agent(app);
+    const user = makeTestUser('csrf_login');
+
+    // Register
+    const regCsrf = await getCsrfToken(agent);
+    const regRes = await agent
+      .post('/api/auth/register')
+      .set('X-CSRF-Token', regCsrf)
+      .send({ email: user.email, password: user.password });
+    expect(regRes.status).toBe(201);
+
+    // Log in with a fresh CSRF token — session may have changed after register
+    const loginCsrf = await getCsrfToken(agent);
+    const loginRes = await agent
+      .post('/api/auth/login')
+      .set('X-CSRF-Token', loginCsrf)
+      .send({ email: user.email, password: user.password });
+
+    expect(loginRes.status).not.toBe(403);
+    expect(loginRes.status).toBe(200);
   });
 });

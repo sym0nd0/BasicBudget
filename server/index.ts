@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { config } from './config.js';
+import { config, isHttpDeployment } from './config.js';
 import { sessionMiddleware } from './auth/session.js';
 import { doubleCsrfProtection } from './middleware/csrf.js';
 import { generalApiLimiter, staticLimiter } from './middleware/rate-limit.js';
@@ -61,6 +61,14 @@ if (
   logger.warn(
     'APP_URL is HTTPS but COOKIE_SECURE is not set — direct HTTP access will fail. ' +
     'Set COOKIE_SECURE=false if you access the app over plain HTTP (e.g. a local IP address).',
+  );
+}
+
+if (config.NODE_ENV === 'production') {
+  logger.info(
+    isHttpDeployment
+      ? 'Cookie security: Secure flag OFF (HTTP mode — cookies will work over plain HTTP)'
+      : 'Cookie security: Secure flag ON (HTTPS mode)',
   );
 }
 
@@ -145,10 +153,22 @@ if (config.NODE_ENV === 'production') {
 
 // 12. Global error handler
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-app.use((err: Error & { status?: number; code?: string }, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+app.use((err: Error & { status?: number; code?: string }, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   // Handle CSRF errors — always log at warn level regardless of environment
   if (err.code === 'EBADCSRFTOKEN') {
-    logger.warn('CSRF token validation failed', { error: err instanceof Error ? err.message : String(err) });
+    const hasCsrfCookie = Boolean(req.cookies?.['bb.csrf']);
+    const csrfHeader = req.headers['x-csrf-token'] as string | undefined;
+    const hasCsrfHeader = Boolean(csrfHeader);
+    const cookieHeaderMatch =
+      hasCsrfCookie && hasCsrfHeader
+        ? req.cookies['bb.csrf'] === csrfHeader
+        : false;
+    logger.warn('CSRF token validation failed', {
+      error: err instanceof Error ? err.message : String(err),
+      hasCsrfCookie,
+      hasCsrfHeader,
+      cookieHeaderMatch,
+    });
     res.status(403).json({ message: 'Invalid CSRF token' });
     return;
   }
