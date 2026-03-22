@@ -17,7 +17,7 @@ BasicBudget is configured through environment variables. Set these in your `comp
 | `CORS_ORIGIN` | Same as `APP_URL` | Allowed CORS origin. Override if your frontend is served from a different URL. |
 | `DB_PATH` | `data/basicbudget.db` | Path to the SQLite database file. |
 | `PORT` | `3001` | In Docker deployments, controls the **host** port via `compose.yml` (`${PORT:-8080}:3000`); the container always listens internally on port 3000. In bare Node.js, sets the Express listen port directly. |
-| `NODE_ENV` | `development` | Set to `production` for production deployments. Enables production optimisations and stricter security. |
+| `NODE_ENV` | `development` | In Docker, always `production` (set by the Dockerfile — **do not override via `.env`**). In bare Node.js, controls whether Express serves static files and enables production security. |
 | `COOKIE_SECURE` | auto-detected from `APP_URL` | Controls whether session and CSRF cookies carry the `Secure` flag. Automatically `true` when `APP_URL` starts with `https://` in production, `false` otherwise. **Set to `false` if your `APP_URL` is an `https://` domain but you also access the app over plain HTTP** (e.g. `http://192.168.1.x:8089`). Without this, browsers silently discard session and CSRF cookies on HTTP, causing login to fail with "Invalid CSRF token". A startup warning is logged when this mismatch is detected. |
 
 ## SMTP and OIDC
