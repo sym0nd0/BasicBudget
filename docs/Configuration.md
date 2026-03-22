@@ -1,6 +1,6 @@
 # Configuration
 
-BasicBudget is configured through environment variables. Set these in your `docker-compose.yml` environment block, a `.env` file, or your system environment.
+BasicBudget is configured through environment variables. Set these in your `compose.yml` environment block, a `.env` file, or your system environment.
 
 ## Required Variables
 

@@ -55,7 +55,7 @@ BasicBudget applies schema migrations automatically on startup. If a migration f
 
 If you lose data after updating the container, you likely did not mount the data directory as a volume. Without a volume mount, data is stored inside the container and lost when it is removed.
 
-Add the volume to your `docker-compose.yml`:
+Add the volume to your `compose.yml`:
 
 ```yaml
 volumes:

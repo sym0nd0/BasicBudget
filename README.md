@@ -281,7 +281,7 @@ docker compose up -d
 
 The app is served on **http://localhost:8080**.
 
-All secrets are passed via environment variables. Create a `.env` file alongside `docker-compose.yml` (Docker Compose picks it up automatically):
+All secrets are passed via environment variables. Create a `.env` file alongside `compose.yml` (Docker Compose picks it up automatically):
 
 ```env
 SESSION_SECRET=<random 32+ char string>
@@ -738,7 +738,7 @@ BasicBudget/
 ├── CODE_OF_CONDUCT.md                 # Community guidelines
 ├── CONTRIBUTING.md                    # Contribution guidelines
 ├── Dockerfile                         # Multi-stage container image
-├── docker-compose.yml                 # Docker Compose configuration
+├── compose.yml                 # Docker Compose configuration
 ├── entrypoint.sh                      # Container entrypoint (fixes volume ownership)
 ├── LICENSE                            # MIT License
 ├── PLAN.md                            # Project planning document

@@ -9,7 +9,7 @@ Docker is the recommended way to run BasicBudget in production.
 
 ## Quick Start
 
-Create a `docker-compose.yml` file:
+Create a `compose.yml` file:
 
 ```yaml
 services:
