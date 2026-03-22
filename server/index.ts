@@ -169,6 +169,14 @@ app.use((err: Error & { status?: number; code?: string }, req: express.Request, 
       hasCsrfHeader,
       cookieHeaderMatch,
     });
+    // Actionable hint when the cause is almost certainly Secure cookies over HTTP
+    if (!hasCsrfCookie && !isHttpDeployment) {
+      logger.warn(
+        'Hint: cookies use Secure flag (HTTPS mode) but the browser did not send the CSRF cookie. ' +
+        'If you access this app over plain HTTP (e.g. http://192.168.x.x), ensure ' +
+        'COOKIE_SECURE=false is set in your container environment (docker-compose.yml).',
+      );
+    }
     res.status(403).json({ message: 'Invalid CSRF token' });
     return;
   }

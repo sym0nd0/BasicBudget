@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
@@ -19,6 +19,20 @@ export function AcceptInvitePage() {
   const [accepting, setAccepting] = useState(false);
 
   const token = searchParams.get('token');
+
+  const handleAccept = useCallback(async (tkn: string) => {
+    setAccepting(true);
+    try {
+      await api.acceptInvite(tkn);
+      localStorage.removeItem('pending_invite_token');
+      await refreshAuth();
+      // Show success and redirect after a brief delay
+      setTimeout(() => navigate('/'), 1500);
+    } catch (err) {
+      setError((err as Error).message);
+      setAccepting(false);
+    }
+  }, [refreshAuth, navigate]);
 
   // On mount: fetch invite info
   useEffect(() => {
@@ -43,21 +57,7 @@ export function AcceptInvitePage() {
         setLoading(false);
       }
     })();
-  }, [token, user]);
-
-  const handleAccept = async (tkn: string) => {
-    setAccepting(true);
-    try {
-      await api.acceptInvite(tkn);
-      localStorage.removeItem('pending_invite_token');
-      await refreshAuth();
-      // Show success and redirect after a brief delay
-      setTimeout(() => navigate('/'), 1500);
-    } catch (err) {
-      setError((err as Error).message);
-      setAccepting(false);
-    }
-  };
+  }, [token, user, handleAccept]);
 
   // User not logged in and invite is for existing user
   if (!loading && inviteInfo && !user && inviteInfo.userExists) {
