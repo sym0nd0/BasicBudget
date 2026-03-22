@@ -42,10 +42,11 @@ describe('CSRF protection', () => {
 
     // Register
     const regCsrf = await getCsrfToken(agent);
-    await agent
+    const regRes = await agent
       .post('/api/auth/register')
       .set('X-CSRF-Token', regCsrf)
       .send({ email: user.email, password: user.password });
+    expect(regRes.status).toBe(201);
 
     // Log in with a fresh CSRF token — session may have changed after register
     const loginCsrf = await getCsrfToken(agent);
