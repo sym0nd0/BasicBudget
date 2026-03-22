@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { config, isHttpDeployment } from './config.js';
+import { config } from './config.js';
 import { sessionMiddleware } from './auth/session.js';
 import { doubleCsrfProtection } from './middleware/csrf.js';
 import { generalApiLimiter, staticLimiter } from './middleware/rate-limit.js';
@@ -55,13 +55,12 @@ app.set('trust proxy', 1);
 
 // 2. Helmet security headers
 // codeql[js/insecure-helmet-configuration] CSP is intentionally disabled in development for Vite HMR; production uses Helmet defaults
-// Plain-HTTP deployments (auto-detected via APP_URL or COOKIE_SECURE=false) must not send
-// upgrade-insecure-requests, or browsers will try to load JS/CSS over HTTPS → ERR_SSL_PROTOCOL_ERROR.
+// upgrade-insecure-requests is always omitted: Vite produces root-relative asset paths that
+// already inherit the page protocol, so the directive is redundant over HTTPS and actively
+// breaks plain-HTTP deployments by upgrading asset fetches to HTTPS (ERR_SSL_PROTOCOL_ERROR).
 app.use(helmet({
   contentSecurityPolicy: config.NODE_ENV === 'production'
-    ? (isHttpDeployment
-        ? { directives: { upgradeInsecureRequests: null } }
-        : undefined)
+    ? { directives: { upgradeInsecureRequests: null } }
     : false,
 }));
 
