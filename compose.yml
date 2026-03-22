@@ -7,7 +7,6 @@ services:
     volumes:
       - bb-data:/app/data
     environment:
-      - NODE_ENV=${NODE_ENV:-production}
       # Required secrets — set these in your environment or a .env file
       - SESSION_SECRET=${SESSION_SECRET}
       - TOTP_ENCRYPTION_KEY=${TOTP_ENCRYPTION_KEY}

@@ -175,7 +175,7 @@ Examples:
 - The GitHub Release must be separately edited from Draft → Published + Latest (`gh release edit vX.Y.Z --draft=false --latest`).
 - Schema migrations for existing databases are applied inline in `server/db.ts` with bare `try { ALTER TABLE … } catch {}` blocks. New tables (e.g. `system_settings`) are added via `schema.sql` using `CREATE TABLE IF NOT EXISTS`.
 
-### Docker Compose — port mapping
+### Docker Compose — port mapping and environment
 
 `compose.yml` maps the host port dynamically and always pins the container to port 3000:
 
@@ -186,7 +186,15 @@ ports:
 
 - **Host port** — controlled by `PORT` in `.env` (default `8080`). Setting `PORT=8089` makes the app reachable at `host:8089`.
 - **Container port** — always 3000. The Dockerfile sets `ENV PORT=3000`; Express reads this and binds to 3000 inside the container.
-- **Do not add `PORT` to the compose `environment` block** — doing so overrides the Dockerfile's `ENV PORT=3000` with the user's host-port value, causing a mismatch where Express listens on the wrong port and requests return `Cannot GET /`.
+
+**Variables that must NOT appear in the compose `environment` block:**
+
+| Variable | Why | Dockerfile default |
+|---|---|---|
+| `PORT` | Would override `ENV PORT=3000`, making Express listen on the wrong port | `3000` |
+| `NODE_ENV` | Would leak `development` from `.env`, preventing Express from serving static files (`Cannot GET /`) | `production` |
+
+These are set correctly by the Dockerfile. Docker Compose reads `.env` for `${VAR}` substitution, so any `${NODE_ENV:-production}` in the environment block resolves to whatever `.env` contains — which is `development` for local dev. The `:-default` syntax only applies when the variable is **unset**, not when it's set to a different value.
 
 `container_name: basicbudget` is set so Docker assigns a predictable name rather than a random one.
 
