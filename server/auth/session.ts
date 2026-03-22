@@ -1,6 +1,6 @@
 import session from 'express-session';
 import { SqliteSessionStore } from './session-store.js';
-import { config } from '../config.js';
+import { config, isHttpDeployment } from '../config.js';
 import type { HouseholdRole, SystemRole } from '../../shared/types.js';
 
 // Augment express-session SessionData with app-specific fields
@@ -33,7 +33,7 @@ export const sessionMiddleware = session({
   rolling: true,
   cookie: {
     httpOnly: true,
-    secure: config.COOKIE_SECURE ? config.COOKIE_SECURE === 'true' : config.NODE_ENV === 'production',
+    secure: !isHttpDeployment && config.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   },

@@ -51,3 +51,9 @@ function buildEnv() {
 }
 
 export const config = buildEnv();
+
+// True when the deployment is plain HTTP — either explicitly via COOKIE_SECURE=false,
+// or auto-detected from APP_URL starting with http:// when COOKIE_SECURE is not set.
+export const isHttpDeployment =
+  config.COOKIE_SECURE === 'false' ||
+  (config.COOKIE_SECURE === undefined && config.APP_URL.startsWith('http://'));

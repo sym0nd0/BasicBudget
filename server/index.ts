@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import { config } from './config.js';
+import { config, isHttpDeployment } from './config.js';
 import { sessionMiddleware } from './auth/session.js';
 import { doubleCsrfProtection } from './middleware/csrf.js';
 import { generalApiLimiter, staticLimiter } from './middleware/rate-limit.js';
@@ -50,28 +50,16 @@ const BANNER = [
 for (const line of BANNER) logger.info(line);
 logger.info(`v${getVersionInfo().current}  |  ${config.NODE_ENV}`);
 
-// Warn operators if production cookies will be Secure=true but no HTTPS override is set.
-// Without HTTPS (or a proxy forwarding X-Forwarded-Proto: https), browsers silently drop
-// Secure cookies over plain HTTP, causing all sessions to fail immediately after creation.
-if (config.NODE_ENV === 'production' && !config.COOKIE_SECURE && config.APP_URL.startsWith('http://')) {
-  logger.warn(
-    'COOKIE_SECURE is not set. Session and CSRF cookies use Secure=true in production. ' +
-    'If this instance is not behind an HTTPS reverse proxy, sessions will fail. ' +
-    'Set COOKIE_SECURE=false to disable Secure cookies for non-HTTPS deployments.',
-  );
-}
-
 // 1. Trust proxy (for rate-limit IP tracking behind reverse proxy)
 app.set('trust proxy', 1);
 
 // 2. Helmet security headers
 // codeql[js/insecure-helmet-configuration] CSP is intentionally disabled in development for Vite HMR; production uses Helmet defaults
-// When COOKIE_SECURE=false the deployment is plain HTTP — remove upgrade-insecure-requests so
-// the browser does not attempt to load subresources (JS/CSS) over HTTPS, causing ERR_SSL_PROTOCOL_ERROR.
-const isHttpOnly = config.COOKIE_SECURE === 'false';
+// Plain-HTTP deployments (auto-detected via APP_URL or COOKIE_SECURE=false) must not send
+// upgrade-insecure-requests, or browsers will try to load JS/CSS over HTTPS → ERR_SSL_PROTOCOL_ERROR.
 app.use(helmet({
   contentSecurityPolicy: config.NODE_ENV === 'production'
-    ? (isHttpOnly
+    ? (isHttpDeployment
         ? { directives: { upgradeInsecureRequests: null } }
         : undefined)
     : false,
