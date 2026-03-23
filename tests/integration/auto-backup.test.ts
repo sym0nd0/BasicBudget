@@ -8,7 +8,13 @@ let nonAdminAgent: ReturnType<typeof supertest.agent>;
 
 async function csrfToken(agent: ReturnType<typeof supertest.agent>): Promise<string> {
   const r = await agent.get('/api/auth/csrf-token');
-  return (r.body as { token?: string }).token ?? '';
+  const token = (r.body as { token?: string }).token;
+  if (!token) {
+    throw new Error(
+      `csrfToken: expected token from /api/auth/csrf-token but got ${r.status} — body: ${JSON.stringify(r.body)}`
+    );
+  }
+  return token;
 }
 
 beforeAll(async () => {
