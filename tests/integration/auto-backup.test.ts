@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import supertest from 'supertest';
-import { getApp, makeTestUser } from '../helpers.js';
+import { getApp, makeTestUser, createTestUser, loginTestUser } from '../helpers.js';
 
 let app: Awaited<ReturnType<typeof getApp>>;
 let adminAgent: ReturnType<typeof supertest.agent>;
@@ -20,29 +20,28 @@ async function csrfToken(agent: ReturnType<typeof supertest.agent>): Promise<str
 beforeAll(async () => {
   app = await getApp();
 
-  // First user registered becomes admin automatically
+  // First user — set admin explicitly for resilience against worker reuse
   adminAgent = supertest.agent(app);
   const adminUser = makeTestUser('abackup');
-  let csrf = await csrfToken(adminAgent);
-  const adminRegRes = await adminAgent.post('/api/auth/register').set('X-CSRF-Token', csrf)
-    .send({ email: adminUser.email, password: adminUser.password, display_name: adminUser.displayName });
-  expect(adminRegRes.status).toBe(201);
-  csrf = await csrfToken(adminAgent);
-  const adminLoginRes = await adminAgent.post('/api/auth/login').set('X-CSRF-Token', csrf)
-    .send({ email: adminUser.email, password: adminUser.password });
-  expect(adminLoginRes.status).toBe(200);
+  await createTestUser(adminAgent, adminUser);
+  await loginTestUser(adminAgent, adminUser);
+
+  // Ensure admin role regardless of registration order
+  const db = (await import('../../server/db.js')).default;
+  db.prepare("UPDATE users SET system_role = 'admin' WHERE email = ?").run(adminUser.email);
 
   // Second user — not admin
   nonAdminAgent = supertest.agent(app);
   const regularUser = makeTestUser('abackup-reg');
-  csrf = await csrfToken(nonAdminAgent);
-  const regRes = await nonAdminAgent.post('/api/auth/register').set('X-CSRF-Token', csrf)
-    .send({ email: regularUser.email, password: regularUser.password, display_name: regularUser.displayName });
-  expect(regRes.status).toBe(201);
-  csrf = await csrfToken(nonAdminAgent);
-  const loginRes = await nonAdminAgent.post('/api/auth/login').set('X-CSRF-Token', csrf)
-    .send({ email: regularUser.email, password: regularUser.password });
-  expect(loginRes.status).toBe(200);
+  await createTestUser(nonAdminAgent, regularUser);
+  await loginTestUser(nonAdminAgent, regularUser);
+});
+
+afterAll(async () => {
+  const { deleteSetting } = await import('../../server/services/settings.js');
+  deleteSetting('backup.enabled');
+  deleteSetting('backup.interval_hours');
+  deleteSetting('backup.max_backups');
 });
 
 describe('GET /api/admin/settings/backup', () => {
