@@ -1,4 +1,5 @@
 import rateLimit from 'express-rate-limit';
+import type { Request } from 'express';
 
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -76,15 +77,17 @@ export const staticLimiter = rateLimit({
   message: 'Too many requests. Please slow down.',
 });
 
+function getRateLimitKey(req: Request): string {
+  const userId = (req as unknown as { userId?: string }).userId;
+  return userId ?? req.ip ?? 'unknown';
+}
+
 export const backupStatusLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    const userId = (req as unknown as { userId?: string }).userId;
-    return userId ?? req.ip ?? 'unknown';
-  },
+  keyGenerator: (req) => getRateLimitKey(req),
   message: { message: 'Too many requests. Please slow down.' },
 });
 
@@ -93,10 +96,7 @@ export const backupConfigWriteLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    const userId = (req as unknown as { userId?: string }).userId;
-    return userId ?? req.ip ?? 'unknown';
-  },
+  keyGenerator: (req) => getRateLimitKey(req),
   skip: () => process.env.NODE_ENV === 'test',
   message: { message: 'Too many backup configuration changes. Please try again in 15 minutes.' },
 });
