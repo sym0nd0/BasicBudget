@@ -218,13 +218,26 @@ Both notices may appear together if both files changed. Never omit this notice �
 
 All screenshots, documentation tables, and wiki pages must list pages in **sidebar navigation order**, top to bottom:
 
-> Dashboard → Income → Expenses → Debt → Savings → Reports → Household → Settings
+> Dashboard → Income → Expenses → Debt → Savings → Reports → Household → Settings → Admin Settings
 
 This applies to:
 - The screenshot capture order in `scripts/screenshot.ts`
 - The screenshot tables in `README.md` (column pairing within each row)
 - The documentation link table in `README.md`
 - The sections in `docs/Screenshots.md`
+
+### Screenshot staleness rule
+
+**Screenshots must be regenerated whenever a new page is added to the sidebar navigation.**
+
+When adding a new sidebar route:
+1. Add the page to `scripts/screenshot.ts` (both dark and light blocks, in sidebar order)
+2. Add entries to the screenshot table in `README.md`
+3. Add a section to `docs/Screenshots.md`
+4. Run `npm run screenshots` to regenerate all files
+5. Commit the new screenshot PNG files alongside the other changes
+
+**Never ship a PR that adds a sidebar page without also adding and capturing its screenshot.** Stale or missing screenshots in `README.md` misrepresent the current state of the application.
 
 ---
 
