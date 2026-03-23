@@ -64,8 +64,8 @@ export function getAutoBackupStatus(): {
   if (fs.existsSync(dir)) {
     try {
       backup_count = fs.readdirSync(dir).filter(f => /^basicbudget-auto-backup-.+\.json$/.test(f)).length;
-    } catch {
-      // If we can't read the dir, report 0
+    } catch (err) {
+      logger.error('Auto-backup: failed to read backup directory', { dir, error: (err as Error).message });
       backup_count = 0;
     }
   }
