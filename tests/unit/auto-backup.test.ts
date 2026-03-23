@@ -96,6 +96,51 @@ describe('getBackupConfig — stored settings', () => {
   });
 });
 
+describe('getBackupConfig — invalid persisted values fall back to safe defaults', () => {
+  afterEach(() => {
+    mockGetSetting.mockReturnValue(null);
+  });
+
+  it('falls back when interval_hours is 0 (below schema minimum)', () => {
+    mockGetSetting.mockImplementation((key: string) => {
+      if (key === 'backup.enabled') return 'true';
+      if (key === 'backup.interval_hours') return '0';
+      if (key === 'backup.max_backups') return '5';
+      return null;
+    });
+    const cfg = getBackupConfig();
+    expect(cfg.enabled).toBe(false);
+    expect(cfg.interval_hours).toBe(24);
+    expect(cfg.max_backups).toBe(7);
+  });
+
+  it('falls back when max_backups is negative', () => {
+    mockGetSetting.mockImplementation((key: string) => {
+      if (key === 'backup.enabled') return 'false';
+      if (key === 'backup.interval_hours') return '6';
+      if (key === 'backup.max_backups') return '-1';
+      return null;
+    });
+    const cfg = getBackupConfig();
+    expect(cfg.enabled).toBe(false);
+    expect(cfg.interval_hours).toBe(24);
+    expect(cfg.max_backups).toBe(7);
+  });
+
+  it('falls back when interval_hours exceeds maximum (721)', () => {
+    mockGetSetting.mockImplementation((key: string) => {
+      if (key === 'backup.enabled') return 'true';
+      if (key === 'backup.interval_hours') return '721';
+      if (key === 'backup.max_backups') return '10';
+      return null;
+    });
+    const cfg = getBackupConfig();
+    expect(cfg.enabled).toBe(false);
+    expect(cfg.interval_hours).toBe(24);
+    expect(cfg.max_backups).toBe(7);
+  });
+});
+
 describe('autoBackupConfigSchema validation', () => {
   it('rejects interval_hours < 1', () => {
     const result = autoBackupConfigSchema.safeParse({ enabled: true, interval_hours: 0, max_backups: 7 });

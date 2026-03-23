@@ -4,6 +4,7 @@ import db from '../db.js';
 import { getSetting, setSetting } from './settings.js';
 import { BACKUP_TABLES, getAppVersion } from '../routes/backup.js';
 import { logger } from './logger.js';
+import { autoBackupConfigSchema } from '../validation/schemas.js';
 
 // ─── Backup directory ──────────────────────────────────────────────────────────
 
@@ -40,11 +41,20 @@ export function getBackupConfig(): BackupScheduleConfig {
   const interval_hours = intervalRaw !== null ? parseInt(intervalRaw, 10) : 24;
   const max_backups = maxRaw !== null ? parseInt(maxRaw, 10) : 7;
 
-  return {
+  const parsed = autoBackupConfigSchema.safeParse({
     enabled,
     interval_hours: Number.isNaN(interval_hours) ? 24 : interval_hours,
     max_backups: Number.isNaN(max_backups) ? 7 : max_backups,
-  };
+  });
+
+  if (!parsed.success) {
+    logger.warn('Auto-backup: invalid persisted config, falling back to defaults', {
+      issues: parsed.error.issues,
+    });
+    return { enabled: false, interval_hours: 24, max_backups: 7 };
+  }
+
+  return parsed.data;
 }
 
 // ─── Status ────────────────────────────────────────────────────────────────────
