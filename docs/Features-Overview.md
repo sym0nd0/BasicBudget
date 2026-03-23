@@ -69,6 +69,7 @@ A comprehensive list of everything BasicBudget can do.
 - **OIDC configuration** — set up single sign-on at runtime without restarting the server
 - **Expense categories** — add, remove, and reorder expense categories
 - **Registration control** — enable or disable public self-registration
+- **Database backup and restore** — download a full JSON backup; restore atomically from a backup file; automated scheduled backups to server disk with configurable interval and retention
 - **Audit log** — searchable, paginated log of significant actions
 - **Log level** — adjust server logging verbosity at runtime
 

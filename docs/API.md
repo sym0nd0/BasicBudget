@@ -204,6 +204,8 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 | `PUT` | `/api/admin/settings/logging` | Set log level |
 | `GET` | `/api/admin/settings/registration` | Get registration status |
 | `PUT` | `/api/admin/settings/registration` | Enable/disable public registration |
+| `GET` | `/api/admin/settings/backup` | Get automated backup configuration and status |
+| `PUT` | `/api/admin/settings/backup` | Update automated backup configuration |
 | `GET` | `/api/admin/audit-log` | Paginated audit log with filters |
 | `GET` | `/api/admin/backup` | Download full database backup as JSON |
 | `POST` | `/api/admin/backup/restore` | Restore from backup file (`multipart/form-data`, field `file`) |
