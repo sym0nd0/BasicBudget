@@ -44,6 +44,14 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 |---|---|
 | <img src="docs/screenshots/savings-dark.png" alt="Savings" width="350"> | <img src="docs/screenshots/reports-dark.png" alt="Reports" width="350"> |
 
+| Household | Settings |
+|---|---|
+| <img src="docs/screenshots/household-dark.png" alt="Household" width="350"> | <img src="docs/screenshots/settings-dark.png" alt="Settings" width="350"> |
+
+| Admin Settings | |
+|---|---|
+| <img src="docs/screenshots/admin-settings-dark.png" alt="Admin Settings" width="350"> | |
+
 ### Light theme
 
 | Dashboard | Income |
@@ -57,6 +65,14 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 | Savings | Reports |
 |---|---|
 | <img src="docs/screenshots/savings-light.png" alt="Savings" width="350"> | <img src="docs/screenshots/reports-light.png" alt="Reports" width="350"> |
+
+| Household | Settings |
+|---|---|
+| <img src="docs/screenshots/household-light.png" alt="Household" width="350"> | <img src="docs/screenshots/settings-light.png" alt="Settings" width="350"> |
+
+| Admin Settings | |
+|---|---|
+| <img src="docs/screenshots/admin-settings-light.png" alt="Admin Settings" width="350"> | |
 
 ---
 
