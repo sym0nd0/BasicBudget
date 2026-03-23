@@ -105,6 +105,7 @@ Full user documentation is available in the [`docs/`](docs/) directory:
   - **Registration**: toggle public sign-up on or off; when disabled, new accounts can only be created via household invites or directly by admins (the first user on a fresh instance can always register)
   - **Logging**: set minimum log level (debug, info, warn, error) to control verbosity of server output; output is JSON-formatted for container and log aggregation compatibility
   - **Expense categories**: add, remove, reorder, or reset to defaults
+- **Database backup and restore**: download a full JSON backup of all users, households, budget data, and system settings; restore from a backup file for instance migration or disaster recovery (admin-only; invalidates all sessions on restore)
 - **Audit log**: paginated, filterable log of all authentication and admin actions
 - All admin actions are written to the audit log
 
@@ -597,6 +598,8 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 | GET | `/api/admin/settings/registration` | Get registration status |
 | PUT | `/api/admin/settings/registration` | Enable/disable public registration |
 | GET | `/api/admin/audit-log` | Paginated audit log with filters |
+| GET | `/api/admin/backup` | Download full database backup as JSON |
+| POST | `/api/admin/backup/restore` | Restore from backup file (replaces all data atomically) |
 
 ---
 

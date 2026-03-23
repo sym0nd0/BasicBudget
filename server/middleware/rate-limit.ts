@@ -56,11 +56,15 @@ export const generalApiLimiter = rateLimit({
   message: { message: 'Too many requests. Please slow down.' },
 });
 
+// Skip in test mode — backup/restore integration tests make more than 5 requests to these
+// endpoints in a single run. All other limiters remain active in tests (security tests
+// verify loginLimiter still triggers 429 as expected).
 export const sensitiveActionLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
   message: { message: 'Too many attempts. Please try again in 15 minutes.' },
 });
 
