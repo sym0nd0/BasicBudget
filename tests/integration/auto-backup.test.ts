@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import supertest from 'supertest';
-import { getApp, makeTestUser, createTestUser, loginTestUser } from '../helpers.js';
+import { getApp, makeTestUser } from '../helpers.js';
 
 let app: Awaited<ReturnType<typeof getApp>>;
 let adminAgent: ReturnType<typeof supertest.agent>;
@@ -18,17 +18,25 @@ beforeAll(async () => {
   adminAgent = supertest.agent(app);
   const adminUser = makeTestUser('abackup');
   let csrf = await csrfToken(adminAgent);
-  await adminAgent.post('/api/auth/register').set('X-CSRF-Token', csrf)
+  const adminRegRes = await adminAgent.post('/api/auth/register').set('X-CSRF-Token', csrf)
     .send({ email: adminUser.email, password: adminUser.password, display_name: adminUser.displayName });
+  expect(adminRegRes.status).toBe(201);
   csrf = await csrfToken(adminAgent);
-  await adminAgent.post('/api/auth/login').set('X-CSRF-Token', csrf)
+  const adminLoginRes = await adminAgent.post('/api/auth/login').set('X-CSRF-Token', csrf)
     .send({ email: adminUser.email, password: adminUser.password });
+  expect(adminLoginRes.status).toBe(200);
 
   // Second user — not admin
   nonAdminAgent = supertest.agent(app);
   const regularUser = makeTestUser('abackup-reg');
-  await createTestUser(nonAdminAgent, regularUser);
-  await loginTestUser(nonAdminAgent, regularUser);
+  csrf = await csrfToken(nonAdminAgent);
+  const regRes = await nonAdminAgent.post('/api/auth/register').set('X-CSRF-Token', csrf)
+    .send({ email: regularUser.email, password: regularUser.password, display_name: regularUser.displayName });
+  expect(regRes.status).toBe(201);
+  csrf = await csrfToken(nonAdminAgent);
+  const loginRes = await nonAdminAgent.post('/api/auth/login').set('X-CSRF-Token', csrf)
+    .send({ email: regularUser.email, password: regularUser.password });
+  expect(loginRes.status).toBe(200);
 });
 
 describe('GET /api/admin/settings/backup', () => {

@@ -21,8 +21,8 @@ import {
   generateBackupFilename,
   getBackupConfig,
   pruneOldBackups,
-  autoBackupConfigSchema,
 } from '../../server/services/autoBackup.js';
+import { autoBackupConfigSchema } from '../../server/validation/schemas.js';
 import { getSetting } from '../../server/services/settings.js';
 
 const mockGetSetting = getSetting as ReturnType<typeof vi.fn>;
