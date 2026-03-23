@@ -75,3 +75,28 @@ export const staticLimiter = rateLimit({
   legacyHeaders: false,
   message: 'Too many requests. Please slow down.',
 });
+
+export const backupStatusLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const userId = (req as unknown as { userId?: string }).userId;
+    return userId ?? req.ip ?? 'unknown';
+  },
+  message: { message: 'Too many requests. Please slow down.' },
+});
+
+export const backupConfigWriteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    const userId = (req as unknown as { userId?: string }).userId;
+    return userId ?? req.ip ?? 'unknown';
+  },
+  skip: () => process.env.NODE_ENV === 'test',
+  message: { message: 'Too many backup configuration changes. Please try again in 15 minutes.' },
+});

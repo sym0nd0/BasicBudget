@@ -18,6 +18,7 @@ import { logger } from '../services/logger.js';
 import type { LogLevel } from '../services/logger.js';
 import { getBackupConfig, getAutoBackupStatus, restartScheduler } from '../services/autoBackup.js';
 import { autoBackupConfigSchema } from '../validation/schemas.js';
+import { backupStatusLimiter, backupConfigWriteLimiter } from '../middleware/rate-limit.js';
 
 const router = Router();
 
@@ -390,14 +391,14 @@ router.put('/settings/registration', (req: Request, res: Response) => {
 // ─── Automated backup settings ────────────────────────────────────────────────
 
 // GET /api/admin/settings/backup
-router.get('/settings/backup', (_req: Request, res: Response) => {
+router.get('/settings/backup', backupStatusLimiter, (_req: Request, res: Response) => {
   const config = getBackupConfig();
   const status = getAutoBackupStatus();
   res.json({ ...config, ...status });
 });
 
 // PUT /api/admin/settings/backup
-router.put('/settings/backup', (req: Request, res: Response) => {
+router.put('/settings/backup', backupConfigWriteLimiter, (req: Request, res: Response) => {
   const result = autoBackupConfigSchema.safeParse(req.body);
   if (!result.success) {
     res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
