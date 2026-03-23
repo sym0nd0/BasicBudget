@@ -75,6 +75,33 @@ Set the verbosity of server-side logging:
 | **warn** | Warnings and potential issues only. |
 | **error** | Errors only. |
 
+## Database Backup
+
+The Database Backup section lets you export or restore a full backup of the entire BasicBudget instance — all users, households, budget data, and system settings.
+
+### Downloading a Backup
+
+Click **Download Backup** to download a JSON file containing all data from the database. The file is named `basicbudget-backup-YYYY-MM-DD.json`.
+
+The backup includes all persistent data (19 tables). Ephemeral data — active login sessions, one-time password replay tokens, and password reset tokens — is excluded. These are short-lived and have no value in a backup.
+
+### Restoring from a Backup
+
+1. Select the backup JSON file using the file picker.
+2. Click **Restore Backup**.
+3. Confirm the warning dialog — this operation permanently replaces **all** existing data and cannot be undone.
+4. After a successful restore, all active sessions are invalidated and all users (including you) are logged out. You will be redirected to the login page after three seconds.
+
+> **Note on encrypted secrets:** TOTP two-factor authentication secrets, the SMTP password, and the OIDC client secret are encrypted at rest using the `TOTP_ENCRYPTION_KEY` environment variable. If you restore a backup on an instance with a **different** `TOTP_ENCRYPTION_KEY`, those encrypted values will be unrecoverable. Affected users will need to re-enrol their 2FA and the admin will need to re-enter the SMTP and OIDC credentials.
+
+### Use Cases
+
+| Use case | Description |
+|---|---|
+| **Instance migration** | Move BasicBudget to a new server or fresh Docker container |
+| **Disaster recovery** | Restore data after accidental deletion or a failed upgrade |
+| **Testing** | Snapshot and restore a known-good state during development |
+
 ## Audit Log
 
 The Audit Log records significant actions performed by all users.
