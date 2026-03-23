@@ -16,7 +16,8 @@ import { resetOidcClient } from './oidc.js';
 import { sendTestEmail } from '../services/email.js';
 import { logger } from '../services/logger.js';
 import type { LogLevel } from '../services/logger.js';
-import { getBackupConfig, getAutoBackupStatus, restartScheduler, autoBackupConfigSchema } from '../services/autoBackup.js';
+import { getBackupConfig, getAutoBackupStatus, restartScheduler } from '../services/autoBackup.js';
+import { autoBackupConfigSchema } from '../validation/schemas.js';
 
 const router = Router();
 

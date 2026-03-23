@@ -1,18 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { z } from 'zod';
 import db from '../db.js';
 import { getSetting, setSetting } from './settings.js';
 import { BACKUP_TABLES, getAppVersion } from '../routes/backup.js';
 import { logger } from './logger.js';
-
-// ─── Schema ────────────────────────────────────────────────────────────────────
-
-export const autoBackupConfigSchema = z.object({
-  enabled: z.boolean(),
-  interval_hours: z.number().int().min(1).max(720),
-  max_backups: z.number().int().min(1).max(100),
-});
 
 // ─── Backup directory ──────────────────────────────────────────────────────────
 
