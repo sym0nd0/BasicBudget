@@ -50,6 +50,30 @@ The Reports page provides trend analysis across configurable date ranges, includ
 |---|---|
 | ![Reports Light](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/reports-light.png) | ![Reports Dark](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/reports-dark.png) |
 
+## Household
+
+The Household page shows income, expenses, debts, and savings shared across all household members — only items marked as jointly appointed are shown.
+
+| Light | Dark |
+|---|---|
+| ![Household Light](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/household-light.png) | ![Household Dark](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/household-dark.png) |
+
+## Settings
+
+The Settings page lets each user manage their profile, theme, colour palette, active sessions, two-factor authentication, and notification preferences.
+
+| Light | Dark |
+|---|---|
+| ![Settings Light](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/settings-light.png) | ![Settings Dark](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/settings-dark.png) |
+
+## Admin Settings
+
+The Admin Settings page (admin-only) provides system configuration: SMTP, OIDC single sign-on, expense categories, registration control, automated database backups, and log level.
+
+| Light | Dark |
+|---|---|
+| ![Admin Settings Light](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/admin-settings-light.png) | ![Admin Settings Dark](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/admin-settings-dark.png) |
+
 ---
 
 <p>
