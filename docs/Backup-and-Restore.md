@@ -25,7 +25,7 @@ Click **Download Backup** to download a JSON file (`basicbudget-backup-YYYY-MM-D
 
 > **Requires Admin role.** Configure from **Admin → System Settings → Database Backup → Automated Backups**.
 
-BasicBudget can automatically create JSON backups on a schedule and save them to the server's `data/backups/` directory.
+BasicBudget can automatically create JSON backups on a schedule and save them to a `backups/` directory alongside the database file. By default this is `data/backups/`; if you set a custom `DB_PATH` the directory is placed next to that database instead.
 
 ### Configuration
 
@@ -37,7 +37,14 @@ BasicBudget can automatically create JSON backups on a schedule and save them to
 
 ### Storage Location
 
-Automated backups are saved in `data/backups/` alongside the database file. In Docker, this is within the volume at `/app/data/backups/`.
+The backup directory is derived at runtime from the database location — it is always a `backups/` subdirectory placed next to wherever the database file lives:
+
+| Setup | Default auto-backup directory |
+|---|---|
+| **Docker** | `/app/data/backups/` inside the container (bind-mounted as `./data/backups/` on the host) |
+| **Manual** | `data/backups/` relative to the project root |
+
+If you set a custom `DB_PATH` environment variable, automated backups are written to `backups/` in the same directory as that database file — not necessarily under `data/`.
 
 Files follow the naming convention: `basicbudget-auto-backup-YYYY-MM-DDTHH-MM-SS.json`
 
