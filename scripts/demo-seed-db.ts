@@ -56,6 +56,7 @@ async function seedDatabase(): Promise<void> {
         posting_day: 25,
         gross_or_net: 'net',
         contributor_name: 'James',
+        is_household: 1,
       },
       {
         name: 'Freelance',
@@ -63,6 +64,7 @@ async function seedDatabase(): Promise<void> {
         posting_day: 15,
         gross_or_net: 'gross',
         contributor_name: null,
+        is_household: 0,
       },
       {
         name: 'Child Benefit',
@@ -70,6 +72,7 @@ async function seedDatabase(): Promise<void> {
         posting_day: 1,
         gross_or_net: 'net',
         contributor_name: null,
+        is_household: 1,
       },
     ];
 
@@ -77,8 +80,8 @@ async function seedDatabase(): Promise<void> {
       db.prepare(`
         INSERT INTO incomes
           (id, household_id, user_id, name, amount_pence, posting_day, gross_or_net,
-           is_recurring, recurrence_type, contributor_name, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'monthly', ?, ?, ?)
+           is_recurring, recurrence_type, contributor_name, is_household, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'monthly', ?, ?, ?, ?)
       `).run(
         randomUUID(),
         householdId,
@@ -88,6 +91,7 @@ async function seedDatabase(): Promise<void> {
         income.posting_day,
         income.gross_or_net,
         income.contributor_name,
+        income.is_household,
         now,
         now,
       );
@@ -97,21 +101,21 @@ async function seedDatabase(): Promise<void> {
     // Create expenses
     console.log('Creating expense entries...');
     const expenses = [
-      { name: 'Mortgage', amount_pence: 105000, posting_day: 1, category: 'Housing' },
-      { name: 'Council Tax', amount_pence: 18500, posting_day: 5, category: 'Housing' },
-      { name: 'Electricity & Gas', amount_pence: 14500, posting_day: 10, category: 'Utilities' },
-      { name: 'Broadband', amount_pence: 4200, posting_day: 18, category: 'Utilities' },
-      { name: 'Groceries', amount_pence: 38000, posting_day: 1, category: 'Food' },
-      { name: 'Car Insurance', amount_pence: 6800, posting_day: 22, category: 'Transport' },
-      { name: 'Netflix', amount_pence: 1800, posting_day: 3, category: 'Entertainment' },
+      { name: 'Mortgage', amount_pence: 105000, posting_day: 1, category: 'Housing', is_household: 1 },
+      { name: 'Council Tax', amount_pence: 18500, posting_day: 5, category: 'Housing', is_household: 1 },
+      { name: 'Electricity & Gas', amount_pence: 14500, posting_day: 10, category: 'Utilities', is_household: 1 },
+      { name: 'Broadband', amount_pence: 4200, posting_day: 18, category: 'Utilities', is_household: 0 },
+      { name: 'Groceries', amount_pence: 38000, posting_day: 1, category: 'Food', is_household: 1 },
+      { name: 'Car Insurance', amount_pence: 6800, posting_day: 22, category: 'Transport', is_household: 0 },
+      { name: 'Netflix', amount_pence: 1800, posting_day: 3, category: 'Entertainment', is_household: 0 },
     ];
 
     for (const expense of expenses) {
       db.prepare(`
         INSERT INTO expenses
           (id, household_id, user_id, name, amount_pence, posting_day, category,
-           is_recurring, recurrence_type, split_ratio, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'monthly', 1.0, ?, ?)
+           is_recurring, recurrence_type, split_ratio, is_household, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'monthly', 1.0, ?, ?, ?)
       `).run(
         randomUUID(),
         householdId,
@@ -120,6 +124,7 @@ async function seedDatabase(): Promise<void> {
         expense.amount_pence,
         expense.posting_day,
         expense.category,
+        expense.is_household,
         now,
         now,
       );
