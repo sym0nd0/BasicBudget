@@ -76,6 +76,7 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
   const [autoBackupSaving, setAutoBackupSaving] = useState(false);
   const [autoBackupMsg, setAutoBackupMsg] = useState('');
   const [autoBackupError, setAutoBackupError] = useState('');
+  const [autoBackupLoadError, setAutoBackupLoadError] = useState(false);
 
   // ── Logging ──
   const [logLevel, setLogLevel] = useState<LoggingConfig['level']>('info');
@@ -108,8 +109,12 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
       .finally(() => setRegLoading(false));
 
     api.getAutoBackupConfig()
-      .then(cfg => setAutoBackup(cfg))
-      .catch(() => {})
+      .then(cfg => { setAutoBackup(cfg); setAutoBackupLoadError(false); setAutoBackupError(''); })
+      .catch((e: unknown) => {
+        console.error('Failed to load auto-backup config', e);
+        setAutoBackupLoadError(true);
+        setAutoBackupError('Failed to load automated backup settings. Reload the page to retry.');
+      })
       .finally(() => setAutoBackupLoading(false));
   }, []);
 
@@ -265,6 +270,7 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
   };
 
   const saveAutoBackup = async () => {
+    if (autoBackupLoadError) return;
     setAutoBackupSaving(true);
     setAutoBackupMsg('');
     setAutoBackupError('');
@@ -353,6 +359,7 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
                       type="checkbox"
                       checked={autoBackup.enabled}
                       onChange={e => setAutoBackup(prev => ({ ...prev, enabled: e.target.checked }))}
+                      disabled={autoBackupLoadError}
                       className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
                     />
                     <span className="text-sm text-[var(--color-text)]">
@@ -366,6 +373,7 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
                     min="1"
                     max="720"
                     step="1"
+                    disabled={autoBackupLoadError}
                     className={inputClass}
                     value={autoBackup.interval_hours}
                     onChange={e => setAutoBackup(prev => ({ ...prev, interval_hours: parseInt(e.target.value, 10) || 24 }))}
@@ -378,6 +386,7 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
                     min="1"
                     max="100"
                     step="1"
+                    disabled={autoBackupLoadError}
                     className={inputClass}
                     value={autoBackup.max_backups}
                     onChange={e => setAutoBackup(prev => ({ ...prev, max_backups: parseInt(e.target.value, 10) || 7 }))}
@@ -389,7 +398,7 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
                   <p>Last backup: <span className="text-[var(--color-text)]">{autoBackup.last_backup_at ?? 'Never'}</span></p>
                   <p>Next backup: <span className="text-[var(--color-text)]">{autoBackup.next_backup_at ?? (autoBackup.enabled ? 'Pending restart' : 'Not scheduled')}</span></p>
                 </div>
-                <Button onClick={saveAutoBackup} disabled={autoBackupSaving} variant="secondary">
+                <Button onClick={saveAutoBackup} disabled={autoBackupSaving || autoBackupLoadError} variant="secondary">
                   {autoBackupSaving ? 'Saving…' : 'Save Automated Backup Settings'}
                 </Button>
                 {autoBackupMsg && <p className="text-sm text-[var(--color-success)]">{autoBackupMsg}</p>}
