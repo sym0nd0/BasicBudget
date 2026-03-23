@@ -52,7 +52,7 @@ The Reports page provides trend analysis across configurable date ranges, includ
 
 ## Household
 
-The Household page shows income, expenses, debts, and savings shared across all household members — only items marked as jointly appointed are shown.
+The Household page shows income, expenses, debts, and savings shared across all household members — only items where `is_household` is enabled are shown.
 
 | Light | Dark |
 |---|---|
