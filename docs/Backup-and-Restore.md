@@ -41,7 +41,7 @@ The backup directory is derived at runtime from the database location — it is 
 
 | Setup | Default auto-backup directory |
 |---|---|
-| **Docker** | `/app/data/backups/` inside the container (bind-mounted as `./data/backups/` on the host) |
+| **Docker** | `/app/data/backups/` inside the container (within the `bb-data` named volume) |
 | **Manual** | `data/backups/` relative to the project root |
 
 If you set a custom `DB_PATH` environment variable, automated backups are written to `backups/` in the same directory as that database file — not necessarily under `data/`.
