@@ -31,6 +31,7 @@ import backupRouter from './routes/backup.js';
 import categoriesRouter from './routes/categories.js';
 import { checkAndSendDealReminders } from './services/debtNotifications.js';
 import { refreshVersionCheck, getVersionInfo } from './services/versionChecker.js';
+import { initAutoBackup } from './services/autoBackup.js';
 import versionRouter from './routes/version.js';
 import { logger } from './services/logger.js';
 
@@ -204,6 +205,9 @@ if (config.NODE_ENV !== 'test') {
       checkAndSendDealReminders().catch(err => logger.error('Deal reminder check failed', { error: String(err) }));
     }, 24 * 60 * 60 * 1000);
   }, 10_000);
+
+  // Automated backups — reads config from system_settings, starts scheduler if enabled
+  initAutoBackup();
 
   app.listen(PORT, () => {
     logger.info('Server listening', { port: PORT });
