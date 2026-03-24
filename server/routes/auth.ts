@@ -13,6 +13,7 @@ import { loginLimiter, passwordResetLimiter, registrationLimiter } from '../midd
 import { generateCsrfToken } from '../middleware/csrf.js';
 import type { User, AuthStatusResponse } from '../../shared/types.js';
 import { getSetting } from '../services/settings.js';
+import { logger } from '../services/logger.js';
 
 // Augment session type to include CSRF flag
 declare module 'express-session' {
@@ -144,7 +145,10 @@ router.post('/register', registrationLimiter, async (req: Request, res: Response
     await sendEmailVerification(email, token);
   } catch { /* ignore */ }
 
+  // Stdout logs are operational telemetry — no PII.
+  // Full details (email, IP, UA) are written to the audit_log table only.
   auditLog(userId, 'register', { email }, req.ip, req.get('user-agent'));
+  logger.info('User registered', { userId });
   res.status(201).json({ message: 'Registration successful. Please check your email to verify your account.' });
 });
 
@@ -161,12 +165,14 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
   if (!row || !row.password_hash) {
     // Perform timing-normalisation verification to prevent user enumeration
     await verifyPassword(await getDummyHash(), password);
+    logger.warn('Login failed: user not found or no password hash');
     res.status(401).json({ message: 'Invalid email or password' });
     return;
   }
 
   // Check lockout
   if (row.locked_until && new Date(row.locked_until as string) > new Date()) {
+    logger.warn('Login blocked: account locked', { userId: row.id as string });
     res.status(423).json({ message: 'Account is temporarily locked due to too many failed login attempts. Try again later.' });
     return;
   }
@@ -181,6 +187,7 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
       UPDATE users SET failed_login_count = ?, locked_until = ?, updated_at = datetime('now') WHERE id = ?
     `).run(failCount, locked_until, row.id);
     auditLog(row.id as string, 'login_failed', { email }, req.ip, req.get('user-agent'));
+    logger.warn('Login failed: invalid password', { userId: row.id as string, failCount });
     res.status(401).json({ message: 'Invalid email or password' });
     return;
   }
@@ -214,6 +221,7 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
     req.session.systemRole = row.system_role as 'admin' | 'user';
     req.session.totpPending = true;
     auditLog(row.id as string, 'login_totp_required', {}, req.ip, req.get('user-agent'));
+    logger.info('Login: TOTP verification required', { userId: row.id as string });
     res.json({ totp_required: true });
     return;
   }
@@ -235,6 +243,7 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
   }
 
   auditLog(row.id as string, 'login_success', {}, req.ip, req.get('user-agent'));
+  logger.info('Login successful', { userId: row.id as string });
   res.json({ user: mapUser(row), household: memberRow ? { id: memberRow.household_id } : null });
 });
 
@@ -245,6 +254,7 @@ router.post('/logout', (req: Request, res: Response) => {
     res.clearCookie('bb.sid');
     res.clearCookie('bb.csrf');
     if (userId) auditLog(userId, 'logout', {}, req.ip, req.get('user-agent'));
+    if (userId) logger.info('Logout', { userId });
     res.status(204).send();
   });
 });

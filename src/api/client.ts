@@ -70,12 +70,18 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (res.status === 401) {
-    // Clear stale CSRF token and redirect to login
     cachedCsrfToken = null;
+    let message = 'Authentication required';
+    try {
+      const body = await res.json() as { message?: string };
+      if (body.message) message = body.message;
+    } catch {
+      // ignore parse errors
+    }
     if (window.location.pathname !== '/login' && window.location.pathname !== '/login/2fa') {
       window.location.href = '/login';
     }
-    throw Object.assign(new Error('Authentication required'), { status: 401 });
+    throw Object.assign(new Error(message), { status: 401 });
   }
 
   if (!res.ok) {
