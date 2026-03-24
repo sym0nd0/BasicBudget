@@ -9,6 +9,7 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { CsvImportForm } from '../components/forms/CsvImportForm';
 import { api } from '../api/client';
+import { formatDate } from '../utils/formatters';
 import type { Account, TotpSetupResponse, SessionInfo, HouseholdMember, MonthLock } from '../types';
 
 interface SettingsPageProps {
@@ -817,10 +818,10 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
                   <tr key={inv.id} className="border-b border-[var(--color-border)] last:border-0">
                     <td className="py-1.5 text-[var(--color-text)]">{inv.invitee_email}</td>
                     <td className="py-1.5 text-[var(--color-text-muted)]">
-                      {new Date(inv.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {formatDate(inv.created_at, user)}
                     </td>
                     <td className="py-1.5 text-[var(--color-text-muted)]">
-                      {new Date(inv.expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {formatDate(inv.expires_at, user)}
                     </td>
                     <td className="py-1.5 text-right">
                       <Button size="sm" variant="ghost" className="hover:text-[var(--color-danger)]"
@@ -858,7 +859,7 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
                         {formatYearMonthLocal(lock.year_month)}
                       </td>
                       <td className="py-3 text-[var(--color-text-muted)] text-xs">
-                        Locked {new Date(lock.locked_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        Locked {formatDate(lock.locked_at, user)}
                       </td>
                       <td className="py-3 text-right">
                         <Button size="sm" variant="ghost" className="hover:text-[var(--color-danger)]"

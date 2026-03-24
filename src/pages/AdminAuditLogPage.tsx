@@ -1,22 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { api } from '../api/client';
+import { formatDateTime } from '../utils/formatters';
 import type { AuditLogEntry, PaginatedResponse } from '../types';
 
 interface AdminAuditLogPageProps {
   onMenuClick: () => void;
-}
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 }
 
 function truncate(s: string | null, n: number): string {
@@ -25,6 +17,7 @@ function truncate(s: string | null, n: number): string {
 }
 
 export function AdminAuditLogPage({ onMenuClick }: AdminAuditLogPageProps) {
+  const { user } = useAuth();
   const [result, setResult] = useState<PaginatedResponse<AuditLogEntry> | null>(null);
   const [page, setPage] = useState(1);
   const [error, setError] = useState('');
@@ -137,7 +130,7 @@ export function AdminAuditLogPage({ onMenuClick }: AdminAuditLogPageProps) {
                         onClick={() => setExpandedId(prev => prev === entry.id ? null : entry.id)}
                       >
                         <td className="px-5 py-3 text-xs text-[var(--color-text-muted)] whitespace-nowrap text-center">
-                          {formatDateTime(entry.created_at)}
+                          {formatDateTime(entry.created_at, user)}
                         </td>
                         <td className="px-5 py-3 text-xs truncate max-w-[140px] text-center">
                           {entry.user_email ?? (entry.user_id ? entry.user_id.slice(0, 8) + '…' : '—')}

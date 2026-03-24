@@ -5,14 +5,11 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { formatDate } from '../utils/formatters';
 import type { AdminUser, PaginatedResponse } from '../types';
 
 interface AdminUsersPageProps {
   onMenuClick: () => void;
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 export function AdminUsersPage({ onMenuClick }: AdminUsersPageProps) {
@@ -150,7 +147,7 @@ export function AdminUsersPage({ onMenuClick }: AdminUsersPageProps) {
                         )}
                       </td>
                       <td className="px-5 py-3 text-xs text-[var(--color-text-muted)] text-center">
-                        {formatDate(u.created_at)}
+                        {formatDate(u.created_at, currentUser)}
                       </td>
                       <td className="px-5 py-3 text-center">
                         <div className="flex items-center justify-center gap-2">

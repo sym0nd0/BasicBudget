@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
+import { useAuth } from '../context/AuthContext';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { api } from '../api/client';
+import { formatDateTime } from '../utils/formatters';
 import type { SmtpConfig, OidcConfig, LoggingConfig, AutoBackupConfig } from '../types';
 import { EXPENSE_CATEGORIES } from '../types';
 
@@ -27,6 +29,7 @@ const inputClass =
 
 export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
+  const { user } = useAuth();
 
   // ── SMTP ──
   const [smtp, setSmtp] = useState<SmtpConfig>({ host: '', port: 587, secure: false, user: '', pass: '', from: '' });
@@ -395,8 +398,8 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
                 </LabeledField>
                 <div className="text-xs text-[var(--color-text-muted)] space-y-0.5">
                   <p>Backups stored: <span className="text-[var(--color-text)]">{autoBackup.backup_count}</span></p>
-                  <p>Last backup: <span className="text-[var(--color-text)]">{autoBackup.last_backup_at ?? 'Never'}</span></p>
-                  <p>Next backup: <span className="text-[var(--color-text)]">{autoBackup.next_backup_at ?? (autoBackup.enabled ? 'Pending restart' : 'Not scheduled')}</span></p>
+                  <p>Last backup: <span className="text-[var(--color-text)]">{autoBackup.last_backup_at ? formatDateTime(autoBackup.last_backup_at, user) : 'Never'}</span></p>
+                  <p>Next backup: <span className="text-[var(--color-text)]">{autoBackup.next_backup_at ? formatDateTime(autoBackup.next_backup_at, user) : (autoBackup.enabled ? 'Pending restart' : 'Not scheduled')}</span></p>
                 </div>
                 <Button onClick={saveAutoBackup} disabled={autoBackupSaving || autoBackupLoadError} variant="secondary">
                   {autoBackupSaving ? 'Saving…' : 'Save Automated Backup Settings'}
