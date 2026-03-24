@@ -262,7 +262,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                   {goal.target_date && (
                     <span className="text-[var(--color-text-muted)]">
                       Target: <span className="font-medium text-[var(--color-text)]">
-                        {new Date(goal.target_date).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                        {formatDate(goal.target_date, user)}
                       </span>
                     </span>
                   )}
