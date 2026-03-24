@@ -1,0 +1,12 @@
+# .coderabbit.yaml
+reviews:
+  tools:
+    languagetool:
+      enabled: true
+code_generation:
+  docstrings:
+    language: typescript
+# Lower docstring coverage threshold to a realistic level for a TypeScript
+# codebase — TypeScript types serve as machine-readable documentation and
+# an 80% JSDoc threshold is calibrated for dynamically-typed languages.
+# Adjust if CodeRabbitAI exposes a direct threshold config key.

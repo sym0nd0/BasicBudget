@@ -19,6 +19,7 @@ function getBackupDir(): string {
 
 // ─── Filename ──────────────────────────────────────────────────────────────────
 
+/** Generates a timestamped auto-backup filename, e.g. `basicbudget-auto-backup-2026-03-24T06-00-00.json`. */
 export function generateBackupFilename(): string {
   const ts = new Date().toISOString().replace(/:/g, '-').replace(/\.\d{3}Z$/, '');
   return `basicbudget-auto-backup-${ts}.json`;
@@ -26,12 +27,14 @@ export function generateBackupFilename(): string {
 
 // ─── Config ────────────────────────────────────────────────────────────────────
 
+/** Persisted scheduler configuration shape. */
 export interface BackupScheduleConfig {
   enabled: boolean;
   interval_hours: number;
   max_backups: number;
 }
 
+/** Reads and validates the auto-backup configuration from `system_settings`. Falls back to safe defaults if values are missing or invalid. */
 export function getBackupConfig(): BackupScheduleConfig {
   const enabledRaw = getSetting('backup.enabled');
   const intervalRaw = getSetting('backup.interval_hours');
@@ -61,6 +64,7 @@ export function getBackupConfig(): BackupScheduleConfig {
 
 let nextBackupTime: Date | null = null;
 
+/** Returns the current auto-backup status: last run time, next scheduled time, and backup file count. */
 export function getAutoBackupStatus(): {
   last_backup_at: string | null;
   next_backup_at: string | null;
@@ -85,6 +89,7 @@ export function getAutoBackupStatus(): {
 
 // ─── Pruning ───────────────────────────────────────────────────────────────────
 
+/** Deletes the oldest auto-backup files in `dir` (or the configured backup directory) until the count is within `maxBackups`. Files removed between directory read and stat are silently skipped. */
 export function pruneOldBackups(dir?: string, maxBackups?: number): void {
   const backupDir = dir ?? getBackupDir();
   const limit = maxBackups ?? getBackupConfig().max_backups;
@@ -125,6 +130,7 @@ export function pruneOldBackups(dir?: string, maxBackups?: number): void {
 
 // ─── Backup execution ──────────────────────────────────────────────────────────
 
+/** Runs a full database backup: serialises all tables to JSON, writes via a `.tmp` rename, updates `backup.last_backup_at`, then calls `pruneOldBackups`. */
 export function runBackup(): void {
   const dir = getBackupDir();
   try {
@@ -209,6 +215,7 @@ function startScheduler(cfg: BackupScheduleConfig): void {
   nextBackupTime = new Date(Date.now() + 10_000);
 }
 
+/** Starts the backup scheduler if `cfg.enabled` is true; called once at server startup. */
 export function initAutoBackup(): void {
   const cfg = getBackupConfig();
   if (cfg.enabled) {
@@ -220,6 +227,7 @@ export function initAutoBackup(): void {
   }
 }
 
+/** Stops the running scheduler (if any) and restarts it with current config from `system_settings`. Used after the admin saves new backup settings. */
 export function restartScheduler(): void {
   stopScheduler();
   const cfg = getBackupConfig();
