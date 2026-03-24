@@ -241,6 +241,7 @@ router.post('/logout', (req: Request, res: Response) => {
   const userId = req.session.userId;
   req.session.destroy(() => {
     res.clearCookie('bb.sid');
+    res.clearCookie('bb.csrf');
     if (userId) auditLog(userId, 'logout', {}, req.ip, req.get('user-agent'));
     res.status(204).send();
   });
