@@ -26,9 +26,9 @@ beforeAll(async () => {
   csrfToken = await getCsrf(agent);
 });
 
-describe('GET /api/auth/me — datetime format defaults', () => {
-  it('GET /api/auth/me returns date_format and time_format with defaults', async () => {
-    const res = await agent.get('/api/auth/me');
+describe('GET /api/auth/profile — datetime format defaults', () => {
+  it('GET /api/auth/profile returns date_format and time_format with defaults', async () => {
+    const res = await agent.get('/api/auth/profile');
     expect(res.status).toBe(200);
     expect(res.body.date_format).toBe('DD/MM/YYYY');
     expect(res.body.time_format).toBe('12h');
@@ -46,7 +46,7 @@ describe('PUT /api/auth/profile/datetime-format', () => {
     expect(res.body.time_format).toBe('24h');
 
     // Verify persisted
-    const me = await agent.get('/api/auth/me');
+    const me = await agent.get('/api/auth/profile');
     expect(me.body.date_format).toBe('MM/DD/YYYY');
     expect(me.body.time_format).toBe('24h');
   });

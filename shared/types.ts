@@ -13,6 +13,8 @@ export interface User {
   has_totp?: boolean;
   colour_palette?: string;
   notify_updates?: boolean;
+  date_format?: string;  // 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD'
+  time_format?: string;  // '12h' | '24h'
 }
 
 export interface VersionInfo {

@@ -67,6 +67,8 @@ function mapUser(row: Record<string, unknown>): User {
     has_totp: Boolean(totpRow),
     colour_palette: (row.colour_palette as string | undefined) ?? 'default',
     notify_updates: row.notify_updates !== undefined ? Boolean(row.notify_updates) : true,
+    date_format: (row.date_format as string | undefined) ?? 'DD/MM/YYYY',
+    time_format: (row.time_format as string | undefined) ?? '12h',
   };
 }
 

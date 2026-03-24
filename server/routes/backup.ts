@@ -21,7 +21,7 @@ router.use(requireAuth, requireAdmin);
 // Trusted column allowlist per table — derived from schema.sql + migrations in db.ts.
 // Used by insertRows to prevent untrusted column names from reaching SQL.
 const TABLE_COLUMNS: Record<string, readonly string[]> = {
-  users: ['id', 'email', 'display_name', 'password_hash', 'email_verified', 'system_role', 'failed_login_count', 'locked_until', 'created_at', 'updated_at', 'colour_palette', 'notify_updates'],
+  users: ['id', 'email', 'display_name', 'password_hash', 'email_verified', 'system_role', 'failed_login_count', 'locked_until', 'created_at', 'updated_at', 'colour_palette', 'notify_updates', 'date_format', 'time_format'],
   households: ['id', 'name', 'created_at'],
   household_members: ['household_id', 'user_id', 'role', 'joined_at'],
   oidc_accounts: ['user_id', 'issuer', 'subject', 'created_at'],
