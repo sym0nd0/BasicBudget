@@ -21,6 +21,32 @@ describe('formatDate', () => {
   });
 });
 
+describe('formatDate — date-only strings', () => {
+  // A date-only string like "2026-03-24" must NOT be interpreted as UTC midnight.
+  // new Date("2026-03-24") is UTC, so UTC-5 would see "23/03/2026" — wrong.
+  // The fix parses it as local time: new Date(2026, 2, 24).
+  const dateOnly = '2026-03-24';
+
+  it('parses date-only DD/MM/YYYY without UTC day shift', () => {
+    const result = formatDate(dateOnly, { date_format: 'DD/MM/YYYY' });
+    expect(result).toBe('24/03/2026');
+  });
+
+  it('parses date-only MM/DD/YYYY without UTC day shift', () => {
+    const result = formatDate(dateOnly, { date_format: 'MM/DD/YYYY' });
+    expect(result).toBe('03/24/2026');
+  });
+
+  it('returns the original date for YYYY-MM-DD output', () => {
+    const result = formatDate(dateOnly, { date_format: 'YYYY-MM-DD' });
+    expect(result).toBe('2026-03-24');
+  });
+
+  it('defaults to DD/MM/YYYY for date-only string with no prefs', () => {
+    expect(formatDate(dateOnly)).toBe('24/03/2026');
+  });
+});
+
 describe('formatDateTime', () => {
   it('includes a time component', () => {
     const result = formatDateTime(iso, { date_format: 'DD/MM/YYYY', time_format: '24h' });

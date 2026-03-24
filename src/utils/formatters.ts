@@ -48,6 +48,9 @@ export const penceToPoundsStr = (pence: number): string =>
 type DateFormatPref = 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
 
 /** Format an ISO date/datetime string to a user-preferred date format.
+ * Date-only strings ("YYYY-MM-DD") are parsed as local time to avoid UTC
+ * day-shift (new Date("2026-03-24") is UTC midnight, causing off-by-one in
+ * negative-offset timezones). Full ISO timestamps are parsed normally.
  * Defaults to DD/MM/YYYY (en-GB) when `prefs` is absent or null. */
 export function formatDate(
   iso: string,
@@ -56,9 +59,21 @@ export function formatDate(
   const rawFmt = prefs?.date_format ?? 'DD/MM/YYYY';
   const fmt: DateFormatPref =
     rawFmt === 'MM/DD/YYYY' || rawFmt === 'YYYY-MM-DD' ? rawFmt : 'DD/MM/YYYY';
-  if (fmt === 'YYYY-MM-DD') return iso.slice(0, 10);
+
+  // Detect date-only strings and parse as local time.
+  const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  const d = dateOnlyMatch
+    ? new Date(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3]))
+    : new Date(iso);
+
+  if (fmt === 'YYYY-MM-DD') {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
   const locale = fmt === 'MM/DD/YYYY' ? 'en-US' : 'en-GB';
-  return new Date(iso).toLocaleDateString(locale, {
+  return d.toLocaleDateString(locale, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
