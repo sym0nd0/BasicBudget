@@ -1,0 +1,50 @@
+import { describe, it, expect, beforeAll } from 'vitest';
+import supertest from 'supertest';
+import { getApp, makeTestUser, createTestUser, loginTestUser, getCsrfToken } from '../helpers.js';
+
+let app: Awaited<ReturnType<typeof getApp>>;
+let agent: ReturnType<typeof supertest.agent>;
+let csrfToken: string;
+
+beforeAll(async () => {
+  app = await getApp();
+  agent = supertest.agent(app);
+  const user = makeTestUser('profile');
+  await createTestUser(agent, user);
+  await loginTestUser(agent, user);
+  csrfToken = await getCsrfToken(agent);
+});
+
+describe('GET /api/auth/profile — datetime format defaults', () => {
+  it('GET /api/auth/profile returns date_format and time_format with defaults', async () => {
+    const res = await agent.get('/api/auth/profile');
+    expect(res.status).toBe(200);
+    expect(res.body.date_format).toBe('DD/MM/YYYY');
+    expect(res.body.time_format).toBe('12h');
+  });
+});
+
+describe('PUT /api/auth/profile/datetime-format', () => {
+  it('updates date_format and time_format', async () => {
+    const res = await agent
+      .put('/api/auth/profile/datetime-format')
+      .set('x-csrf-token', csrfToken)
+      .send({ date_format: 'MM/DD/YYYY', time_format: '24h' });
+    expect(res.status).toBe(200);
+    expect(res.body.date_format).toBe('MM/DD/YYYY');
+    expect(res.body.time_format).toBe('24h');
+
+    // Verify persisted
+    const me = await agent.get('/api/auth/profile');
+    expect(me.body.date_format).toBe('MM/DD/YYYY');
+    expect(me.body.time_format).toBe('24h');
+  });
+
+  it('rejects invalid values', async () => {
+    const res = await agent
+      .put('/api/auth/profile/datetime-format')
+      .set('x-csrf-token', csrfToken)
+      .send({ date_format: 'invalid', time_format: 'nope' });
+    expect(res.status).toBe(400);
+  });
+});

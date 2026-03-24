@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { useBudget } from '../context/BudgetContext';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,7 @@ import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { CsvImportForm } from '../components/forms/CsvImportForm';
 import { api } from '../api/client';
+import { formatDate } from '../utils/formatters';
 import type { Account, TotpSetupResponse, SessionInfo, HouseholdMember, MonthLock } from '../types';
 
 interface SettingsPageProps {
@@ -72,6 +73,12 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   const [notifyLoading, setNotifyLoading] = useState(false);
   const [notifyMsg, setNotifyMsg] = useState('');
 
+  // Date & Time format
+  const [dtFormatSaving, setDtFormatSaving] = useState(false);
+  const [dtFormatMsg, setDtFormatMsg] = useState('');
+  const [dtDateDraft, setDtDateDraft] = useState<string>(user?.date_format ?? 'DD/MM/YYYY');
+  const [dtTimeDraft, setDtTimeDraft] = useState<string>(user?.time_format ?? '12h');
+
   // Household members
   const [members, setMembers] = useState<HouseholdMember[] | null>(null);
   const [membersLoading, setMembersLoading] = useState(false);
@@ -89,6 +96,13 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   const [monthLocksLoading, setMonthLocksLoading] = useState(false);
   const [lockMonthInput, setLockMonthInput] = useState('');
   const [lockMonthMsg, setLockMonthMsg] = useState('');
+
+  // Keep date/time format drafts in sync when user preference is updated externally
+  // (e.g. after a successful refreshAuth following a save).
+  useEffect(() => {
+    setDtDateDraft(user?.date_format ?? 'DD/MM/YYYY');
+    setDtTimeDraft(user?.time_format ?? '12h');
+  }, [user?.date_format, user?.time_format]);
 
   // ─── Account management handlers ────────────────────────────────────────────
 
@@ -264,6 +278,25 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
       setNotifyMsg('Failed to save.');
     } finally {
       setNotifyLoading(false);
+    }
+  };
+
+  const handleDateTimeFormatChange = async (date_format: string, time_format: string) => {
+    setDtFormatSaving(true);
+    setDtFormatMsg('');
+    try {
+      await api.updateDateTimeFormat(date_format, time_format);
+      setDtFormatMsg('Saved.');
+      try {
+        await refreshAuth();
+      } catch {
+        // refreshAuth failure does not undo a successful save — swallow silently.
+      }
+    } catch (err) {
+      console.error('Failed to save date/time format:', err);
+      setDtFormatMsg('Failed to save.');
+    } finally {
+      setDtFormatSaving(false);
     }
   };
 
@@ -495,6 +528,54 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
             ))}
           </div>
           {paletteMsg && <p className="text-xs text-[var(--color-text-muted)] mt-2">{paletteMsg}</p>}
+        </div>
+        <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+          <h3 className="text-sm font-semibold text-[var(--color-text)] mb-1">Date &amp; Time</h3>
+          <p className="text-xs text-[var(--color-text-muted)] mb-3">
+            Choose how dates and times are displayed throughout the app.
+          </p>
+          <div className="flex flex-col gap-3 max-w-sm">
+            <div>
+              <label htmlFor="date-format-select" className="block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">
+                Date format
+              </label>
+              <select
+                id="date-format-select"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                value={dtDateDraft}
+                disabled={dtFormatSaving}
+                onChange={e => {
+                  const newDate = e.target.value;
+                  setDtDateDraft(newDate);
+                  handleDateTimeFormatChange(newDate, dtTimeDraft);
+                }}
+              >
+                <option value="DD/MM/YYYY">DD/MM/YYYY — 24/03/2026</option>
+                <option value="MM/DD/YYYY">MM/DD/YYYY — 03/24/2026</option>
+                <option value="YYYY-MM-DD">YYYY-MM-DD — 2026-03-24</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="time-format-select" className="block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">
+                Time format
+              </label>
+              <select
+                id="time-format-select"
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                value={dtTimeDraft}
+                disabled={dtFormatSaving}
+                onChange={e => {
+                  const newTime = e.target.value;
+                  setDtTimeDraft(newTime);
+                  handleDateTimeFormatChange(dtDateDraft, newTime);
+                }}
+              >
+                <option value="12h">12-hour — 10:30 AM</option>
+                <option value="24h">24-hour — 10:30</option>
+              </select>
+            </div>
+          </div>
+          {dtFormatMsg && <p className="text-xs text-[var(--color-text-muted)] mt-2">{dtFormatMsg}</p>}
         </div>
         {user?.system_role === 'admin' && (
           <div className="mt-4 border-t border-[var(--color-border)] pt-4">
@@ -755,10 +836,10 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
                   <tr key={inv.id} className="border-b border-[var(--color-border)] last:border-0">
                     <td className="py-1.5 text-[var(--color-text)]">{inv.invitee_email}</td>
                     <td className="py-1.5 text-[var(--color-text-muted)]">
-                      {new Date(inv.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {formatDate(inv.created_at, user)}
                     </td>
                     <td className="py-1.5 text-[var(--color-text-muted)]">
-                      {new Date(inv.expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {formatDate(inv.expires_at, user)}
                     </td>
                     <td className="py-1.5 text-right">
                       <Button size="sm" variant="ghost" className="hover:text-[var(--color-danger)]"
@@ -796,7 +877,7 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
                         {formatYearMonthLocal(lock.year_month)}
                       </td>
                       <td className="py-3 text-[var(--color-text-muted)] text-xs">
-                        Locked {new Date(lock.locked_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        Locked {formatDate(lock.locked_at, user)}
                       </td>
                       <td className="py-3 text-right">
                         <Button size="sm" variant="ghost" className="hover:text-[var(--color-danger)]"

@@ -1,6 +1,6 @@
 # Customisation
 
-BasicBudget offers theme and colour palette options to suit your preferences and accessibility needs. These settings are per-user and stored with your profile.
+BasicBudget offers theme, colour palette, and date/time format options to suit your preferences and accessibility needs. These settings are per-user and stored with your profile.
 
 ## Theme
 
@@ -32,6 +32,17 @@ The selected palette applies to all charts in the application, including:
 - Income vs expenses bar chart (Reports and Household)
 
 Switching palettes takes effect immediately without a page reload.
+
+## Date & Time Formats
+
+Go to **Settings** → **Date & Time** to choose how dates and times are displayed throughout the application.
+
+| Setting | Options |
+|---|---|
+| **Date format** | `DD/MM/YYYY` (default), `MM/DD/YYYY`, `YYYY-MM-DD` |
+| **Time format** | `12-hour` (e.g. 2:30 PM), `24-hour` (e.g. 14:30) |
+
+Changes apply immediately across all pages.
 
 ---
 

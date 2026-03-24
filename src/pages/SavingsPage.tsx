@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSavings } from '../context/SavingsContext';
 import { useFilter } from '../context/FilterContext';
+import { useAuth } from '../context/AuthContext';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { useApi } from '../hooks/useApi';
 import { PageShell } from '../components/layout/PageShell';
@@ -12,7 +13,7 @@ import { Badge } from '../components/ui/Badge';
 import { FilterBar } from '../components/layout/FilterBar';
 import { SavingsGoalForm } from '../components/forms/SavingsGoalForm';
 import { SavingsGrowthChart } from '../components/charts/SavingsGrowthChart';
-import { formatCurrency, formatPercent } from '../utils/formatters';
+import { formatCurrency, formatDate, formatPercent } from '../utils/formatters';
 import { findDuplicateSavingsGoal } from '../utils/duplicates';
 import type { SavingsGoal, SavingsTransaction, SavingsTransactionType } from '../types';
 
@@ -45,6 +46,7 @@ function txTypeLabel(type: SavingsTransactionType): string {
 export function SavingsPage({ onMenuClick }: SavingsPageProps) {
   const { goals, addGoal, updateGoal, deleteGoal, createTransaction, refetchGoals } = useSavings();
   const { fromMonth, toMonth } = useFilter();
+  const { user } = useAuth();
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -260,7 +262,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                   {goal.target_date && (
                     <span className="text-[var(--color-text-muted)]">
                       Target: <span className="font-medium text-[var(--color-text)]">
-                        {new Date(goal.target_date).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                        {formatDate(goal.target_date, user)}
                       </span>
                     </span>
                   )}
@@ -315,7 +317,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                   {transactions.map(tx => (
                     <tr key={tx.id} className="border-b border-[var(--color-border)] last:border-0">
                       <td className="px-5 py-2.5 text-[var(--color-text-muted)] whitespace-nowrap">
-                        {tx.created_at ? new Date(tx.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                        {tx.created_at ? formatDate(tx.created_at, user) : '—'}
                       </td>
                       <td className="px-5 py-2.5 text-[var(--color-text)]">{tx.goal_name ?? '—'}</td>
                       <td className="px-5 py-2.5">

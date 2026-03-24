@@ -139,6 +139,11 @@ export const api = {
     request<User>('/auth/profile/palette', { method: 'PUT', body: JSON.stringify({ colour_palette: palette }) }),
   updateNotifyUpdates: (notify: boolean) =>
     request<User>('/auth/profile/notify-updates', { method: 'PUT', body: JSON.stringify({ notify_updates: notify }) }),
+  updateDateTimeFormat: (date_format: string, time_format: string) =>
+    request<User>('/auth/profile/datetime-format', {
+      method: 'PUT',
+      body: JSON.stringify({ date_format, time_format }),
+    }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<{ message: string }>('/auth/change-password', {
       method: 'POST',

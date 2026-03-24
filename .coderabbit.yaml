@@ -1,0 +1,11 @@
+# .coderabbit.yaml
+reviews:
+  tools:
+    languagetool:
+      enabled: true
+  pre_merge_checks:
+    docstrings:
+      threshold: 30
+code_generation:
+  docstrings:
+    language: en-GB

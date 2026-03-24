@@ -41,6 +41,13 @@ Click **Export Data** to download a full JSON export of all your income, expense
 
 Choose a chart colour palette optimised for different types of colour vision. See [[Customisation]] for details.
 
+## Date & Time
+
+Choose your preferred date and time display format. These settings apply to all date and time values shown across the application.
+
+- **Date format** — `DD/MM/YYYY` (default), `MM/DD/YYYY`, or `YYYY-MM-DD`
+- **Time format** — `12-hour` (e.g. 2:30 PM) or `24-hour` (e.g. 14:30)
+
 ## Theme
 
 Choose between **Light**, **Dark**, or **System** (follows your operating system preference). See [[Customisation]] for details.

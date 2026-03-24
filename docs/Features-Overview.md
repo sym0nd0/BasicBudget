@@ -77,6 +77,7 @@ A comprehensive list of everything BasicBudget can do.
 
 - **Light / Dark / System theme** — follows OS preference or manual selection
 - **Colour blindness palettes** — Deuteranopia, Protanopia, and Tritanopia optimised chart palettes
+- **Date & time format preferences** — per-user selection of date format (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD) and time format (12-hour or 24-hour); applied across all date/time displays
 - **Version update notifications** — opt-in sidebar badge notifying admins when a new release is available on GitHub
 
 ---

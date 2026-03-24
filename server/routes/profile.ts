@@ -3,7 +3,8 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { sensitiveActionLimiter } from '../middleware/rate-limit.js';
+import { dateTimeFormatSchema } from '../validation/schemas.js';
+import { sensitiveActionLimiter, generalApiLimiter } from '../middleware/rate-limit.js';
 import { hashPassword, verifyPassword, validatePasswordStrength } from '../auth/password.js';
 import { createToken, validateAndConsumeToken } from '../auth/tokens.js';
 import { sendEmailChangeVerification, sendEmailVerification } from '../services/email.js';
@@ -27,6 +28,8 @@ function mapUser(row: Record<string, unknown>): User {
     has_totp: Boolean(totpRow),
     colour_palette: (row.colour_palette as string | undefined) ?? 'default',
     notify_updates: row.notify_updates !== undefined ? Boolean(row.notify_updates) : true,
+    date_format: ((row.date_format as User['date_format']) ?? 'DD/MM/YYYY'),
+    time_format: ((row.time_format as User['time_format']) ?? '12h'),
   };
 }
 
@@ -55,6 +58,19 @@ router.put('/palette', (req: Request, res: Response) => {
   if (!result.success) { res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' }); return; }
 
   db.prepare("UPDATE users SET colour_palette = ?, updated_at = datetime('now') WHERE id = ?").run(result.data.colour_palette, req.userId!);
+  const row = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId!) as Record<string, unknown>;
+  res.json(mapUser(row));
+});
+
+// PUT /api/auth/profile/datetime-format
+router.put('/datetime-format', generalApiLimiter, (req: Request, res: Response) => {
+  const result = dateTimeFormatSchema.safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
+    return;
+  }
+  db.prepare("UPDATE users SET date_format = ?, time_format = ?, updated_at = datetime('now') WHERE id = ?")
+    .run(result.data.date_format, result.data.time_format, req.userId!);
   const row = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId!) as Record<string, unknown>;
   res.json(mapUser(row));
 });

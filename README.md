@@ -176,6 +176,7 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 - CSV import (expenses, incomes, debts, and savings goals) and JSON export for bulk data management and backups
 - **Version update notifications** — opt-in sidebar badge notifying admins when a new release is available on GitHub
 - **Colour blindness palettes** — per-user accessibility setting (server-persisted); choose from Default, Deuteranopia (blue/orange), Protanopia (teal/pink), or Tritanopia (green/red); affects status colours and charts
+- **Date & time format preferences** — per-user selection of date format (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD) and time format (12-hour or 24-hour); applied across all date/time displays in the application
 
 ### Additional
 - **Duplicate detection** — warns before saving an entry identical to an existing one
@@ -533,6 +534,7 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 | GET | `/api/auth/profile` | Get current user profile |
 | PUT | `/api/auth/profile` | Update display name |
 | PUT | `/api/auth/profile/palette` | Set colour blindness palette |
+| PUT | `/api/auth/profile/datetime-format` | Set date and time format preferences |
 | PUT | `/api/auth/profile/notify-updates` | Toggle version update notifications |
 | POST | `/api/auth/profile/change-password` | Change password (requires current password) |
 | POST | `/api/auth/profile/change-email` | Request email change |

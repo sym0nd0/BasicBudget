@@ -103,3 +103,8 @@ export const autoBackupConfigSchema = z.object({
   interval_hours: z.number().int().min(1).max(720),
   max_backups: z.number().int().min(1).max(100),
 });
+
+export const dateTimeFormatSchema = z.object({
+  date_format: z.enum(['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']),
+  time_format: z.enum(['12h', '24h']),
+});
