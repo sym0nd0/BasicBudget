@@ -8,6 +8,15 @@ beforeAll(async () => {
   app = await getApp();
 });
 
+interface AuthStatus {
+  authenticated?: boolean;
+  user?: { email?: string };
+}
+
+function parseAuthStatus(res: { body: unknown }): AuthStatus {
+  return res.body as AuthStatus;
+}
+
 describe('cross-user login', () => {
   it('User B can log in and be identified correctly after User A logs out', async () => {
     const agent = supertest.agent(app);
@@ -23,12 +32,17 @@ describe('cross-user login', () => {
 
     // Verify User A is authenticated
     const statusA = await agent.get('/api/auth/status');
-    expect((statusA.body as { authenticated?: boolean }).authenticated).toBe(true);
-    expect((statusA.body as { user?: { email?: string } }).user?.email).toBe(userA.email);
+    expect(parseAuthStatus(statusA).authenticated).toBe(true);
+    expect(parseAuthStatus(statusA).user?.email).toBe(userA.email);
 
     // Logout User A
     csrf = await getCsrfToken(agent);
-    await agent.post('/api/auth/logout').set('X-CSRF-Token', csrf);
+    const logoutRes = await agent.post('/api/auth/logout').set('X-CSRF-Token', csrf);
+    expect(logoutRes.status).toBe(204);
+
+    // Assert session is cleared after logout
+    const loggedOutStatus = await agent.get('/api/auth/status');
+    expect(parseAuthStatus(loggedOutStatus).authenticated).toBe(false);
 
     // Register User B on a separate agent
     const agentB = supertest.agent(app);
@@ -46,7 +60,7 @@ describe('cross-user login', () => {
 
     // Verify User B is the authenticated user
     const statusB = await agent.get('/api/auth/status');
-    expect((statusB.body as { authenticated?: boolean }).authenticated).toBe(true);
-    expect((statusB.body as { user?: { email?: string } }).user?.email).toBe(userB.email);
+    expect(parseAuthStatus(statusB).authenticated).toBe(true);
+    expect(parseAuthStatus(statusB).user?.email).toBe(userB.email);
   });
 });
