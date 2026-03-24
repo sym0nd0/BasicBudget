@@ -74,6 +74,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await api.logout();
+    // Session is destroyed on the server — discard the cached CSRF token so the
+    // next mutating request fetches a fresh one bound to the new session ID.
+    clearCsrfToken();
     setUser(null);
     setHousehold(null);
     setHouseholdRole(undefined);
