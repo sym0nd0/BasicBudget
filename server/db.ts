@@ -272,6 +272,16 @@ try {
   // Column already exists, ignore
 }
 
+// Add date_format column to users for date display preference
+try {
+  db.prepare("ALTER TABLE users ADD COLUMN date_format TEXT NOT NULL DEFAULT 'DD/MM/YYYY'").run();
+} catch { /* column already exists */ }
+
+// Add time_format column to users for 12h/24h time display preference
+try {
+  db.prepare("ALTER TABLE users ADD COLUMN time_format TEXT NOT NULL DEFAULT '12h'").run();
+} catch { /* column already exists */ }
+
 // Add is_household column to savings_goals for joint savings (proportioned equally)
 try {
   db.prepare('ALTER TABLE savings_goals ADD COLUMN is_household INTEGER DEFAULT 0').run();
