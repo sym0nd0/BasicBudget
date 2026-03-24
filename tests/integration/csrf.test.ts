@@ -58,4 +58,59 @@ describe('CSRF protection', () => {
     expect(loginRes.status).not.toBe(403);
     expect(loginRes.status).toBe(200);
   });
+
+  it('login with a fresh CSRF token succeeds immediately after logout', async () => {
+    const agent = supertest.agent(app);
+
+    // Register + log in as user A
+    const userA = makeTestUser('csrf_logout_a');
+    const regCsrfA = await getCsrfToken(agent);
+    const regResA = await agent
+      .post('/api/auth/register')
+      .set('X-CSRF-Token', regCsrfA)
+      .send({ email: userA.email, password: userA.password });
+    expect(regResA.status).toBe(201);
+
+    const loginCsrfA = await getCsrfToken(agent);
+    const loginResA = await agent
+      .post('/api/auth/login')
+      .set('X-CSRF-Token', loginCsrfA)
+      .send({ email: userA.email, password: userA.password });
+    expect(loginResA.status).toBe(200);
+
+    // Capture the stale token (simulates cachedCsrfToken before fix)
+    const staleToken = loginCsrfA;
+
+    // Log out as user A with a fresh token
+    const logoutCsrfA = await getCsrfToken(agent);
+    const logoutRes = await agent
+      .post('/api/auth/logout')
+      .set('X-CSRF-Token', logoutCsrfA);
+    expect(logoutRes.status).toBe(204);
+
+    // Register user B on a separate agent so the registration does not alter agent's session cookie state
+    const agentB = supertest.agent(app);
+    const userB = makeTestUser('csrf_logout_b');
+    const regCsrfB = await getCsrfToken(agentB);
+    const regResB = await agentB
+      .post('/api/auth/register')
+      .set('X-CSRF-Token', regCsrfB)
+      .send({ email: userB.email, password: userB.password });
+    expect(regResB.status).toBe(201);
+
+    // Simulate using a stale token (no fresh fetch) — this must be rejected
+    const staleLoginRes = await agent
+      .post('/api/auth/login')
+      .set('X-CSRF-Token', staleToken)
+      .send({ email: userB.email, password: userB.password });
+    expect(staleLoginRes.status).toBe(403);
+
+    // Fetch a fresh token on the same agent (simulates what the fix ensures happens)
+    const freshToken = await getCsrfToken(agent);
+    const freshLoginRes = await agent
+      .post('/api/auth/login')
+      .set('X-CSRF-Token', freshToken)
+      .send({ email: userB.email, password: userB.password });
+    expect(freshLoginRes.status).toBe(200);
+  });
 });
