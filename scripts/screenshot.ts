@@ -187,6 +187,9 @@ async function main(): Promise<void> {
     await captureScreenshot(page, join(SCREENSHOTS_DIR, 'debt-dark.png'), `${BASE_URL}/debt`);
     await captureScreenshot(page, join(SCREENSHOTS_DIR, 'savings-dark.png'), `${BASE_URL}/savings`);
     await captureScreenshot(page, join(SCREENSHOTS_DIR, 'reports-dark.png'), `${BASE_URL}/reports`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'household-dark.png'), `${BASE_URL}/household`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'settings-dark.png'), `${BASE_URL}/settings`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'admin-settings-dark.png'), `${BASE_URL}/admin/settings`);
 
     // Capture light theme screenshots
     console.log('\nCapturing light theme screenshots...');
@@ -197,6 +200,9 @@ async function main(): Promise<void> {
     await captureScreenshot(page, join(SCREENSHOTS_DIR, 'debt-light.png'), `${BASE_URL}/debt`);
     await captureScreenshot(page, join(SCREENSHOTS_DIR, 'savings-light.png'), `${BASE_URL}/savings`);
     await captureScreenshot(page, join(SCREENSHOTS_DIR, 'reports-light.png'), `${BASE_URL}/reports`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'household-light.png'), `${BASE_URL}/household`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'settings-light.png'), `${BASE_URL}/settings`);
+    await captureScreenshot(page, join(SCREENSHOTS_DIR, 'admin-settings-light.png'), `${BASE_URL}/admin/settings`);
 
     // Clean up
     console.log('\nCleaning up...');

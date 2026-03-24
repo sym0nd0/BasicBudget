@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -148,9 +149,10 @@ app.use('/api', (_req, res) => {
 // 11. Static + SPA fallback (production)
 if (config.NODE_ENV === 'production') {
   const publicDir = path.join(__dirname, '..', '..', 'public');
+  const indexHtml = readFileSync(path.join(publicDir, 'index.html'), 'utf8');
   app.use(express.static(publicDir));
-  app.get(/^(?!\/api).*$/, staticLimiter, (_req, res) => {
-    res.sendFile(path.join(publicDir, 'index.html'));
+  app.get('/{*path}', staticLimiter, (_req, res) => {
+    res.type('html').send(indexHtml);
   });
 }
 
