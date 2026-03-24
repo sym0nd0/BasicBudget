@@ -101,10 +101,14 @@ export function pruneOldBackups(dir?: string, maxBackups?: number): void {
 
   if (files.length <= limit) return;
 
-  // Sort by mtime ascending (oldest first)
-  const withMtime = files.map(f => {
-    const stat = fs.statSync(path.join(backupDir, f));
-    return { name: f, mtime: stat.mtimeMs };
+  // Sort by mtime ascending (oldest first); skip files removed since readdirSync
+  const withMtime = files.flatMap(f => {
+    try {
+      const stat = fs.statSync(path.join(backupDir, f));
+      return [{ name: f, mtime: stat.mtimeMs }];
+    } catch {
+      return [];
+    }
   });
   withMtime.sort((a, b) => a.mtime - b.mtime);
 
