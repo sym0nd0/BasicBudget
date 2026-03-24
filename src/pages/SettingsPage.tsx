@@ -72,6 +72,10 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   const [notifyLoading, setNotifyLoading] = useState(false);
   const [notifyMsg, setNotifyMsg] = useState('');
 
+  // Date & Time format
+  const [dtFormatSaving, setDtFormatSaving] = useState(false);
+  const [dtFormatMsg, setDtFormatMsg] = useState('');
+
   // Household members
   const [members, setMembers] = useState<HouseholdMember[] | null>(null);
   const [membersLoading, setMembersLoading] = useState(false);
@@ -264,6 +268,20 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
       setNotifyMsg('Failed to save.');
     } finally {
       setNotifyLoading(false);
+    }
+  };
+
+  const handleDateTimeFormatChange = async (date_format: string, time_format: string) => {
+    setDtFormatSaving(true);
+    setDtFormatMsg('');
+    try {
+      await api.updateDateTimeFormat(date_format, time_format);
+      await refreshAuth();
+      setDtFormatMsg('Saved.');
+    } catch {
+      setDtFormatMsg('Failed to save.');
+    } finally {
+      setDtFormatSaving(false);
     }
   };
 
@@ -495,6 +513,48 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
             ))}
           </div>
           {paletteMsg && <p className="text-xs text-[var(--color-text-muted)] mt-2">{paletteMsg}</p>}
+        </div>
+        <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+          <h3 className="text-sm font-semibold text-[var(--color-text)] mb-1">Date &amp; Time</h3>
+          <p className="text-xs text-[var(--color-text-muted)] mb-3">
+            Choose how dates and times are displayed throughout the app.
+          </p>
+          <div className="flex flex-col gap-3 max-w-sm">
+            <div>
+              <label className="block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">
+                Date format
+              </label>
+              <select
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                value={user?.date_format ?? 'DD/MM/YYYY'}
+                disabled={dtFormatSaving}
+                onChange={e =>
+                  handleDateTimeFormatChange(e.target.value, user?.time_format ?? '12h')
+                }
+              >
+                <option value="DD/MM/YYYY">DD/MM/YYYY — 24/03/2026</option>
+                <option value="MM/DD/YYYY">MM/DD/YYYY — 03/24/2026</option>
+                <option value="YYYY-MM-DD">YYYY-MM-DD — 2026-03-24</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">
+                Time format
+              </label>
+              <select
+                className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                value={user?.time_format ?? '12h'}
+                disabled={dtFormatSaving}
+                onChange={e =>
+                  handleDateTimeFormatChange(user?.date_format ?? 'DD/MM/YYYY', e.target.value)
+                }
+              >
+                <option value="12h">12-hour — 10:30 AM</option>
+                <option value="24h">24-hour — 10:30</option>
+              </select>
+            </div>
+          </div>
+          {dtFormatMsg && <p className="text-xs text-[var(--color-text-muted)] mt-2">{dtFormatMsg}</p>}
         </div>
         {user?.system_role === 'admin' && (
           <div className="mt-4 border-t border-[var(--color-border)] pt-4">
