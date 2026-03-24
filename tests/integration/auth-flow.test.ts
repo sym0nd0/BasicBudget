@@ -93,3 +93,32 @@ describe('auth flow', () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe('login error messages', () => {
+  it('returns descriptive error on wrong password', async () => {
+    const agent = supertest.agent(app);
+    const user = makeTestUser('err_msg_wrong');
+    let csrf = await csrfToken(agent);
+    await agent.post('/api/auth/register').set('X-CSRF-Token', csrf).send({ email: user.email, password: user.password });
+
+    csrf = await csrfToken(agent);
+    const res = await agent
+      .post('/api/auth/login')
+      .set('X-CSRF-Token', csrf)
+      .send({ email: user.email, password: 'WrongPass1!' });
+    expect(res.status).toBe(401);
+    expect((res.body as { message?: string }).message).toBe('Invalid email or password');
+  });
+
+  it('returns descriptive error for non-existent user', async () => {
+    const agent = supertest.agent(app);
+    const csrf = await csrfToken(agent);
+    const res = await agent
+      .post('/api/auth/login')
+      .set('X-CSRF-Token', csrf)
+      .send({ email: 'nonexistent@example.com', password: 'SomePass1!' });
+    expect(res.status).toBe(401);
+    expect((res.body as { message?: string }).message).toBe('Invalid email or password');
+  });
+});
+
