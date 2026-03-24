@@ -77,10 +77,10 @@ if (config.NODE_ENV === 'production') {
 app.set('trust proxy', 1);
 
 // 2. Helmet security headers
-// codeql[js/insecure-helmet-configuration] CSP is intentionally disabled in development for Vite HMR; production uses Helmet defaults
 // upgrade-insecure-requests is always omitted: Vite produces root-relative asset paths that
 // already inherit the page protocol, so the directive is redundant over HTTPS and actively
 // breaks plain-HTTP deployments by upgrading asset fetches to HTTPS (ERR_SSL_PROTOCOL_ERROR).
+// codeql[js/insecure-helmet-configuration] CSP is intentionally disabled in development for Vite HMR; production uses Helmet defaults
 app.use(helmet({
   contentSecurityPolicy: config.NODE_ENV === 'production'
     ? { directives: { upgradeInsecureRequests: null } }
