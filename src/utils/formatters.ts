@@ -44,3 +44,37 @@ export const poundsToPence = (pounds: string): number =>
 /** Convert pence integer to pounds string for form display */
 export const penceToPoundsStr = (pence: number): string =>
   (pence / 100).toFixed(2);
+
+type DateFormatPref = 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
+
+/** Format an ISO date/datetime string to a user-preferred date format.
+ * Defaults to DD/MM/YYYY (en-GB) when `prefs` is absent or null. */
+export function formatDate(
+  iso: string,
+  prefs?: { date_format?: string | null } | null,
+): string {
+  const fmt = (prefs?.date_format ?? 'DD/MM/YYYY') as DateFormatPref;
+  if (fmt === 'YYYY-MM-DD') return iso.slice(0, 10);
+  const locale = fmt === 'MM/DD/YYYY' ? 'en-US' : 'en-GB';
+  return new Date(iso).toLocaleDateString(locale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+/** Format an ISO datetime string to a user-preferred date + time string.
+ * Defaults to DD/MM/YYYY and 12h when `prefs` is absent or null. */
+export function formatDateTime(
+  iso: string,
+  prefs?: { date_format?: string | null; time_format?: string | null } | null,
+): string {
+  const datePart = formatDate(iso, prefs);
+  const hour12 = (prefs?.time_format ?? '12h') !== '24h';
+  const timePart = new Date(iso).toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12,
+  });
+  return `${datePart}, ${timePart}`;
+}
