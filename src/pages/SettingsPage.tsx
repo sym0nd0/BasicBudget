@@ -279,7 +279,8 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
       await api.updateDateTimeFormat(date_format, time_format);
       await refreshAuth();
       setDtFormatMsg('Saved.');
-    } catch {
+    } catch (err) {
+      console.error('Failed to save date/time format:', err);
       setDtFormatMsg('Failed to save.');
     } finally {
       setDtFormatSaving(false);
