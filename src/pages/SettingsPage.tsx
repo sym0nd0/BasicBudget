@@ -521,10 +521,11 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
           </p>
           <div className="flex flex-col gap-3 max-w-sm">
             <div>
-              <label className="block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">
+              <label htmlFor="date-format-select" className="block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">
                 Date format
               </label>
               <select
+                id="date-format-select"
                 className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                 value={user?.date_format ?? 'DD/MM/YYYY'}
                 disabled={dtFormatSaving}
@@ -538,10 +539,11 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">
+              <label htmlFor="time-format-select" className="block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-1">
                 Time format
               </label>
               <select
+                id="time-format-select"
                 className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                 value={user?.time_format ?? '12h'}
                 disabled={dtFormatSaving}
