@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { useBudget } from '../context/BudgetContext';
 import { useAuth } from '../context/AuthContext';
@@ -76,6 +76,8 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   // Date & Time format
   const [dtFormatSaving, setDtFormatSaving] = useState(false);
   const [dtFormatMsg, setDtFormatMsg] = useState('');
+  const [dtDateDraft, setDtDateDraft] = useState<string>(user?.date_format ?? 'DD/MM/YYYY');
+  const [dtTimeDraft, setDtTimeDraft] = useState<string>(user?.time_format ?? '12h');
 
   // Household members
   const [members, setMembers] = useState<HouseholdMember[] | null>(null);
@@ -94,6 +96,13 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
   const [monthLocksLoading, setMonthLocksLoading] = useState(false);
   const [lockMonthInput, setLockMonthInput] = useState('');
   const [lockMonthMsg, setLockMonthMsg] = useState('');
+
+  // Keep date/time format drafts in sync when user preference is updated externally
+  // (e.g. after a successful refreshAuth following a save).
+  useEffect(() => {
+    setDtDateDraft(user?.date_format ?? 'DD/MM/YYYY');
+    setDtTimeDraft(user?.time_format ?? '12h');
+  }, [user?.date_format, user?.time_format]);
 
   // ─── Account management handlers ────────────────────────────────────────────
 
@@ -277,8 +286,12 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
     setDtFormatMsg('');
     try {
       await api.updateDateTimeFormat(date_format, time_format);
-      await refreshAuth();
       setDtFormatMsg('Saved.');
+      try {
+        await refreshAuth();
+      } catch {
+        // refreshAuth failure does not undo a successful save — swallow silently.
+      }
     } catch (err) {
       console.error('Failed to save date/time format:', err);
       setDtFormatMsg('Failed to save.');
@@ -529,11 +542,13 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
               <select
                 id="date-format-select"
                 className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                value={user?.date_format ?? 'DD/MM/YYYY'}
+                value={dtDateDraft}
                 disabled={dtFormatSaving}
-                onChange={e =>
-                  handleDateTimeFormatChange(e.target.value, user?.time_format ?? '12h')
-                }
+                onChange={e => {
+                  const newDate = e.target.value;
+                  setDtDateDraft(newDate);
+                  handleDateTimeFormatChange(newDate, dtTimeDraft);
+                }}
               >
                 <option value="DD/MM/YYYY">DD/MM/YYYY — 24/03/2026</option>
                 <option value="MM/DD/YYYY">MM/DD/YYYY — 03/24/2026</option>
@@ -547,11 +562,13 @@ export function SettingsPage({ onMenuClick }: SettingsPageProps) {
               <select
                 id="time-format-select"
                 className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                value={user?.time_format ?? '12h'}
+                value={dtTimeDraft}
                 disabled={dtFormatSaving}
-                onChange={e =>
-                  handleDateTimeFormatChange(user?.date_format ?? 'DD/MM/YYYY', e.target.value)
-                }
+                onChange={e => {
+                  const newTime = e.target.value;
+                  setDtTimeDraft(newTime);
+                  handleDateTimeFormatChange(dtDateDraft, newTime);
+                }}
               >
                 <option value="12h">12-hour — 10:30 AM</option>
                 <option value="24h">24-hour — 10:30</option>
