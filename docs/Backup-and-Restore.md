@@ -21,6 +21,43 @@ Click **Download Backup** to download a JSON file (`basicbudget-backup-YYYY-MM-D
 
 ---
 
+## Automated Backups
+
+> **Requires Admin role.** Configure from **Admin → System Settings → Database Backup → Automated Backups**.
+
+BasicBudget can automatically create JSON backups on a schedule and save them to a `backups/` directory alongside the database file. By default this is `data/backups/`; if you set a custom `DB_PATH` the directory is placed next to that database instead.
+
+### Configuration
+
+| Setting | Default | Description |
+|---|---|---|
+| **Enabled** | Off | Enable or disable the automated scheduler |
+| **Interval (hours)** | 24 | How often a backup is created (1–720) |
+| **Maximum backups** | 7 | Number of backup files to retain; oldest are removed when the limit is exceeded (1–100) |
+
+### Storage Location
+
+The backup directory is derived at runtime from the database location — it is always a `backups/` subdirectory placed next to wherever the database file lives:
+
+| Setup | Default auto-backup directory |
+|---|---|
+| **Docker** | `/app/data/backups/` inside the container (within the `bb-data` named volume) |
+| **Manual** | `data/backups/` relative to the project root |
+
+If you set a custom `DB_PATH` environment variable, automated backups are written to `backups/` in the same directory as that database file — not necessarily under `data/`.
+
+Files follow the naming convention: `basicbudget-auto-backup-YYYY-MM-DDTHH-MM-SS.json`
+
+### Compatibility with Manual Restore
+
+Automated backup files are structurally identical to manually downloaded backups. They can be restored using the standard **Restore Backup** function in the Admin UI.
+
+### Retention
+
+When the number of backup files exceeds the configured maximum, the oldest files (by last-modified time) are deleted automatically. Only files matching the `basicbudget-auto-backup-*.json` pattern are affected; manually downloaded backup files stored elsewhere are never touched.
+
+---
+
 ## File-Level SQLite Backup
 
 BasicBudget stores all data in a single SQLite database file. Backing it up is straightforward.

@@ -16,6 +16,9 @@ import { resetOidcClient } from './oidc.js';
 import { sendTestEmail } from '../services/email.js';
 import { logger } from '../services/logger.js';
 import type { LogLevel } from '../services/logger.js';
+import { getBackupConfig, getAutoBackupStatus, restartScheduler } from '../services/autoBackup.js';
+import { autoBackupConfigSchema } from '../validation/schemas.js';
+import { backupStatusLimiter, backupConfigWriteLimiter } from '../middleware/rate-limit.js';
 
 const router = Router();
 
@@ -383,6 +386,32 @@ router.put('/settings/registration', (req: Request, res: Response) => {
   auditLog(req.userId!, 'admin_registration_toggled', { disabled }, req.ip, req.get('user-agent'));
   logger.info('Registration toggle changed by admin', { disabled, admin_id: req.userId });
   res.json({ message: `Registration ${disabled ? 'disabled' : 'enabled'}.` });
+});
+
+// ─── Automated backup settings ────────────────────────────────────────────────
+
+// GET /api/admin/settings/backup
+router.get('/settings/backup', backupStatusLimiter, (_req: Request, res: Response) => {
+  const config = getBackupConfig();
+  const status = getAutoBackupStatus();
+  res.json({ ...config, ...status });
+});
+
+// PUT /api/admin/settings/backup
+router.put('/settings/backup', backupConfigWriteLimiter, (req: Request, res: Response) => {
+  const result = autoBackupConfigSchema.safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
+    return;
+  }
+  const { enabled, interval_hours, max_backups } = result.data;
+  setSetting('backup.enabled', String(enabled));
+  setSetting('backup.interval_hours', String(interval_hours));
+  setSetting('backup.max_backups', String(max_backups));
+  restartScheduler();
+  auditLog(req.userId!, 'admin_auto_backup_updated', { enabled, interval_hours, max_backups }, req.ip, req.get('user-agent'));
+  logger.info('Automated backup settings updated', { enabled, interval_hours, max_backups, admin_id: req.userId });
+  res.json({ message: `Automated backups ${enabled ? 'enabled' : 'disabled'}.` });
 });
 
 export default router;

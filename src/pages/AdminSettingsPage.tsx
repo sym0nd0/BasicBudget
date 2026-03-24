@@ -4,7 +4,7 @@ import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { api } from '../api/client';
-import type { SmtpConfig, OidcConfig, LoggingConfig } from '../types';
+import type { SmtpConfig, OidcConfig, LoggingConfig, AutoBackupConfig } from '../types';
 import { EXPENSE_CATEGORIES } from '../types';
 
 interface AdminSettingsPageProps {
@@ -67,6 +67,17 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
   const [restoreError, setRestoreError] = useState('');
   const restoreFileRef = useRef<HTMLInputElement>(null);
 
+  // ── Automated Backup ──
+  const [autoBackup, setAutoBackup] = useState<AutoBackupConfig>({
+    enabled: false, interval_hours: 24, max_backups: 7,
+    last_backup_at: null, next_backup_at: null, backup_count: 0,
+  });
+  const [autoBackupLoading, setAutoBackupLoading] = useState(true);
+  const [autoBackupSaving, setAutoBackupSaving] = useState(false);
+  const [autoBackupMsg, setAutoBackupMsg] = useState('');
+  const [autoBackupError, setAutoBackupError] = useState('');
+  const [autoBackupLoadError, setAutoBackupLoadError] = useState(false);
+
   // ── Logging ──
   const [logLevel, setLogLevel] = useState<LoggingConfig['level']>('info');
   const [logLoading, setLogLoading] = useState(true);
@@ -96,6 +107,15 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
       .then(cfg => setRegDisabled(cfg.disabled))
       .catch(() => {})
       .finally(() => setRegLoading(false));
+
+    api.getAutoBackupConfig()
+      .then(cfg => { setAutoBackup(cfg); setAutoBackupLoadError(false); setAutoBackupError(''); })
+      .catch((e: unknown) => {
+        console.error('Failed to load auto-backup config', e);
+        setAutoBackupLoadError(true);
+        setAutoBackupError('Failed to load automated backup settings. Reload the page to retry.');
+      })
+      .finally(() => setAutoBackupLoading(false));
   }, []);
 
   const saveSMTP = async () => {
@@ -249,6 +269,27 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
     }
   };
 
+  const saveAutoBackup = async () => {
+    if (autoBackupLoadError) return;
+    setAutoBackupSaving(true);
+    setAutoBackupMsg('');
+    setAutoBackupError('');
+    try {
+      const r = await api.updateAutoBackupConfig({
+        enabled: autoBackup.enabled,
+        interval_hours: autoBackup.interval_hours,
+        max_backups: autoBackup.max_backups,
+      });
+      setAutoBackupMsg(r.message);
+      const cfg = await api.getAutoBackupConfig();
+      setAutoBackup(cfg);
+    } catch (e) {
+      setAutoBackupError(e instanceof Error ? e.message : 'Failed to save automated backup settings');
+    } finally {
+      setAutoBackupSaving(false);
+    }
+  };
+
   const smtpConfigured = !!smtp.host;
   const oidcConfigured = !!(oidc.issuer_url && oidc.client_id);
 
@@ -297,6 +338,73 @@ export function AdminSettingsPage({ onMenuClick }: AdminSettingsPageProps) {
               {restoreMsg && <p className="text-sm text-[var(--color-success)]">{restoreMsg}</p>}
               {restoreError && <p className="text-sm text-[var(--color-danger)]">{restoreError}</p>}
             </div>
+
+            {/* Divider */}
+            <hr className="border-[var(--color-border)]" />
+
+            {/* Automated Backups section */}
+            {autoBackupLoading ? (
+              <p className="text-sm text-[var(--color-text-muted)]">Loading…</p>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-[var(--color-text)] mb-1">Automated Backups</p>
+                  <p className="text-sm text-[var(--color-text-muted)]">
+                    Schedule automatic backups to the server's <code className="text-xs bg-[var(--color-surface-2)] px-1 py-0.5 rounded">data/backups/</code> directory. Automated backup files are compatible with the manual restore function above.
+                  </p>
+                </div>
+                <LabeledField label="Enable automated backups">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoBackup.enabled}
+                      onChange={e => setAutoBackup(prev => ({ ...prev, enabled: e.target.checked }))}
+                      disabled={autoBackupLoadError}
+                      className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-primary)] focus:ring-[var(--color-primary)]"
+                    />
+                    <span className="text-sm text-[var(--color-text)]">
+                      {autoBackup.enabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </label>
+                </LabeledField>
+                <LabeledField label="Backup interval (hours)">
+                  <input
+                    type="number"
+                    min="1"
+                    max="720"
+                    step="1"
+                    disabled={autoBackupLoadError}
+                    className={inputClass}
+                    value={autoBackup.interval_hours}
+                    onChange={e => setAutoBackup(prev => ({ ...prev, interval_hours: parseInt(e.target.value, 10) || 24 }))}
+                  />
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1">Between 1 and 720 hours.</p>
+                </LabeledField>
+                <LabeledField label="Maximum backups to keep">
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    step="1"
+                    disabled={autoBackupLoadError}
+                    className={inputClass}
+                    value={autoBackup.max_backups}
+                    onChange={e => setAutoBackup(prev => ({ ...prev, max_backups: parseInt(e.target.value, 10) || 7 }))}
+                  />
+                  <p className="text-xs text-[var(--color-text-muted)] mt-1">Oldest files are removed when the limit is exceeded. Between 1 and 100.</p>
+                </LabeledField>
+                <div className="text-xs text-[var(--color-text-muted)] space-y-0.5">
+                  <p>Backups stored: <span className="text-[var(--color-text)]">{autoBackup.backup_count}</span></p>
+                  <p>Last backup: <span className="text-[var(--color-text)]">{autoBackup.last_backup_at ?? 'Never'}</span></p>
+                  <p>Next backup: <span className="text-[var(--color-text)]">{autoBackup.next_backup_at ?? (autoBackup.enabled ? 'Pending restart' : 'Not scheduled')}</span></p>
+                </div>
+                <Button onClick={saveAutoBackup} disabled={autoBackupSaving || autoBackupLoadError} variant="secondary">
+                  {autoBackupSaving ? 'Saving…' : 'Save Automated Backup Settings'}
+                </Button>
+                {autoBackupMsg && <p className="text-sm text-[var(--color-success)]">{autoBackupMsg}</p>}
+                {autoBackupError && <p className="text-sm text-[var(--color-danger)]">{autoBackupError}</p>}
+              </div>
+            )}
           </div>
         </Card>
 

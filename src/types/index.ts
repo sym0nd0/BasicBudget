@@ -33,6 +33,7 @@ export type {
   OidcConfig,
   LoggingConfig,
   RegistrationConfig,
+  AutoBackupConfig,
   AuditLogEntry,
   PaginatedResponse,
   VersionInfo,

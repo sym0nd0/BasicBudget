@@ -102,6 +102,27 @@ The backup includes all persistent data (19 tables). Ephemeral data — active l
 | **Disaster recovery** | Restore data after accidental deletion or a failed upgrade |
 | **Testing** | Snapshot and restore a known-good state during development |
 
+### Automated Backups
+
+> **Requires Admin role.** Available from **Admin → System Settings → Database Backup**.
+
+The automated backup scheduler runs in the background and saves JSON backup files to the server's `data/backups/` directory on a configurable schedule.
+
+| Setting | Description | Range |
+|---|---|---|
+| **Enable automated backups** | Turns the scheduler on or off | On / Off |
+| **Backup interval (hours)** | How often a backup is created | 1–720 hours |
+| **Maximum backups to keep** | Oldest files are pruned when the limit is exceeded | 1–100 |
+
+Automated backup files use the format `basicbudget-auto-backup-YYYY-MM-DDTHH-MM-SS.json` and are identical in structure to manually downloaded backups. They can be restored using the standard **Restore Backup** function.
+
+The status display shows:
+- **Backups stored** — number of automated backup files currently on disk
+- **Last backup** — timestamp of the most recent automated backup
+- **Next backup** — scheduled time for the next automated backup
+
+> **Note:** The `data/backups/` directory is located alongside the database file. When running in Docker, this directory is inside the volume mounted at `/app/data/`. Ensure sufficient disk space is available for the configured number of backups.
+
 ## Audit Log
 
 The Audit Log records significant actions performed by all users.

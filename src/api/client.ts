@@ -19,6 +19,7 @@ import type {
   OidcConfig,
   LoggingConfig,
   RegistrationConfig,
+  AutoBackupConfig,
   AuditLogEntry,
   PaginatedResponse,
   VersionInfo,
@@ -279,6 +280,15 @@ export const api = {
     }
     return r.json() as Promise<{ message: string; tables: Record<string, number> }>;
   },
+
+  // ── Admin — Automated Backup ──
+  getAutoBackupConfig: () =>
+    request<AutoBackupConfig>('/admin/settings/backup'),
+  updateAutoBackupConfig: (cfg: Pick<AutoBackupConfig, 'enabled' | 'interval_hours' | 'max_backups'>) =>
+    request<{ message: string }>('/admin/settings/backup', {
+      method: 'PUT',
+      body: JSON.stringify(cfg),
+    }),
 
   // ── Admin — Users ──
   getAdminUsers: (page = 1, limit = 20) =>

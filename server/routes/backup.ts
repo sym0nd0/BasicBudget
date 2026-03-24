@@ -11,6 +11,7 @@ import { auditLog } from '../services/audit.js';
 import { logger } from '../services/logger.js';
 import { invalidateCache } from '../services/settings.js';
 import { resetOidcClient } from './oidc.js';
+import { restartScheduler } from '../services/autoBackup.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -42,7 +43,7 @@ const TABLE_COLUMNS: Record<string, readonly string[]> = {
 };
 
 // Tables to include in backup (all persistent tables — excludes ephemeral)
-const BACKUP_TABLES = [
+export const BACKUP_TABLES = [
   'users', 'households', 'household_members', 'oidc_accounts',
   'totp_secrets', 'recovery_codes', 'audit_log', 'login_alerts',
   'accounts', 'incomes', 'expenses', 'debts', 'debt_deal_periods',
@@ -73,7 +74,7 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 },
 });
 
-function getAppVersion(): string {
+export function getAppVersion(): string {
   try {
     const pkgPath = join(__dirname, '..', '..', 'package.json');
     const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { version: string };
@@ -215,6 +216,7 @@ router.post(
       // Invalidate in-memory caches so next read re-fetches from the restored DB
       invalidateCache();
       resetOidcClient();
+      restartScheduler();
 
       logger.info('Full database restore completed', { userId: adminUserId, rowCounts });
 

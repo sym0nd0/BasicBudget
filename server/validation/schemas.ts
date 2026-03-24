@@ -95,3 +95,11 @@ export const accountSchema = z.object({
   sort_order: z.number().int().optional(),
   is_joint: z.boolean().optional(),
 });
+
+// ─── Auto-backup ─────────────────────────────────────────────────────────────
+
+export const autoBackupConfigSchema = z.object({
+  enabled: z.boolean(),
+  interval_hours: z.number().int().min(1).max(720),
+  max_backups: z.number().int().min(1).max(100),
+});

@@ -329,6 +329,15 @@ export interface RegistrationConfig {
   disabled: boolean;
 }
 
+export interface AutoBackupConfig {
+  enabled: boolean;
+  interval_hours: number;
+  max_backups: number;
+  last_backup_at: string | null;
+  next_backup_at: string | null;
+  backup_count: number;
+}
+
 export interface AuditLogEntry {
   id: string;
   user_id: string | null;
