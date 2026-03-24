@@ -53,7 +53,9 @@ export function formatDate(
   iso: string,
   prefs?: { date_format?: string | null } | null,
 ): string {
-  const fmt = (prefs?.date_format ?? 'DD/MM/YYYY') as DateFormatPref;
+  const rawFmt = prefs?.date_format ?? 'DD/MM/YYYY';
+  const fmt: DateFormatPref =
+    rawFmt === 'MM/DD/YYYY' || rawFmt === 'YYYY-MM-DD' ? rawFmt : 'DD/MM/YYYY';
   if (fmt === 'YYYY-MM-DD') return iso.slice(0, 10);
   const locale = fmt === 'MM/DD/YYYY' ? 'en-US' : 'en-GB';
   return new Date(iso).toLocaleDateString(locale, {
