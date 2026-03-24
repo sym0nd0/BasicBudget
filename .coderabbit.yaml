@@ -5,7 +5,7 @@ reviews:
       enabled: true
 code_generation:
   docstrings:
-    language: typescript
+    language: en-GB
 # Lower docstring coverage threshold to a realistic level for a TypeScript
 # codebase — TypeScript types serve as machine-readable documentation and
 # an 80% JSDoc threshold is calibrated for dynamically-typed languages.
