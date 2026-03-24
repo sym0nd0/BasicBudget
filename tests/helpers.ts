@@ -20,7 +20,13 @@ export async function getCsrfToken(agent: ReturnType<typeof supertest.agent>, co
   const res = await agent
     .get('/api/auth/csrf-token')
     .set('Cookie', cookie ?? '');
-  return (res.body as { token?: string }).token ?? '';
+  const token = (res.body as { token?: string }).token;
+  if (!token) {
+    throw new Error(
+      `getCsrfToken: expected token from /api/auth/csrf-token but got ${res.status} — body: ${JSON.stringify(res.body)}`
+    );
+  }
+  return token;
 }
 
 export interface TestUser {

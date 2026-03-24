@@ -1,21 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import supertest from 'supertest';
-import { getApp, makeTestUser, createTestUser, loginTestUser } from '../helpers.js';
+import { getApp, makeTestUser, createTestUser, loginTestUser, getCsrfToken } from '../helpers.js';
 
 let app: Awaited<ReturnType<typeof getApp>>;
 let agent: ReturnType<typeof supertest.agent>;
 let csrfToken: string;
-
-async function getCsrf(a: ReturnType<typeof supertest.agent>): Promise<string> {
-  const r = await a.get('/api/auth/csrf-token');
-  const token = (r.body as { token?: string }).token;
-  if (!token) {
-    throw new Error(
-      `csrfToken: expected token from /api/auth/csrf-token but got ${r.status} — body: ${JSON.stringify(r.body)}`
-    );
-  }
-  return token;
-}
 
 beforeAll(async () => {
   app = await getApp();
@@ -23,7 +12,7 @@ beforeAll(async () => {
   const user = makeTestUser('profile');
   await createTestUser(agent, user);
   await loginTestUser(agent, user);
-  csrfToken = await getCsrf(agent);
+  csrfToken = await getCsrfToken(agent);
 });
 
 describe('GET /api/auth/profile — datetime format defaults', () => {
