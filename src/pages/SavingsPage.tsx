@@ -22,10 +22,15 @@ interface SavingsPageProps {
 }
 
 function monthsToGoal(goal: SavingsGoal): number | null {
-  const remaining = goal.target_amount_pence - goal.current_amount_pence;
+  let remaining = goal.target_amount_pence - goal.current_amount_pence;
   if (remaining <= 0) return 0;
   if (goal.monthly_contribution_pence <= 0) return null;
-  return Math.ceil(remaining / goal.monthly_contribution_pence);
+  let months = 0;
+  while (remaining > 0 && months < 1201) {
+    remaining -= goal.monthly_contribution_pence;
+    months++;
+  }
+  return months > 1200 ? null : months;
 }
 
 function progressPercent(goal: SavingsGoal): number {
