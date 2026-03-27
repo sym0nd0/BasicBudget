@@ -63,7 +63,7 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
   const [error, setError] = useState('');
 
   const memberCount = householdDetails?.members?.length ?? 1;
-  const totalOutgoingPence = (displayOverview?.shared_expenses_pence ?? 0) + (displayOverview?.debt_payments_pence ?? 0);
+  const totalOutgoingPence = (displayOverview?.shared_expenses_pence ?? 0) + (displayOverview?.debt_payments_pence ?? 0) + (displayOverview?.household_savings_pence ?? 0);
   const perMemberOutgoingPence = Math.round(totalOutgoingPence / memberCount);
 
   const handleSaveName = async () => {
@@ -204,6 +204,7 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
             income={displayOverview?.total_income_pence ?? 0}
             expenses={displayOverview?.shared_expenses_pence ?? 0}
             debtPayments={displayOverview?.debt_payments_pence ?? 0}
+            savings={displayOverview?.household_savings_pence ?? 0}
           />
         </Card>
 

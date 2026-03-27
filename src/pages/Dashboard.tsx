@@ -84,8 +84,6 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
   const displaySummary = isRangeActive ? rangeSummary : summary;
 
   const totalDebtPence = debts.reduce((s, d) => s + d.balance_pence, 0);
-  const totalPaymentsPence = debts.reduce((s, d) => s + Math.round((d.minimum_payment_pence + d.overpayment_pence) * d.split_ratio), 0);
-
   const disposablePence = displaySummary?.disposable_income_pence ?? 0;
   const disposableVariant = disposablePence >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
 
@@ -139,7 +137,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
         />
         <SummaryCard
           label="Total Monthly Outgoing"
-          value={formatCurrency((displaySummary?.total_expenses_pence ?? 0) + (displaySummary?.total_debt_payments_pence ?? 0))}
+          value={formatCurrency((displaySummary?.total_expenses_pence ?? 0) + (displaySummary?.total_debt_payments_pence ?? 0) + (displaySummary?.total_savings_pence ?? 0))}
           colorClass="text-[var(--color-primary)]"
           iconBgClass="bg-[var(--color-primary-light)]"
           to="/"
@@ -153,7 +151,6 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
         <SummaryCard
           label="Disposable Income"
           value={formatCurrency(disposablePence)}
-          sub={totalPaymentsPence > 0 ? `${formatCurrency(totalDebtPence)} in debts` : undefined}
           colorClass={disposableVariant}
           iconBgClass={disposablePence >= 0 ? 'bg-[var(--color-primary-light)]' : 'bg-[var(--color-danger-light)]'}
           to="/"
@@ -180,6 +177,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
             income={displaySummary?.total_income_pence ?? 0}
             expenses={displaySummary?.total_expenses_pence ?? 0}
             debtPayments={displaySummary?.total_debt_payments_pence ?? 0}
+            savings={displaySummary?.total_savings_pence ?? 0}
           />
         </Card>
 
