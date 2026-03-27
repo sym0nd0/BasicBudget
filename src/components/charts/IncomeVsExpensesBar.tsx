@@ -14,6 +14,7 @@ interface IncomeVsExpensesBarProps {
   income: number;
   expenses: number;
   debtPayments: number;
+  savings: number;
 }
 
 interface CustomTooltipProps {
@@ -36,13 +37,14 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   );
 };
 
-export function IncomeVsExpensesBar({ income, expenses, debtPayments }: IncomeVsExpensesBarProps) {
+export function IncomeVsExpensesBar({ income, expenses, debtPayments, savings }: IncomeVsExpensesBarProps) {
   const data = [
     {
       name: 'This Month',
       Income: income,
       Expenses: expenses,
       'Debt Payments': debtPayments,
+      Savings: savings,
     },
   ];
 
@@ -60,6 +62,7 @@ export function IncomeVsExpensesBar({ income, expenses, debtPayments }: IncomeVs
         <Bar dataKey="Income" fill="var(--color-chart-3)" radius={[4, 4, 0, 0]} />
         <Bar dataKey="Expenses" fill="var(--color-chart-5)" radius={[4, 4, 0, 0]} />
         <Bar dataKey="Debt Payments" fill="var(--color-chart-4)" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Savings" fill="var(--color-chart-2)" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

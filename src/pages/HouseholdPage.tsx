@@ -204,6 +204,7 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
             income={displayOverview?.total_income_pence ?? 0}
             expenses={displayOverview?.shared_expenses_pence ?? 0}
             debtPayments={displayOverview?.debt_payments_pence ?? 0}
+            savings={displayOverview?.household_savings_pence ?? 0}
           />
         </Card>
 

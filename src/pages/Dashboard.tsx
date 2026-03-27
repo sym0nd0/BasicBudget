@@ -177,6 +177,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
             income={displaySummary?.total_income_pence ?? 0}
             expenses={displaySummary?.total_expenses_pence ?? 0}
             debtPayments={displaySummary?.total_debt_payments_pence ?? 0}
+            savings={displaySummary?.total_savings_pence ?? 0}
           />
         </Card>
 

@@ -34,6 +34,14 @@ describe('monthsToGoal', () => {
     expect(monthsToGoal({ target_amount_pence: 5001, current_amount_pence: 0, monthly_contribution_pence: 2500 })).toBe(3);
   });
 
+  it('returns 1200 for a goal that takes exactly 1200 months (boundary — within cap)', () => {
+    expect(monthsToGoal({ target_amount_pence: 1200, current_amount_pence: 0, monthly_contribution_pence: 1 })).toBe(1200);
+  });
+
+  it('returns null for a goal that requires 1201 months (boundary — exceeds cap)', () => {
+    expect(monthsToGoal({ target_amount_pence: 1201, current_amount_pence: 0, monthly_contribution_pence: 1 })).toBeNull();
+  });
+
   it('returns null for effectively unreachable goals (> 100 years)', () => {
     expect(monthsToGoal({ target_amount_pence: 100_000_000, current_amount_pence: 0, monthly_contribution_pence: 1 })).toBeNull();
   });
