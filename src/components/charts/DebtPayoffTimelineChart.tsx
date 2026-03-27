@@ -91,6 +91,7 @@ export function DebtPayoffTimelineChart({ householdOnly }: DebtPayoffTimelineCha
             variant={strategy === 'avalanche' ? 'primary' : 'secondary'}
             size="sm"
             onClick={() => setStrategy('avalanche')}
+            title="Avalanche: pay off highest interest rate first — minimises total interest paid"
           >
             Avalanche
           </Button>
@@ -98,6 +99,7 @@ export function DebtPayoffTimelineChart({ householdOnly }: DebtPayoffTimelineCha
             variant={strategy === 'snowball' ? 'primary' : 'secondary'}
             size="sm"
             onClick={() => setStrategy('snowball')}
+            title="Snowball: pay off smallest balance first — builds momentum with quick wins"
           >
             Snowball
           </Button>
