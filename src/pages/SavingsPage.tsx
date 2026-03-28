@@ -13,6 +13,8 @@ import { Badge } from '../components/ui/Badge';
 import { FilterBar } from '../components/layout/FilterBar';
 import { SavingsGoalForm } from '../components/forms/SavingsGoalForm';
 import { SavingsGrowthChart } from '../components/charts/SavingsGrowthChart';
+import { usePreviousPeriod } from '../hooks/usePreviousPeriod';
+import { DeltaIndicator } from '../components/ui/DeltaIndicator';
 import { formatCurrency, formatDate, formatPercent } from '../utils/formatters';
 import { findDuplicateSavingsGoal } from '../utils/duplicates';
 import type { SavingsGoal, SavingsTransaction, SavingsTransactionType } from '../types';
@@ -68,6 +70,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
   const txUrl = `/savings-goals/transactions?from=${fromMonth}&to=${toMonth}`;
   const { data: transactions, refetch: refetchTx } = useApi<SavingsTransaction[]>(txUrl);
 
+  const prevPeriod = usePreviousPeriod();
   const totalSaved = goals.reduce((s, g) => s + g.current_amount_pence, 0);
   const totalTarget = goals.reduce((s, g) => s + g.target_amount_pence, 0);
   const totalMonthly = goals.reduce((s, g) => s + g.monthly_contribution_pence, 0);
@@ -168,6 +171,11 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Monthly Contributions</p>
           <p className="text-2xl font-bold text-[var(--color-warning)]">{formatCurrency(totalMonthly)}</p>
+          <DeltaIndicator
+            current={totalMonthly}
+            previous={prevPeriod?.savings ?? null}
+            semantics="positive-up"
+          />
         </Card>
       </div>
 
