@@ -4,15 +4,16 @@ The Dashboard is the home page of BasicBudget. It gives you an at-a-glance view 
 
 ## Summary Cards
 
-Five cards appear at the top of the page:
+Six cards appear at the top of the page:
 
 | Card | Description |
 |---|---|
-| **Total Income** | Sum of all active income entries for the month |
-| **Total Expenses** | Sum of all active expense entries for the month |
-| **Disposable Income** | Total Income minus Total Expenses |
-| **Total Debt** | Combined outstanding balance across all active debts |
-| **Total Savings** | Combined current balance across all savings goals |
+| **Monthly Income** | Sum of all active income entries for the month |
+| **Monthly Expenses** | Sum of all active expense entries for the month |
+| **Debt Payments** | Total monthly debt repayment amounts across all active debts |
+| **Monthly Savings** | Sum of all savings goal monthly contributions |
+| **Total Monthly Outgoing** | Monthly Expenses + Debt Payments + Monthly Savings |
+| **Disposable Income** | Monthly Income minus Total Monthly Outgoing |
 
 ## Charts
 

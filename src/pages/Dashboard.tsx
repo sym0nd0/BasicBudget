@@ -97,7 +97,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6 items-stretch">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-6 items-stretch">
         <SummaryCard
           label="Monthly Income"
           value={formatCurrency(displaySummary?.total_income_pence ?? 0)}
@@ -132,6 +132,18 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
           icon={
             <svg className="w-5 h-5 text-[var(--color-warning)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          }
+        />
+        <SummaryCard
+          label="Monthly Savings"
+          value={formatCurrency(displaySummary?.total_savings_pence ?? 0)}
+          colorClass="text-[var(--color-success)]"
+          iconBgClass="bg-[var(--color-success-light)]"
+          to="/savings"
+          icon={
+            <svg className="w-5 h-5 text-[var(--color-success)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           }
         />
