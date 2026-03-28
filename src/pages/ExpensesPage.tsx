@@ -12,6 +12,8 @@ import { SortableHeader } from '../components/ui/SortableHeader';
 import { useSortableTable } from '../hooks/useSortableTable';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { useRangeOverview } from '../hooks/useRangeOverview';
+import { usePreviousPeriod } from '../hooks/usePreviousPeriod';
+import { DeltaIndicator } from '../components/ui/DeltaIndicator';
 import { formatCurrency, formatOrdinal, formatPercent } from '../utils/formatters';
 import { findDuplicateExpense } from '../utils/duplicates';
 import type { Expense } from '../types';
@@ -29,6 +31,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
   const { expenses, accounts, addExpense, updateExpense, deleteExpense } = useBudget();
   const { filterCategory } = useFilter();
   const { isRangeActive, data: rangeOverview } = useRangeOverview();
+  const prevPeriod = usePreviousPeriod();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | undefined>();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -144,6 +147,11 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
         <Card className="h-full">
           <p className="text-sm text-[var(--color-text-muted)]">Your Share (All Expenses)</p>
           <p className="text-2xl font-bold text-[var(--color-danger)] mt-1">{formatCurrency(totalAll)}</p>
+          <DeltaIndicator
+            current={totalAll}
+            previous={prevPeriod?.expenses ?? null}
+            semantics="positive-down"
+          />
           <p className="text-xs text-[var(--color-text-muted)] mt-1">{expenses.length} expenses total</p>
         </Card>
         <Card className="h-full">
