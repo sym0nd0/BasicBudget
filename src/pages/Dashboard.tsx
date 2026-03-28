@@ -2,10 +2,12 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { useDebt } from '../context/DebtContext';
 import { useFilter } from '../context/FilterContext';
+import { usePreviousPeriod } from '../hooks/usePreviousPeriod';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { FilterBar } from '../components/layout/FilterBar';
+import { DeltaIndicator } from '../components/ui/DeltaIndicator';
 import { IncomeVsExpensesBar } from '../components/charts/IncomeVsExpensesBar';
 import { ExpenseDonut } from '../components/charts/ExpenseDonut';
 import { formatCurrency, formatPercent } from '../utils/formatters';
@@ -23,9 +25,10 @@ interface SummaryCardProps {
   iconBgClass: string;
   icon: React.ReactNode;
   to: string;
+  deltaElement?: React.ReactNode;
 }
 
-function SummaryCard({ label, value, sub, colorClass, iconBgClass, icon, to }: SummaryCardProps) {
+function SummaryCard({ label, value, sub, colorClass, iconBgClass, icon, to, deltaElement }: SummaryCardProps) {
   return (
     <Link to={to} className="block group h-full">
       <Card className="h-full transition-all duration-150 group-hover:shadow-md group-hover:border-[var(--color-primary)]">
@@ -33,6 +36,7 @@ function SummaryCard({ label, value, sub, colorClass, iconBgClass, icon, to }: S
           <div>
             <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-medium">{label}</p>
             <p className={`text-2xl font-bold mt-1.5 ${colorClass}`}>{value}</p>
+            {deltaElement}
             {sub && <p className="text-xs text-[var(--color-text-muted)] mt-1">{sub}</p>}
           </div>
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${iconBgClass}`}>
@@ -47,6 +51,7 @@ function SummaryCard({ label, value, sub, colorClass, iconBgClass, icon, to }: S
 export function Dashboard({ onMenuClick }: DashboardProps) {
   const { debts } = useDebt();
   const { activeMonth, fromMonth, toMonth, isRangeActive } = useFilter();
+  const prevPeriod = usePreviousPeriod();
 
   const { data: summary } = useApi<BudgetSummary>(
     !isRangeActive ? `/summary?month=${activeMonth}` : null
@@ -86,6 +91,9 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
   const totalDebtPence = debts.reduce((s, d) => s + d.balance_pence, 0);
   const disposablePence = displaySummary?.disposable_income_pence ?? 0;
   const disposableVariant = disposablePence >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
+  const prevTotalOutgoing = prevPeriod != null
+    ? prevPeriod.expenses + prevPeriod.debt + prevPeriod.savings
+    : null;
 
   return (
     <PageShell title="Dashboard" onMenuClick={onMenuClick}>
@@ -104,6 +112,13 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
           colorClass="text-[var(--color-success)]"
           iconBgClass="bg-[var(--color-success-light)]"
           to="/income"
+          deltaElement={
+            <DeltaIndicator
+              current={displaySummary?.total_income_pence ?? 0}
+              previous={prevPeriod?.income ?? null}
+              semantics="positive-up"
+            />
+          }
           icon={
             <svg className="w-5 h-5 text-[var(--color-success)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M7 11l5-5m0 0l5 5m-5-5v12" />
@@ -116,6 +131,13 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
           colorClass="text-[var(--color-danger)]"
           iconBgClass="bg-[var(--color-danger-light)]"
           to="/expenses"
+          deltaElement={
+            <DeltaIndicator
+              current={displaySummary?.total_expenses_pence ?? 0}
+              previous={prevPeriod?.expenses ?? null}
+              semantics="positive-down"
+            />
+          }
           icon={
             <svg className="w-5 h-5 text-[var(--color-danger)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
@@ -129,6 +151,13 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
           colorClass="text-[var(--color-warning)]"
           iconBgClass="bg-[var(--color-warning-light)]"
           to="/debt"
+          deltaElement={
+            <DeltaIndicator
+              current={displaySummary?.total_debt_payments_pence ?? 0}
+              previous={prevPeriod?.debt ?? null}
+              semantics="positive-down"
+            />
+          }
           icon={
             <svg className="w-5 h-5 text-[var(--color-warning)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -138,9 +167,19 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
         <SummaryCard
           label="Monthly Savings"
           value={formatCurrency(displaySummary?.total_savings_pence ?? 0)}
+          sub={!isRangeActive && displaySummary?.total_saved_pence != null
+            ? `${formatCurrency(displaySummary.total_saved_pence)} total saved`
+            : undefined}
           colorClass="text-[var(--color-success)]"
           iconBgClass="bg-[var(--color-success-light)]"
           to="/savings"
+          deltaElement={
+            <DeltaIndicator
+              current={displaySummary?.total_savings_pence ?? 0}
+              previous={prevPeriod?.savings ?? null}
+              semantics="positive-up"
+            />
+          }
           icon={
             <svg className="w-5 h-5 text-[var(--color-success)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -153,6 +192,13 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
           colorClass="text-[var(--color-primary)]"
           iconBgClass="bg-[var(--color-primary-light)]"
           to="/"
+          deltaElement={
+            <DeltaIndicator
+              current={(displaySummary?.total_expenses_pence ?? 0) + (displaySummary?.total_debt_payments_pence ?? 0) + (displaySummary?.total_savings_pence ?? 0)}
+              previous={prevTotalOutgoing}
+              semantics="positive-down"
+            />
+          }
           icon={
             <svg className="w-5 h-5 text-[var(--color-primary)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
               <circle cx="12" cy="12" r="9" />
@@ -166,6 +212,13 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
           colorClass={disposableVariant}
           iconBgClass={disposablePence >= 0 ? 'bg-[var(--color-primary-light)]' : 'bg-[var(--color-danger-light)]'}
           to="/"
+          deltaElement={
+            <DeltaIndicator
+              current={disposablePence}
+              previous={prevPeriod?.disposable ?? null}
+              semantics="positive-up"
+            />
+          }
           icon={
             <svg
               className={`w-5 h-5 ${disposablePence >= 0 ? 'text-[var(--color-primary)]' : 'text-[var(--color-danger)]'}`}
