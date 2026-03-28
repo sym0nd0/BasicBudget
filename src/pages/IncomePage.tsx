@@ -12,6 +12,8 @@ import { SortableHeader } from '../components/ui/SortableHeader';
 import { useSortableTable } from '../hooks/useSortableTable';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { useRangeOverview } from '../hooks/useRangeOverview';
+import { usePreviousPeriod } from '../hooks/usePreviousPeriod';
+import { DeltaIndicator } from '../components/ui/DeltaIndicator';
 import { formatCurrency, formatOrdinal } from '../utils/formatters';
 import { findDuplicateIncome } from '../utils/duplicates';
 import type { Income } from '../types';
@@ -26,6 +28,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
   const { incomes, addIncome, updateIncome, deleteIncome } = useBudget();
   const { sorted: sortedIncomes, sortKey, sortDir, toggleSort } = useSortableTable<Income>(incomes, 'name');
   const { isRangeActive, data: rangeOverview } = useRangeOverview();
+  const prevPeriod = usePreviousPeriod();
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Income | undefined>();
@@ -113,6 +116,11 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
             <div>
               <p className="text-sm text-[var(--color-text-muted)]">Total Income</p>
               <p className="text-3xl font-bold text-[var(--color-success)] mt-1">{formatCurrency(total)}</p>
+              <DeltaIndicator
+                current={total}
+                previous={prevPeriod?.income ?? null}
+                semantics="positive-up"
+              />
               <p className="text-xs text-[var(--color-text-muted)] mt-1">{incomes.length} source{incomes.length !== 1 ? 's' : ''}</p>
             </div>
             <div className="w-12 h-12 rounded-xl bg-[var(--color-success-light)] flex items-center justify-center">
