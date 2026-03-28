@@ -5,7 +5,7 @@ function currentYearMonth(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
-function addMonthsToYM(ym: string, n: number): string {
+export function addMonthsToYM(ym: string, n: number): string {
   let [y, m] = ym.split('-').map(Number);
   m += n;
   while (m > 12) { m -= 12; y++; }
