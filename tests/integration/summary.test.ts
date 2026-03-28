@@ -23,6 +23,26 @@ async function registerAndLogin(suffix: string) {
   return { agent };
 }
 
+describe('/api/summary total_saved_pence', () => {
+  it('returns total_saved_pence as sum of current_amount_pence across goals', async () => {
+    const { agent } = await registerAndLogin('sum_totalsaved');
+    const csrf = await csrfToken(agent);
+
+    await agent
+      .post('/api/savings-goals')
+      .set('X-CSRF-Token', csrf)
+      .send({ name: 'Holiday Fund', target_amount_pence: 500000, current_amount_pence: 120000, monthly_contribution_pence: 10000, is_household: 0 });
+
+    await agent
+      .post('/api/savings-goals')
+      .set('X-CSRF-Token', csrf)
+      .send({ name: 'Emergency Fund', target_amount_pence: 1000000, current_amount_pence: 80000, monthly_contribution_pence: 15000, is_household: 0 });
+
+    const res = await agent.get('/api/summary').expect(200);
+    expect((res.body as { total_saved_pence: number }).total_saved_pence).toBe(200000); // 120000 + 80000
+  });
+});
+
 describe('/api/summary total_savings_pence', () => {
   it('returns 0 when no savings goals exist', async () => {
     const { agent } = await registerAndLogin('sum_nosavings');

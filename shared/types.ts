@@ -272,6 +272,7 @@ export interface BudgetSummary {
   total_savings_pence: number;
   disposable_income_pence: number;
   category_breakdown: CategoryBreakdown[];
+  total_saved_pence?: number;
 }
 
 // ─── Household Overview ────────────────────────────────────────────────────────

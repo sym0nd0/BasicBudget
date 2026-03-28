@@ -55,6 +55,24 @@ router.get('/', (req: Request, res: Response) => {
     }
   }
 
+  // Compute total cumulative savings (current balance across all goals)
+  // For future months, project autopay contributions forward
+  const currentYM = currentYearMonth();
+  const [reqY, reqM] = month.split('-').map(Number);
+  const [curY, curM] = currentYM.split('-').map(Number);
+  const monthsAhead = (reqY - curY) * 12 + (reqM - curM);
+
+  let totalSavedPence = 0;
+  for (const savings of allSavings) {
+    const balance = (savings.current_amount_pence as number) ?? 0;
+    const contribution = (savings.monthly_contribution_pence as number) ?? 0;
+    const isAuto = Boolean(savings.auto_contribute);
+    totalSavedPence += balance;
+    if (monthsAhead > 0 && isAuto && contribution > 0) {
+      totalSavedPence += contribution * monthsAhead;
+    }
+  }
+
   const disposableIncomePence = totalIncomePence - totalExpensesPence - totalDebtPaymentsPence - totalSavingsPence;
 
   const categoryMap = new Map<string, number>();
@@ -79,6 +97,7 @@ router.get('/', (req: Request, res: Response) => {
     total_savings_pence: totalSavingsPence,
     disposable_income_pence: disposableIncomePence,
     category_breakdown: categoryBreakdown,
+    total_saved_pence: totalSavedPence,
   };
 
   res.json(summary);
