@@ -20,9 +20,15 @@ describe('calculateDelta', () => {
     expect(result.percentage).toBe(0);
   });
 
-  it('returns zero percentage when previous is zero', () => {
+  it('returns null percentage when previous is zero and current is non-zero', () => {
     const result = calculateDelta(500, 0);
     expect(result.delta).toBe(500);
+    expect(result.percentage).toBeNull();
+  });
+
+  it('returns zero delta and zero percentage when both are zero', () => {
+    const result = calculateDelta(0, 0);
+    expect(result.delta).toBe(0);
     expect(result.percentage).toBe(0);
   });
 

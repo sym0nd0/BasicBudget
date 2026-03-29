@@ -16,6 +16,7 @@ interface DeltaIndicatorProps {
 /**
  * Renders a coloured ↑/↓ percentage badge showing change vs previous period.
  * Returns null when there is no previous data or when the delta is exactly zero.
+ * When comparing against a zero baseline, shows the arrow without a percentage.
  */
 export function DeltaIndicator({ current, previous, semantics = 'positive-up' }: DeltaIndicatorProps) {
   if (previous == null) return null;
@@ -35,7 +36,7 @@ export function DeltaIndicator({ current, previous, semantics = 'positive-up' }:
 
   return (
     <div className={`text-xs mt-2 ${colourClass}`}>
-      {isIncrease ? '↑' : '↓'} {formatPercent(Math.abs(percentage))}
+      {isIncrease ? '↑' : '↓'}{percentage !== null ? ` ${formatPercent(Math.abs(percentage))}` : ''}
     </div>
   );
 }
