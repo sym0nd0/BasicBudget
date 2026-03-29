@@ -11,6 +11,7 @@ import { DeltaIndicator } from '../components/ui/DeltaIndicator';
 import { IncomeVsExpensesBar } from '../components/charts/IncomeVsExpensesBar';
 import { ExpenseDonut } from '../components/charts/ExpenseDonut';
 import { formatCurrency, formatPercent } from '../utils/formatters';
+import { addMonthsToYM } from '../utils/reportRanges';
 import type { BudgetSummary, MonthlyReportRow } from '../types';
 
 interface DashboardProps {
@@ -60,6 +61,10 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
     isRangeActive && fromMonth && toMonth
       ? `/reports/overview?from=${fromMonth}&to=${toMonth}`
       : null
+  );
+  const prevMonth = addMonthsToYM(activeMonth, -1);
+  const { data: prevSummary } = useApi<BudgetSummary>(
+    !isRangeActive ? `/summary?month=${prevMonth}` : null
   );
 
   const rangeSummary: BudgetSummary | null = overview ? (() => {
@@ -282,6 +287,15 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
                     </td>
                     <td className="px-5 py-3 font-mono text-[var(--color-danger)] text-center">
                       {formatCurrency(cat.total_pence)}
+                      <DeltaIndicator
+                        current={cat.total_pence}
+                        previous={
+                          prevSummary
+                            ? (prevSummary.category_breakdown.find(p => p.category === cat.category)?.total_pence ?? null)
+                            : null
+                        }
+                        semantics="positive-down"
+                      />
                     </td>
                     <td className="px-5 py-3 text-[var(--color-text-muted)] text-center">
                       {formatPercent(cat.percentage)}
