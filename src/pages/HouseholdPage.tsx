@@ -12,7 +12,10 @@ import { DebtBalanceChart } from '../components/charts/DebtBalanceChart';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useRangeOverview } from '../hooks/useRangeOverview';
+import { usePreviousPeriod } from '../hooks/usePreviousPeriod';
+import { DeltaIndicator } from '../components/ui/DeltaIndicator';
 import { formatCurrency, formatPercent } from '../utils/formatters';
+import { aggregateRangeOverview } from '../utils/householdRangeAggregate';
 import type { HouseholdOverview, HouseholdMember } from '../types';
 
 interface HouseholdPageProps {
@@ -25,36 +28,9 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
   const { data: overview } = useApi<HouseholdOverview>(`/household/summary?month=${activeMonth}`);
   const { isRangeActive, data: rangeOverview } = useRangeOverview({ householdOnly: true });
 
-  const displayOverview: HouseholdOverview | null = isRangeActive && rangeOverview ? (() => {
-    const categoryMap = new Map<string, number>();
-    for (const row of rangeOverview) {
-      for (const cat of row.category_breakdown) {
-        categoryMap.set(cat.category, (categoryMap.get(cat.category) ?? 0) + cat.total_pence);
-      }
-    }
-    const shared_expenses_pence = rangeOverview.reduce((s, r) => s + r.expenses_pence, 0);
-    const debt_payments_pence = rangeOverview.reduce((s, r) => s + r.debt_payments_pence, 0);
-    const total_income_pence = rangeOverview.reduce((s, r) => s + r.income_pence, 0);
-    const category_breakdown = Array.from(categoryMap.entries())
-      .map(([category, total_pence]) => ({
-        category,
-        total_pence,
-        percentage: shared_expenses_pence > 0 ? (total_pence / shared_expenses_pence) * 100 : 0,
-      }))
-      .sort((a, b) => b.total_pence - a.total_pence);
-    return {
-      total_income_pence,
-      shared_expenses_pence,
-      total_expenses_pence: shared_expenses_pence,
-      sole_expenses_pence: 0,
-      debt_payments_pence,
-      household_savings_pence: 0,
-      disposable_income_pence: total_income_pence - shared_expenses_pence - debt_payments_pence,
-      debt_to_income_ratio: total_income_pence > 0 ? Math.round((debt_payments_pence / total_income_pence) * 1000) / 10 : 0,
-      total_debt_balance_pence: overview?.total_debt_balance_pence ?? 0,
-      category_breakdown,
-    } as HouseholdOverview;
-  })() : overview;
+  const displayOverview: HouseholdOverview | null = isRangeActive && rangeOverview
+    ? aggregateRangeOverview(rangeOverview, overview?.total_debt_balance_pence ?? 0)
+    : overview;
   const { data: householdDetails, refetch } = useApi<{ id?: string; name?: string; members?: HouseholdMember[] }>('/household');
 
   const [isEditingName, setIsEditingName] = useState(false);
@@ -62,6 +38,10 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
 
+  const prevPeriod = usePreviousPeriod({ householdOnly: true });
+  const prevTotalOutgoing = prevPeriod != null
+    ? prevPeriod.expenses + prevPeriod.debt + prevPeriod.savings
+    : null;
   const memberCount = householdDetails?.members?.length ?? 1;
   const totalOutgoingPence = (displayOverview?.shared_expenses_pence ?? 0) + (displayOverview?.debt_payments_pence ?? 0) + (displayOverview?.household_savings_pence ?? 0);
   const perMemberOutgoingPence = Math.round(totalOutgoingPence / memberCount);
@@ -153,18 +133,33 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
           <p className="text-2xl font-bold text-[var(--color-success)]">
             {formatCurrency(displayOverview?.total_income_pence ?? 0)}
           </p>
+          <DeltaIndicator
+            current={displayOverview?.total_income_pence ?? 0}
+            previous={prevPeriod?.income ?? null}
+            semantics="positive-up"
+          />
         </Card>
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Shared Expenses</p>
           <p className="text-2xl font-bold text-[var(--color-danger)]">
             {formatCurrency(displayOverview?.shared_expenses_pence ?? 0)}
           </p>
+          <DeltaIndicator
+            current={displayOverview?.shared_expenses_pence ?? 0}
+            previous={prevPeriod?.expenses ?? null}
+            semantics="positive-down"
+          />
         </Card>
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Debt Payments</p>
           <p className="text-2xl font-bold text-[var(--color-warning)]">
             {formatCurrency(displayOverview?.debt_payments_pence ?? 0)}
           </p>
+          <DeltaIndicator
+            current={displayOverview?.debt_payments_pence ?? 0}
+            previous={prevPeriod?.debt ?? null}
+            semantics="positive-down"
+          />
           <p className="text-xs text-[var(--color-text-muted)] mt-1">
             {formatPercent(displayOverview?.debt_to_income_ratio ?? 0)} DTI
           </p>
@@ -174,6 +169,11 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
           <p className="text-2xl font-bold text-[var(--color-primary)]">
             {formatCurrency(totalOutgoingPence)}
           </p>
+          <DeltaIndicator
+            current={totalOutgoingPence}
+            previous={prevTotalOutgoing}
+            semantics="positive-down"
+          />
         </Card>
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Per Member</p>
@@ -193,6 +193,11 @@ export function HouseholdPage({ onMenuClick }: HouseholdPageProps) {
           }`}>
             {formatCurrency(displayOverview?.disposable_income_pence ?? 0)}
           </p>
+          <DeltaIndicator
+            current={displayOverview?.disposable_income_pence ?? 0}
+            previous={prevPeriod?.disposable ?? null}
+            semantics="positive-up"
+          />
         </Card>
       </div>
 

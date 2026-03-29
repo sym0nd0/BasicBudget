@@ -15,6 +15,10 @@ Six cards appear at the top of the page:
 | **Total Monthly Outgoing** | Monthly Expenses + Debt Payments + Monthly Savings |
 | **Disposable Income** | Monthly Income minus Total Monthly Outgoing |
 
+Each card shows a coloured ↑/↓ percentage indicator comparing the current period to the previous one (e.g. previous month, or previous equivalent range). Green indicates a favourable change; red indicates an unfavourable change. No indicator is shown when there is no previous data or when the value is unchanged.
+
+The **Monthly Savings** card also displays a "Total Saved" sub-value showing the cumulative balance across all savings goals. For future months, this includes projected autopay contributions.
+
 ## Charts
 
 ### Income vs Outgoings Bar Chart
