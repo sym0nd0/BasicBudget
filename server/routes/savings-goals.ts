@@ -279,10 +279,13 @@ router.put('/:id', (req: Request, res: Response) => {
       );
       if (balanceChanged) {
         // Insert snapshot so month-scoped queries reflect the updated balance
+        const previousBalance = existing.current_amount_pence as number;
+        const delta = newBalance - previousBalance;
+        const snapshotType = delta >= 0 ? 'deposit' : 'withdrawal';
         db.prepare(`
           INSERT INTO savings_transactions (id, savings_goal_id, household_id, user_id, type, amount_pence, balance_after_pence, notes)
-          VALUES (?, ?, ?, ?, 'deposit', ?, ?, 'Balance updated')
-        `).run(randomUUID(), id, req.householdId!, req.userId!, newBalance, newBalance);
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'Balance updated')
+        `).run(randomUUID(), id, req.householdId!, req.userId!, snapshotType, Math.abs(delta), newBalance);
       }
     })();
   } catch (err) {
