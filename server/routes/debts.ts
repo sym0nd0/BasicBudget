@@ -59,7 +59,7 @@ router.get('/', (req: Request, res: Response) => {
   if (month) {
     const recurringItems = visible.map(mapDebtToRecurringItem);
     const activeItems = filterActiveInMonth(recurringItems, month);
-    const activeIds = new Set(activeItems.map(item => item['id'] as string));
+    const activeIds = new Set(activeItems.map(item => item.id));
 
     const activeDebts = debts.filter(d => activeIds.has(d.id));
     const n = monthsAgo(currentYearMonth(), month);

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import supertest from 'supertest';
 import { getApp, makeTestUser } from '../helpers.js';
 
@@ -26,8 +26,8 @@ async function registerAndLogin(suffix: string) {
 describe('GET /api/debts — month param', () => {
   let agent: ReturnType<typeof supertest.agent>;
 
-  beforeAll(async () => {
-    const result = await registerAndLogin('debts_month');
+  beforeEach(async () => {
+    const result = await registerAndLogin(`debts_month_${Date.now()}`);
     agent = result.agent;
     const csrf = await csrfToken(agent);
     await agent
