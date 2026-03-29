@@ -38,3 +38,19 @@ describe('calculateDelta', () => {
     expect(result.percentage).toBeCloseTo(100);
   });
 });
+
+describe('DeltaIndicator format contract', () => {
+  it('provides both absolute delta and percentage for non-zero previous', () => {
+    const { delta, percentage } = calculateDelta(11050, 10600);
+    // line 1: arrow + formatCurrency(Math.abs(delta)) → "↑ £4.50"
+    // line 2: formatPercent(Math.abs(percentage))    → "4.25%"
+    expect(delta).toBe(450);
+    expect(percentage).toBeCloseTo(4.245, 1);
+  });
+
+  it('provides null percentage when previous is zero', () => {
+    const { delta, percentage } = calculateDelta(5000, 0);
+    expect(delta).toBe(5000);
+    expect(percentage).toBeNull();
+  });
+});
