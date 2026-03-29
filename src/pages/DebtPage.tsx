@@ -1,18 +1,22 @@
 import { useState, Fragment } from 'react';
 import { useDebt } from '../context/DebtContext';
+import { useFilter } from '../context/FilterContext';
 import { useApi } from '../hooks/useApi';
 import { PageShell } from '../components/layout/PageShell';
+import { FilterBar } from '../components/layout/FilterBar';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { DebtForm } from '../components/forms/DebtForm';
 import { Badge } from '../components/ui/Badge';
+import { DeltaIndicator } from '../components/ui/DeltaIndicator';
 import { SortableHeader } from '../components/ui/SortableHeader';
 import { useSortableTable } from '../hooks/useSortableTable';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { DebtBalanceChart } from '../components/charts/DebtBalanceChart';
 import { formatCurrency, formatPercent, formatYearMonth } from '../utils/formatters';
 import { findDuplicateDebt } from '../utils/duplicates';
+import { addMonthsToYM } from '../utils/reportRanges';
 import type { Debt, RepaymentRow, DebtPayoffSummary } from '../types';
 
 interface DebtPageProps {
@@ -89,7 +93,14 @@ function isDebtActiveThisMonth(debt: Debt): boolean {
 }
 
 export function DebtPage({ onMenuClick }: DebtPageProps) {
-  const { debts, addDebt, updateDebt, deleteDebt } = useDebt();
+  const { addDebt, updateDebt, deleteDebt } = useDebt();
+  const { activeMonth } = useFilter();
+  const prevMonth = addMonthsToYM(activeMonth, -1);
+
+  const { data: currentMonthDebts, refetch: refetchCurrentDebts } = useApi<Debt[]>(`/debts?month=${activeMonth}`);
+  const { data: prevMonthDebts } = useApi<Debt[]>(`/debts?month=${prevMonth}`);
+
+  const debts = currentMonthDebts ?? [];
   const { sorted: sortedDebts, sortKey, sortDir, toggleSort } = useSortableTable<Debt>(debts, 'name');
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
   const [modalOpen, setModalOpen] = useState(false);
@@ -103,6 +114,11 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
     .reduce((s, d) => s + Math.round((d.minimum_payment_pence + d.overpayment_pence) * d.split_ratio), 0);
   const totalInterestDebts = debts.filter(d => d.interest_rate > 0).length;
 
+  const prevDebts = prevMonthDebts ?? [];
+  const prevTotalBalance = prevDebts.reduce((s, d) => s + d.balance_pence, 0);
+  const prevTotalPayments = prevDebts.reduce((s, d) =>
+    s + Math.round((d.minimum_payment_pence + (d.overpayment_pence ?? 0)) * (d.split_ratio ?? 1)), 0);
+
   const handleSave = async (data: Omit<Debt, 'id' | 'created_at' | 'updated_at'>) => {
     if (!editing) {
       const dup = findDuplicateDebt(debts, data);
@@ -114,6 +130,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
       } else {
         await addDebt(data);
       }
+      refetchCurrentDebts();
       setModalOpen(false);
       setEditing(undefined);
       setErrorMsg(null);
@@ -131,6 +148,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
     if (!await confirm('Delete Debt', 'Delete this debt?', 'danger')) return;
     try {
       await deleteDebt(id);
+      refetchCurrentDebts();
     } catch (err) {
       setErrorMsg((err as Error).message);
     }
@@ -158,15 +176,32 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
         </Button>
       }
     >
+      {/* Filter bar */}
+      <div className="mb-5">
+        <Card>
+          <FilterBar />
+        </Card>
+      </div>
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5 items-stretch">
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Debt</p>
           <p className="text-2xl font-bold text-[var(--color-danger)]">{formatCurrency(totalBalance)}</p>
+          <DeltaIndicator
+            current={totalBalance}
+            previous={prevMonthDebts ? prevTotalBalance : null}
+            semantics="positive-down"
+          />
         </Card>
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Monthly Payments</p>
           <p className="text-2xl font-bold text-[var(--color-warning)]">{formatCurrency(totalPayments)}</p>
+          <DeltaIndicator
+            current={totalPayments}
+            previous={prevMonthDebts ? prevTotalPayments : null}
+            semantics="positive-down"
+          />
         </Card>
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Debts</p>
@@ -249,6 +284,11 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                       </td>
                       <td className="px-5 py-3 font-mono font-semibold text-[var(--color-danger)] text-center">
                         {formatCurrency(debt.balance_pence)}
+                        <DeltaIndicator
+                          current={debt.balance_pence}
+                          previous={prevMonthDebts ? (prevDebts.find(p => p.id === debt.id)?.balance_pence ?? null) : null}
+                          semantics="positive-down"
+                        />
                       </td>
                       <td className="px-5 py-3 text-center">
                         {debt.interest_rate > 0 ? (
