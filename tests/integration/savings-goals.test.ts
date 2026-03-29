@@ -42,13 +42,14 @@ describe('GET /api/savings-goals — month param', () => {
     expect(goalRes.status).toBe(201);
     testGoalId = (goalRes.body as { id: string }).id;
 
-    // Create a transaction in the current month with balance_after_pence = 50000
+    // Create a transaction whose created_at falls in the current month (the server
+    // filters by strftime('%Y-%m', created_at), not by the notes field)
     const now = new Date();
     const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const txRes = await agent
       .post(`/api/savings-goals/${testGoalId}/transactions`)
       .set('X-CSRF-Token', csrf)
-      .send({ type: 'contribution', amount_pence: 50000, notes: `month:${currentYM}` });
+      .send({ type: 'contribution', amount_pence: 50000, notes: 'test contribution' });
     expect(txRes.status).toBe(201);
   });
 
