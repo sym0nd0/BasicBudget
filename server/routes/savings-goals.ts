@@ -168,7 +168,7 @@ router.post('/', (req: Request, res: Response) => {
       // Insert opening snapshot so month-scoped queries can resolve the initial balance
       db.prepare(`
         INSERT INTO savings_transactions (id, savings_goal_id, household_id, user_id, type, amount_pence, balance_after_pence, notes)
-        VALUES (?, ?, ?, ?, 'opening', ?, ?, 'Opening balance')
+        VALUES (?, ?, ?, ?, 'deposit', ?, ?, 'Opening balance')
       `).run(randomUUID(), id, req.householdId!, req.userId!, openingBalance, openingBalance);
     })();
   } catch (err) {
@@ -280,7 +280,7 @@ router.put('/:id', (req: Request, res: Response) => {
         // Insert snapshot so month-scoped queries reflect the updated balance
         db.prepare(`
           INSERT INTO savings_transactions (id, savings_goal_id, household_id, user_id, type, amount_pence, balance_after_pence, notes)
-          VALUES (?, ?, ?, ?, 'opening', ?, ?, 'Balance updated')
+          VALUES (?, ?, ?, ?, 'deposit', ?, ?, 'Balance updated')
         `).run(randomUUID(), id, req.householdId!, req.userId!, newBalance, newBalance);
       }
     })();
