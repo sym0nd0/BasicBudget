@@ -1,6 +1,8 @@
 import { useState, useMemo, Fragment } from 'react';
 import { useBudget } from '../context/BudgetContext';
 import { useFilter } from '../context/FilterContext';
+import { useApi } from '../hooks/useApi';
+import { addMonthsToYM } from '../utils/reportRanges';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -29,7 +31,9 @@ type ExpenseRow = Expense & {
 
 export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
   const { expenses, accounts, addExpense, updateExpense, deleteExpense } = useBudget();
-  const { filterCategory } = useFilter();
+  const { filterCategory, activeMonth } = useFilter();
+  const prevMonth = addMonthsToYM(activeMonth, -1);
+  const { data: prevExpenses } = useApi<Expense[]>(`/expenses?month=${prevMonth}`);
   const { isRangeActive, data: rangeOverview } = useRangeOverview();
   const prevPeriod = usePreviousPeriod();
   const [modalOpen, setModalOpen] = useState(false);
@@ -218,9 +222,19 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                       </td>
                       <td className="px-5 py-3 font-mono text-[var(--color-text-muted)] text-center">
                         {formatCurrency(expense.display_full_pence)}
+                        <DeltaIndicator
+                          current={expense.display_full_pence}
+                          previous={prevExpenses ? (prevExpenses.find(p => p.id === expense.id)?.amount_pence ?? null) : null}
+                          semantics="positive-down"
+                        />
                       </td>
                       <td className="px-5 py-3 font-mono font-semibold text-[var(--color-danger)] text-center">
                         {formatCurrency(expense.display_share_pence)}
+                        <DeltaIndicator
+                          current={expense.display_share_pence}
+                          previous={prevExpenses ? (() => { const p = prevExpenses.find(p => p.id === expense.id); return p ? Math.round(p.amount_pence * p.split_ratio) : null; })() : null}
+                          semantics="positive-down"
+                        />
                       </td>
                       <td className="px-5 py-3 text-center">
                         <Badge variant="default">{formatOrdinal(expense.posting_day)}</Badge>
