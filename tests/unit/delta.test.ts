@@ -39,7 +39,7 @@ describe('calculateDelta', () => {
   });
 });
 
-describe('DeltaIndicator format contract', () => {
+describe('calculateDelta contract', () => {
   it('provides both absolute delta and percentage for non-zero previous', () => {
     const { delta, percentage } = calculateDelta(11050, 10600);
     // line 1: arrow + formatCurrency(Math.abs(delta)) → "↑ £4.50"

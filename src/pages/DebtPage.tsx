@@ -68,10 +68,17 @@ function RepaymentPanel({ debtId }: { debtId: string }) {
   );
 }
 
-function isDebtActiveThisMonth(debt: Debt): boolean {
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+function isDebtActiveThisMonth(debt: Debt, yearMonth?: string): boolean {
+  let monthStart: Date, monthEnd: Date;
+  if (yearMonth) {
+    const [y, m] = yearMonth.split('-').map(Number);
+    monthStart = new Date(y, m - 1, 1);
+    monthEnd = new Date(y, m, 0);
+  } else {
+    const now = new Date();
+    monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  }
 
   const parseDate = (d: string | null | undefined): Date | null => {
     if (!d) return null;
@@ -110,14 +117,15 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
 
   const totalBalance = debts.reduce((s, d) => s + d.balance_pence, 0);
   const totalPayments = debts
-    .filter(isDebtActiveThisMonth)
+    .filter(d => isDebtActiveThisMonth(d))
     .reduce((s, d) => s + Math.round((d.minimum_payment_pence + d.overpayment_pence) * d.split_ratio), 0);
   const totalInterestDebts = debts.filter(d => d.interest_rate > 0).length;
 
   const prevDebts = prevMonthDebts ?? [];
   const prevTotalBalance = prevDebts.reduce((s, d) => s + d.balance_pence, 0);
-  const prevTotalPayments = prevDebts.reduce((s, d) =>
-    s + Math.round((d.minimum_payment_pence + (d.overpayment_pence ?? 0)) * (d.split_ratio ?? 1)), 0);
+  const prevTotalPayments = prevDebts
+    .filter(d => isDebtActiveThisMonth(d, prevMonth))
+    .reduce((s, d) => s + Math.round((d.minimum_payment_pence + (d.overpayment_pence ?? 0)) * (d.split_ratio ?? 1)), 0);
 
   const handleSave = async (data: Omit<Debt, 'id' | 'created_at' | 'updated_at'>) => {
     if (!editing) {

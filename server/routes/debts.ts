@@ -33,17 +33,19 @@ function monthsAgo(current: string, target: string): number {
 }
 
 function estimatedBalanceNMonthsAgo(
-  currentBalance: number,
+  debt: Debt,
   monthlyPayment: number,
-  annualInterestRate: number,
   n: number,
 ): number {
-  const monthlyRate = annualInterestRate / 100 / 12;
-  let b = currentBalance;
+  const now = new Date();
+  const currentMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
+  let b = debt.balance_pence;
   for (let i = 0; i < n; i++) {
+    const monthlyRate = getMonthlyRateForDate(debt, currentMonthDate);
     b = monthlyRate === 0
       ? b + monthlyPayment
       : (b + monthlyPayment) / (1 + monthlyRate);
+    currentMonthDate.setMonth(currentMonthDate.getMonth() - 1);
   }
   return Math.round(b);
 }
@@ -59,22 +61,21 @@ router.get('/', (req: Request, res: Response) => {
   if (month) {
     const recurringItems = visible.map(mapDebtToRecurringItem);
     const activeItems = filterActiveInMonth(recurringItems, month);
-    const activeIds = new Set(activeItems.map(item => item.id));
+    const activeItemMap = new Map(activeItems.map(item => [item.id as string, item]));
 
-    const activeDebts = debts.filter(d => activeIds.has(d.id));
+    const activeDebts = debts.filter(d => activeItemMap.has(d.id));
     const n = monthsAgo(currentYearMonth(), month);
 
     debts = n <= 0
-      ? activeDebts
-      : activeDebts.map(debt => ({
-          ...debt,
-          balance_pence: estimatedBalanceNMonthsAgo(
-            debt.balance_pence,
-            debt.minimum_payment_pence + (debt.overpayment_pence ?? 0),
-            debt.interest_rate,
-            n,
-          ),
-        }));
+      ? activeDebts.map(debt => ({ ...debt, effective_pence: activeItemMap.get(debt.id)!.effective_pence }))
+      : activeDebts.map(debt => {
+          const activeItem = activeItemMap.get(debt.id)!;
+          return {
+            ...debt,
+            effective_pence: activeItem.effective_pence,
+            balance_pence: estimatedBalanceNMonthsAgo(debt, activeItem.effective_pence, n),
+          };
+        });
   }
 
   res.json(debts);
