@@ -4,15 +4,15 @@ import { addMonthsToYM, previousRange } from '../utils/reportRanges';
 import type { MonthlyReportRow } from '../types';
 
 interface UsePreviousPeriodOptions {
-  householdOnly?: boolean;
+  readonly householdOnly?: boolean;
 }
 
 interface PreviousPeriodTotals {
-  income: number;
-  expenses: number;
-  debt: number;
-  savings: number;
-  disposable: number;
+  readonly income: number;
+  readonly expenses: number;
+  readonly debt: number;
+  readonly savings: number;
+  readonly disposable: number;
 }
 
 export function usePreviousPeriod(
