@@ -8,6 +8,8 @@ import { logger } from '../services/logger.js';
 import type { SavingsGoal } from '../../shared/types.js';
 import { savingsGoalSchema, savingsTransactionSchema } from '../validation/schemas.js';
 
+export const BALANCE_UPDATED_NOTE = 'Balance updated';
+
 const router = Router();
 router.use(requireAuth);
 
@@ -284,8 +286,8 @@ router.put('/:id', (req: Request, res: Response) => {
         const snapshotType = delta >= 0 ? 'deposit' : 'withdrawal';
         db.prepare(`
           INSERT INTO savings_transactions (id, savings_goal_id, household_id, user_id, type, amount_pence, balance_after_pence, notes)
-          VALUES (?, ?, ?, ?, ?, ?, ?, 'Balance updated')
-        `).run(randomUUID(), id, req.householdId!, req.userId!, snapshotType, Math.abs(delta), newBalance);
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(randomUUID(), id, req.householdId!, req.userId!, snapshotType, Math.abs(delta), newBalance, BALANCE_UPDATED_NOTE);
       }
     })();
   } catch (err) {

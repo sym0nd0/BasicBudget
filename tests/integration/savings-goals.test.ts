@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import supertest from 'supertest';
 import { getApp, makeTestUser } from '../helpers.js';
 import db from '../../server/db.js';
+import { BALANCE_UPDATED_NOTE } from '../../server/routes/savings-goals.js';
 
 let app: Awaited<ReturnType<typeof getApp>>;
 
@@ -107,9 +108,9 @@ describe('PUT /api/savings-goals/:id — balance-change snapshot', () => {
     expect((res.body as { current_amount_pence: number }).current_amount_pence).toBe(30000);
 
     const rows = db
-      .prepare(`SELECT type, amount_pence, balance_after_pence FROM savings_transactions WHERE savings_goal_id = ? AND notes = 'Balance updated' ORDER BY rowid DESC LIMIT 1`)
-      .all(goalId) as { type: string; amount_pence: number; balance_after_pence: number }[];
-    expect(rows.length).toBeGreaterThanOrEqual(1);
+      .prepare(`SELECT type, amount_pence, balance_after_pence FROM savings_transactions WHERE savings_goal_id = ? AND notes = ? ORDER BY rowid DESC LIMIT 1`)
+      .all(goalId, BALANCE_UPDATED_NOTE) as { type: string; amount_pence: number; balance_after_pence: number }[];
+    expect(rows.length).toBe(1);
     expect(rows[0]!.type).toBe('withdrawal');
     expect(rows[0]!.amount_pence).toBe(20000);
     expect(rows[0]!.balance_after_pence).toBe(30000);
@@ -125,9 +126,9 @@ describe('PUT /api/savings-goals/:id — balance-change snapshot', () => {
     expect((res.body as { current_amount_pence: number }).current_amount_pence).toBe(80000);
 
     const rows = db
-      .prepare(`SELECT type, amount_pence, balance_after_pence FROM savings_transactions WHERE savings_goal_id = ? AND notes = 'Balance updated' ORDER BY rowid DESC LIMIT 1`)
-      .all(goalId) as { type: string; amount_pence: number; balance_after_pence: number }[];
-    expect(rows.length).toBeGreaterThanOrEqual(1);
+      .prepare(`SELECT type, amount_pence, balance_after_pence FROM savings_transactions WHERE savings_goal_id = ? AND notes = ? ORDER BY rowid DESC LIMIT 1`)
+      .all(goalId, BALANCE_UPDATED_NOTE) as { type: string; amount_pence: number; balance_after_pence: number }[];
+    expect(rows.length).toBe(1);
     expect(rows[0]!.type).toBe('deposit');
     expect(rows[0]!.amount_pence).toBe(30000);
     expect(rows[0]!.balance_after_pence).toBe(80000);
