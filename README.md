@@ -163,7 +163,7 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 - Assign savings goals to specific household members for individual tracking
 
 ### Reports
-- **Overview section** — at-a-glance summary cards (income, expenses, debt payments, savings, disposable) plus month-over-month comparison with percentage change indicators
+- **Overview section** — at-a-glance summary cards (income, expenses, debt payments, savings, disposable) plus month-over-month change indicators showing absolute £ change and percentage
 - **Trends section** — multi-month income vs expenses grouped bar chart showing financial patterns across the selected period
 - **Spending section** — expense breakdown donut chart showing spending proportions by category across the entire period
 - **Debt section** — debt projection line chart displaying all debts' balances over time with per-debt visibility

@@ -4,12 +4,16 @@ The Debt page tracks outstanding debts (credit cards, loans, mortgages, etc.) an
 
 ## Overview
 
+The Debt tab includes a **Filter Bar** at the top to select the month. The summary cards and table reflect balances as of the selected month, with historical balances estimated via amortisation for past months.
+
 Each debt entry shows:
 
-- The current outstanding balance
+- The current outstanding balance (with a change indicator vs the previous month)
 - The APR and monthly interest charge
 - Minimum payment and any overpayment
 - A **View Schedule** button to see the full repayment projection
+
+The **Total Debt** and **Monthly Payments** summary cards also show change indicators vs the previous month.
 
 For step-by-step instructions on adding a debt, see [[Adding Debts\|Adding-Debts]].
 

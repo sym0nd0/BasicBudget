@@ -15,7 +15,14 @@ Six cards appear at the top of the page:
 | **Total Monthly Outgoing** | Monthly Expenses + Debt Payments + Monthly Savings |
 | **Disposable Income** | Monthly Income minus Total Monthly Outgoing |
 
-Each card shows a coloured ↑/↓ percentage indicator comparing the current period to the previous one (e.g. previous month, or previous equivalent range). Green indicates a favourable change; red indicates an unfavourable change. No indicator is shown when there is no previous data or when the value is unchanged.
+Each card shows a two-line coloured indicator comparing the current period to the previous one:
+
+```
+↑ £10.50
+0.49%
+```
+
+Line 1 shows the absolute change in pounds; line 2 shows the percentage change. Green indicates a favourable change; red indicates an unfavourable change. No indicator is shown when there is no previous data or when the value is unchanged.
 
 The **Monthly Savings** card also displays a "Total Saved" sub-value showing the cumulative balance across all savings goals. For future months, this includes projected autopay contributions.
 
@@ -47,8 +54,9 @@ Changing any preset updates all summary cards and charts simultaneously.
 
 When 3M, 6M, 12M, or Custom is selected, the Dashboard aggregates totals across every month in the range rather than showing a single month:
 
-- **Summary cards** — show totals for the entire range (e.g. 3M sums income across 3 months).
+- **Summary cards** — show totals for the entire range (e.g. 3M sums income across 3 months). Change indicators are not shown in range mode.
 - **Charts** — update to reflect the aggregated data.
+- **Category breakdown table** — shows each category's total for the range. In single-month mode, each category row shows a change indicator vs the previous month.
 
 To return to single-month mode, click **1M**.
 
