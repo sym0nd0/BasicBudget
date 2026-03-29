@@ -12,6 +12,7 @@ import { CategoryTrend } from '../components/charts/CategoryTrend';
 import { DebtToIncomeTrend } from '../components/charts/DebtToIncomeTrend';
 import { ReportSection } from '../components/reports/ReportSection';
 import { MonthlyComparison } from '../components/reports/MonthlyComparison';
+import { DeltaIndicator } from '../components/ui/DeltaIndicator';
 import { formatCurrency, formatPercent } from '../utils/formatters';
 import { resolveRange, previousRange } from '../utils/reportRanges';
 import type { ReportRange, MonthlyReportRow } from '../types';
@@ -82,13 +83,6 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
     }
   }
 
-  // Calculate deltas
-  const calculateDelta = (current: number, previous: number) => {
-    const delta = current - previous;
-    const percentage = previous !== 0 ? (delta / previous) * 100 : 0;
-    return { delta, percentage };
-  };
-
   // Aggregate all categories across the range
   const aggregatedCategories = (() => {
     if (!overview) return [];
@@ -157,65 +151,25 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
               <Card className="h-full">
                 <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Income</p>
                 <p className="text-2xl font-bold text-[var(--color-success)]">{formatCurrency(totals.income)}</p>
-                {previousOverview && (
-                  (() => {
-                    const { delta, percentage } = calculateDelta(totals.income, previousTotals.income);
-                    const isPositive = delta >= 0;
-                    return (
-                      <div className={`text-xs mt-2 ${isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
-                        {isPositive ? '↑' : '↓'} {formatPercent(Math.abs(percentage))}
-                      </div>
-                    );
-                  })()
-                )}
+                <DeltaIndicator current={totals.income} previous={previousOverview ? previousTotals.income : null} semantics="positive-up" />
               </Card>
               {/* Expenses card */}
               <Card className="h-full">
                 <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Expenses</p>
                 <p className="text-2xl font-bold text-[var(--color-danger)]">{formatCurrency(totals.expenses)}</p>
-                {previousOverview && (
-                  (() => {
-                    const { delta, percentage } = calculateDelta(totals.expenses, previousTotals.expenses);
-                    const isPositive = delta >= 0; // For expenses, positive is bad
-                    return (
-                      <div className={`text-xs mt-2 ${!isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
-                        {isPositive ? '↑' : '↓'} {formatPercent(Math.abs(percentage))}
-                      </div>
-                    );
-                  })()
-                )}
+                <DeltaIndicator current={totals.expenses} previous={previousOverview ? previousTotals.expenses : null} semantics="positive-down" />
               </Card>
               {/* Debt Payments card */}
               <Card className="h-full">
                 <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Debt Payments</p>
                 <p className="text-2xl font-bold text-[var(--color-warning)]">{formatCurrency(totals.debt)}</p>
-                {previousOverview && (
-                  (() => {
-                    const { delta, percentage } = calculateDelta(totals.debt, previousTotals.debt);
-                    const isPositive = delta >= 0; // For debt, positive is bad
-                    return (
-                      <div className={`text-xs mt-2 ${!isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
-                        {isPositive ? '↑' : '↓'} {formatPercent(Math.abs(percentage))}
-                      </div>
-                    );
-                  })()
-                )}
+                <DeltaIndicator current={totals.debt} previous={previousOverview ? previousTotals.debt : null} semantics="positive-down" />
               </Card>
               {/* Savings card */}
               <Card className="h-full">
                 <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Savings</p>
                 <p className="text-2xl font-bold text-[var(--color-primary)]">{formatCurrency(totals.savings)}</p>
-                {previousOverview && (
-                  (() => {
-                    const { delta, percentage } = calculateDelta(totals.savings, previousTotals.savings);
-                    const isPositive = delta >= 0;
-                    return (
-                      <div className={`text-xs mt-2 ${isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
-                        {isPositive ? '↑' : '↓'} {formatPercent(Math.abs(percentage))}
-                      </div>
-                    );
-                  })()
-                )}
+                <DeltaIndicator current={totals.savings} previous={previousOverview ? previousTotals.savings : null} semantics="positive-up" />
               </Card>
               {/* Disposable card */}
               <Card className="h-full">
@@ -223,17 +177,7 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
                 <p className={`text-2xl font-bold ${totals.disposable >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
                   {formatCurrency(totals.disposable)}
                 </p>
-                {previousOverview && (
-                  (() => {
-                    const { delta, percentage } = calculateDelta(totals.disposable, previousTotals.disposable);
-                    const isPositive = delta >= 0;
-                    return (
-                      <div className={`text-xs mt-2 ${isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'}`}>
-                        {isPositive ? '↑' : '↓'} {formatPercent(Math.abs(percentage))}
-                      </div>
-                    );
-                  })()
-                )}
+                <DeltaIndicator current={totals.disposable} previous={previousOverview ? previousTotals.disposable : null} semantics="positive-up" />
               </Card>
             </div>
 
@@ -328,16 +272,30 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
                 <tbody>
                   {overview.map((row, idx) => {
                     const savingsRate = row.income_pence > 0 ? (row.savings_pence / row.income_pence) * 100 : 0;
+                    const prevRow = idx > 0 ? overview[idx - 1] : null;
                     return (
                       <tr key={idx} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)]">
                         <td className="px-4 py-2 font-medium text-[var(--color-text)]">{row.month}</td>
-                        <td className="text-right px-4 py-2 font-mono text-[var(--color-success)]">{formatCurrency(row.income_pence)}</td>
-                        <td className="text-right px-4 py-2 font-mono text-[var(--color-danger)]">{formatCurrency(row.expenses_pence)}</td>
-                        <td className="text-right px-4 py-2 font-mono text-[var(--color-warning)]">{formatCurrency(row.debt_payments_pence)}</td>
-                        <td className="text-right px-4 py-2 font-mono text-[var(--color-primary)]">{formatCurrency(row.savings_pence)}</td>
+                        <td className="text-right px-4 py-2 font-mono text-[var(--color-success)]">
+                          {formatCurrency(row.income_pence)}
+                          <DeltaIndicator current={row.income_pence} previous={prevRow?.income_pence ?? null} semantics="positive-up" />
+                        </td>
+                        <td className="text-right px-4 py-2 font-mono text-[var(--color-danger)]">
+                          {formatCurrency(row.expenses_pence)}
+                          <DeltaIndicator current={row.expenses_pence} previous={prevRow?.expenses_pence ?? null} semantics="positive-down" />
+                        </td>
+                        <td className="text-right px-4 py-2 font-mono text-[var(--color-warning)]">
+                          {formatCurrency(row.debt_payments_pence)}
+                          <DeltaIndicator current={row.debt_payments_pence} previous={prevRow?.debt_payments_pence ?? null} semantics="positive-down" />
+                        </td>
+                        <td className="text-right px-4 py-2 font-mono text-[var(--color-primary)]">
+                          {formatCurrency(row.savings_pence)}
+                          <DeltaIndicator current={row.savings_pence} previous={prevRow?.savings_pence ?? null} semantics="positive-up" />
+                        </td>
                         <td className="text-right px-4 py-2 font-mono text-[var(--color-text)]">{formatPercent(savingsRate)}</td>
                         <td className={`text-right px-4 py-2 font-mono ${row.disposable_pence >= 0 ? 'text-[var(--color-primary)]' : 'text-[var(--color-danger)]'}`}>
                           {formatCurrency(row.disposable_pence)}
+                          <DeltaIndicator current={row.disposable_pence} previous={prevRow?.disposable_pence ?? null} semantics="positive-up" />
                         </td>
                       </tr>
                     );
