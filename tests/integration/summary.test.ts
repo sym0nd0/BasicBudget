@@ -93,3 +93,35 @@ describe('/api/summary total_savings_pence', () => {
     expect(body.total_savings_pence).toBe(10000);
   });
 });
+
+describe('/api/summary total_saved_pence with auto_contribute projection', () => {
+  it('projects total_saved_pence forward for auto-contribute goals on a future month', async () => {
+    const { agent } = await registerAndLogin('sum_autoprojection');
+    const csrf = await csrfToken(agent);
+
+    const currentAmountPence = 120000;
+    const monthlyContributionPence = 10000;
+
+    await agent
+      .post('/api/savings-goals')
+      .set('X-CSRF-Token', csrf)
+      .send({
+        name: 'Auto Fund',
+        target_amount_pence: 2000000,
+        current_amount_pence: currentAmountPence,
+        monthly_contribution_pence: monthlyContributionPence,
+        auto_contribute: 1,
+        is_household: 0,
+      });
+
+    const futureMonth = '2099-01';
+    const currentYM = new Date().toISOString().slice(0, 7); // YYYY-MM
+    const [reqY, reqM] = [2099, 1];
+    const [curY, curM] = currentYM.split('-').map(Number);
+    const monthsAhead = (reqY - curY) * 12 + (reqM - curM);
+    const expectedSaved = currentAmountPence + monthlyContributionPence * monthsAhead;
+
+    const res = await agent.get(`/api/summary?month=${futureMonth}`).expect(200);
+    expect((res.body as { total_saved_pence: number }).total_saved_pence).toBe(expectedSaved);
+  });
+});
