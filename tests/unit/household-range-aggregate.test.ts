@@ -75,6 +75,13 @@ describe('aggregateRangeOverview', () => {
     expect(result.debt_to_income_ratio).toBe(30);
   });
 
+  it('rounds debt_to_income_ratio to one decimal place for fractional results', () => {
+    // 100000 / 300000 = 33.333...% → rounds to 33.3
+    const rows = [row({ income_pence: 300000, debt_payments_pence: 100000 })];
+    const result = aggregateRangeOverview(rows, 0);
+    expect(result.debt_to_income_ratio).toBe(33.3);
+  });
+
   it('returns 0 debt_to_income_ratio when total_income_pence is 0', () => {
     const rows = [row({ income_pence: 0, debt_payments_pence: 5000 })];
     const result = aggregateRangeOverview(rows, 0);
