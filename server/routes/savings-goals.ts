@@ -118,7 +118,7 @@ router.get('/', (req: Request, res: Response) => {
 
     goals = goals.map(goal => {
       const tx = stmt.get(goal.id, month) as { balance_after_pence: number } | undefined;
-      return { ...goal, current_amount_pence: tx?.balance_after_pence ?? goal.current_amount_pence };
+      return { ...goal, current_amount_pence: tx?.balance_after_pence ?? 0 };
     });
   }
 
@@ -165,10 +165,11 @@ router.post('/', (req: Request, res: Response) => {
         body.auto_contribute ? 1 : 0,
         body.contribution_day ?? 1,
       );
-      // Insert opening snapshot so month-scoped queries can resolve the initial balance
+      // Insert opening snapshot so month-scoped queries can resolve the initial balance.
+      // Use start-of-month so any same-month contributions (datetime) sort after this row.
       db.prepare(`
-        INSERT INTO savings_transactions (id, savings_goal_id, household_id, user_id, type, amount_pence, balance_after_pence, notes)
-        VALUES (?, ?, ?, ?, 'deposit', ?, ?, 'Opening balance')
+        INSERT INTO savings_transactions (id, savings_goal_id, household_id, user_id, type, amount_pence, balance_after_pence, notes, created_at)
+        VALUES (?, ?, ?, ?, 'deposit', ?, ?, 'Opening balance', date('now', 'start of month'))
       `).run(randomUUID(), id, req.householdId!, req.userId!, openingBalance, openingBalance);
     })();
   } catch (err) {
