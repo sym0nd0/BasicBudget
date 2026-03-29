@@ -1,4 +1,4 @@
-import type { HouseholdOverview, MonthlyReportRow } from '../../shared/types';
+import type { HouseholdOverview, MonthlyReportRow } from '../types';
 
 /**
  * Aggregates an array of MonthlyReportRow (from /api/reports/overview) into a
