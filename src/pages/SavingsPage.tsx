@@ -17,7 +17,8 @@ import { usePreviousPeriod } from '../hooks/usePreviousPeriod';
 import { DeltaIndicator } from '../components/ui/DeltaIndicator';
 import { formatCurrency, formatDate, formatPercent } from '../utils/formatters';
 import { findDuplicateSavingsGoal } from '../utils/duplicates';
-import type { SavingsGoal, SavingsTransaction, SavingsTransactionType } from '../types';
+import { addMonthsToYM } from '../utils/reportRanges';
+import type { BudgetSummary, SavingsGoal, SavingsTransaction, SavingsTransactionType } from '../types';
 
 interface SavingsPageProps {
   onMenuClick: () => void;
@@ -52,7 +53,7 @@ function txTypeLabel(type: SavingsTransactionType): string {
 
 export function SavingsPage({ onMenuClick }: SavingsPageProps) {
   const { goals, addGoal, updateGoal, deleteGoal, createTransaction, refetchGoals } = useSavings();
-  const { fromMonth, toMonth } = useFilter();
+  const { fromMonth, toMonth, activeMonth } = useFilter();
   const { user } = useAuth();
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
 
@@ -69,6 +70,10 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
 
   const txUrl = `/savings-goals/transactions?from=${fromMonth}&to=${toMonth}`;
   const { data: transactions, refetch: refetchTx } = useApi<SavingsTransaction[]>(txUrl);
+
+  const prevMonth = addMonthsToYM(activeMonth, -1);
+  const { data: prevSummary } = useApi<BudgetSummary>(`/summary?month=${prevMonth}`);
+  const { data: prevGoals } = useApi<SavingsGoal[]>(`/savings-goals?month=${prevMonth}`);
 
   const prevPeriod = usePreviousPeriod();
   const totalSaved = goals.reduce((s, g) => s + g.current_amount_pence, 0);
@@ -163,6 +168,11 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Saved</p>
           <p className="text-2xl font-bold text-[var(--color-success)]">{formatCurrency(totalSaved)}</p>
+          <DeltaIndicator
+            current={totalSaved}
+            previous={prevSummary?.total_saved_pence ?? null}
+            semantics="positive-up"
+          />
         </Card>
         <Card className="h-full">
           <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide mb-1">Total Target</p>
@@ -262,6 +272,11 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                   <span className="text-[var(--color-text-muted)]">
                     Saved: <span className="font-medium text-[var(--color-text)]">{formatCurrency(goal.current_amount_pence)}</span>
                   </span>
+                  <DeltaIndicator
+                    current={goal.current_amount_pence}
+                    previous={prevGoals ? (prevGoals.find(p => p.id === goal.id)?.current_amount_pence ?? null) : null}
+                    semantics="positive-up"
+                  />
                   {goal.monthly_contribution_pence > 0 && (
                     <span className="text-[var(--color-text-muted)]">
                       <span className="font-medium text-[var(--color-text)]">{formatCurrency(goal.monthly_contribution_pence)}</span>/mo
