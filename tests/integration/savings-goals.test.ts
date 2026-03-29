@@ -135,3 +135,22 @@ describe('PUT /api/savings-goals/:id — balance-change snapshot', () => {
     expect(rows[0]!.balance_after_pence).toBe(80000);
   });
 });
+
+describe('GET /api/savings-goals — month param validation', () => {
+  let agent: ReturnType<typeof supertest.agent>;
+
+  beforeAll(async () => {
+    const result = await registerAndLogin(`sg_monthval_${Date.now()}`);
+    agent = result.agent;
+  });
+
+  it('returns 400 when month param is not YYYY-MM format', async () => {
+    const res = await agent.get('/api/savings-goals?month=foo');
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 when month param has an invalid month number', async () => {
+    const res = await agent.get('/api/savings-goals?month=2026-13');
+    expect(res.status).toBe(400);
+  });
+});

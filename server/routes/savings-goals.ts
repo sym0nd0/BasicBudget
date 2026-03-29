@@ -6,7 +6,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { filterVisible, canModify } from '../utils/visibility.js';
 import { logger } from '../services/logger.js';
 import type { SavingsGoal } from '../../shared/types.js';
-import { savingsGoalSchema, savingsTransactionSchema } from '../validation/schemas.js';
+import { savingsGoalSchema, savingsTransactionSchema, monthParam } from '../validation/schemas.js';
 
 export const BALANCE_UPDATED_NOTE = 'Balance updated';
 
@@ -110,6 +110,12 @@ router.get('/', (req: Request, res: Response) => {
 
   const month = req.query['month'] as string | undefined;
   if (month) {
+    const monthResult = monthParam.safeParse(month);
+    if (!monthResult.success) {
+      res.status(400).json({ message: 'Invalid month format' });
+      return;
+    }
+    const parsedMonth = monthResult.data;
     const stmt = db.prepare(`
       SELECT balance_after_pence
       FROM savings_transactions
@@ -119,7 +125,7 @@ router.get('/', (req: Request, res: Response) => {
     `);
 
     goals = goals.map(goal => {
-      const tx = stmt.get(goal.id, month) as { balance_after_pence: number } | undefined;
+      const tx = stmt.get(goal.id, parsedMonth) as { balance_after_pence: number } | undefined;
       return { ...goal, current_amount_pence: tx?.balance_after_pence ?? 0 };
     });
   }
