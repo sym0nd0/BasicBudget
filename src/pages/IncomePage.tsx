@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useBudget } from '../context/BudgetContext';
+import { useFilter } from '../context/FilterContext';
+import { useApi } from '../hooks/useApi';
 import { api } from '../api/client';
+import { addMonthsToYM } from '../utils/reportRanges';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -29,6 +32,9 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
   const { sorted: sortedIncomes, sortKey, sortDir, toggleSort } = useSortableTable<Income>(incomes, 'name');
   const { isRangeActive, data: rangeOverview } = useRangeOverview();
   const prevPeriod = usePreviousPeriod();
+  const { activeMonth } = useFilter();
+  const prevMonth = addMonthsToYM(activeMonth, -1);
+  const { data: prevIncomes } = useApi<Income[]>(`/incomes?month=${prevMonth}`);
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Income | undefined>();
@@ -181,6 +187,11 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
                   </td>
                   <td className="px-5 py-3 font-mono font-semibold text-[var(--color-success)] text-center">
                     {formatCurrency(income.amount_pence)}
+                    <DeltaIndicator
+                      current={income.amount_pence}
+                      previous={prevIncomes ? (prevIncomes.find(p => p.id === income.id)?.amount_pence ?? null) : null}
+                      semantics="positive-up"
+                    />
                   </td>
                   <td className="px-5 py-3 text-center">
                     <Badge variant="default">{formatOrdinal(income.posting_day)}</Badge>
