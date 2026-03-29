@@ -104,7 +104,25 @@ router.get('/', (req: Request, res: Response) => {
   processAutoContributions(req.householdId!, req.userId!);
   const rows = db.prepare('SELECT * FROM savings_goals WHERE household_id = ? ORDER BY created_at').all(req.householdId!) as Record<string, unknown>[];
   const visible = filterVisible(rows, req.userId!);
-  res.json(visible.map(mapGoal));
+  let goals = visible.map(mapGoal);
+
+  const month = req.query['month'] as string | undefined;
+  if (month) {
+    const stmt = db.prepare(`
+      SELECT balance_after_pence
+      FROM savings_transactions
+      WHERE savings_goal_id = ? AND strftime('%Y-%m', created_at) <= ?
+      ORDER BY created_at DESC
+      LIMIT 1
+    `);
+
+    goals = goals.map(goal => {
+      const tx = stmt.get(goal.id, month) as { balance_after_pence: number } | undefined;
+      return { ...goal, current_amount_pence: tx?.balance_after_pence ?? 0 };
+    });
+  }
+
+  res.json(goals);
 });
 
 // POST /api/savings-goals
