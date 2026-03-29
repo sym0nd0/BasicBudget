@@ -197,6 +197,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
               )}
               {filtered.map(expense => {
                 const isExpanded = expandedId === expense.id;
+                const prevExpense = prevExpenses?.find(p => p.id === expense.id) ?? null;
                 return (
                   <Fragment key={expense.id}>
                     <tr
@@ -224,7 +225,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                         {formatCurrency(expense.display_full_pence)}
                         <DeltaIndicator
                           current={expense.display_full_pence}
-                          previous={prevExpenses ? (prevExpenses.find(p => p.id === expense.id)?.amount_pence ?? null) : null}
+                          previous={prevExpense?.amount_pence ?? null}
                           semantics="positive-down"
                         />
                       </td>
@@ -232,7 +233,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                         {formatCurrency(expense.display_share_pence)}
                         <DeltaIndicator
                           current={expense.display_share_pence}
-                          previous={prevExpenses ? (() => { const p = prevExpenses.find(p => p.id === expense.id); return p ? Math.round(p.amount_pence * p.split_ratio) : null; })() : null}
+                          previous={prevExpense ? Math.round(prevExpense.amount_pence * prevExpense.split_ratio) : null}
                           semantics="positive-down"
                         />
                       </td>

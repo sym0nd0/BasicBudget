@@ -13,7 +13,6 @@ import { Badge } from '../components/ui/Badge';
 import { FilterBar } from '../components/layout/FilterBar';
 import { SavingsGoalForm } from '../components/forms/SavingsGoalForm';
 import { SavingsGrowthChart } from '../components/charts/SavingsGrowthChart';
-import { usePreviousPeriod } from '../hooks/usePreviousPeriod';
 import { DeltaIndicator } from '../components/ui/DeltaIndicator';
 import { formatCurrency, formatDate, formatPercent } from '../utils/formatters';
 import { findDuplicateSavingsGoal } from '../utils/duplicates';
@@ -75,7 +74,6 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
   const { data: prevSummary } = useApi<BudgetSummary>(`/summary?month=${prevMonth}`);
   const { data: prevGoals } = useApi<SavingsGoal[]>(`/savings-goals?month=${prevMonth}`);
 
-  const prevPeriod = usePreviousPeriod();
   const totalSaved = goals.reduce((s, g) => s + g.current_amount_pence, 0);
   const totalTarget = goals.reduce((s, g) => s + g.target_amount_pence, 0);
   const totalMonthly = goals.reduce((s, g) => s + g.monthly_contribution_pence, 0);
@@ -183,7 +181,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
           <p className="text-2xl font-bold text-[var(--color-warning)]">{formatCurrency(totalMonthly)}</p>
           <DeltaIndicator
             current={totalMonthly}
-            previous={prevPeriod?.savings ?? null}
+            previous={prevGoals ? prevGoals.reduce((s, g) => s + g.monthly_contribution_pence, 0) : null}
             semantics="positive-up"
           />
         </Card>
