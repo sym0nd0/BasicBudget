@@ -4,6 +4,7 @@ import db from '../db.js';
 import { randomUUID } from 'node:crypto';
 import { isMonthLocked } from './months.js';
 import { filterVisible, canModify } from '../utils/visibility.js';
+import { filterActiveInMonth, currentYearMonth, mapDebtToRecurringItem } from '../utils/recurring.js';
 import { requireAuth } from '../middleware/auth.js';
 import type { Debt, DebtDealPeriod, RepaymentRow, DebtPayoffSummary } from '../../shared/types.js';
 import { logger } from '../services/logger.js';
@@ -25,11 +26,58 @@ function enrichDebtWithPeriods(debt: Debt): Debt {
   return { ...debt, deal_periods: periods };
 }
 
-// GET /api/debts
+function monthsAgo(current: string, target: string): number {
+  const [cy, cm] = current.split('-').map(Number);
+  const [ty, tm] = target.split('-').map(Number);
+  return (cy - ty) * 12 + (cm - tm);
+}
+
+function estimatedBalanceNMonthsAgo(
+  currentBalance: number,
+  monthlyPayment: number,
+  annualInterestRate: number,
+  n: number,
+): number {
+  const monthlyRate = annualInterestRate / 100 / 12;
+  let b = currentBalance;
+  for (let i = 0; i < n; i++) {
+    b = monthlyRate === 0
+      ? b + monthlyPayment
+      : (b + monthlyPayment) / (1 + monthlyRate);
+  }
+  return Math.round(b);
+}
+
+// GET /api/debts  or  GET /api/debts?month=YYYY-MM
 router.get('/', (req: Request, res: Response) => {
+  const month = req.query['month'] as string | undefined;
+
   const rows = db.prepare('SELECT * FROM debts WHERE household_id = ? ORDER BY created_at').all(req.householdId!) as Record<string, unknown>[];
   const visible = filterVisible(rows, req.userId!);
-  res.json(visible.map(mapDebt).map(enrichDebtWithPeriods));
+  let debts = visible.map(mapDebt).map(enrichDebtWithPeriods);
+
+  if (month) {
+    const recurringItems = visible.map(mapDebtToRecurringItem);
+    const activeItems = filterActiveInMonth(recurringItems, month);
+    const activeIds = new Set(activeItems.map(item => item['id'] as string));
+
+    const activeDebts = debts.filter(d => activeIds.has(d.id));
+    const n = monthsAgo(currentYearMonth(), month);
+
+    debts = n <= 0
+      ? activeDebts
+      : activeDebts.map(debt => ({
+          ...debt,
+          balance_pence: estimatedBalanceNMonthsAgo(
+            debt.balance_pence,
+            debt.minimum_payment_pence + (debt.overpayment_pence ?? 0),
+            debt.interest_rate,
+            n,
+          ),
+        }));
+  }
+
+  res.json(debts);
 });
 
 // POST /api/debts
