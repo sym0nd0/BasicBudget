@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import supertest from 'supertest';
-import { getApp, makeTestUser, registerAndLoginDirect } from '../helpers.js';
+import { getApp, makeTestUser, registerAndLoginDirect, getCsrfToken } from '../helpers.js';
 import type { DebtProjectionPoint } from '../../shared/types.js';
 
 let app: Awaited<ReturnType<typeof getApp>>;
@@ -8,11 +8,6 @@ let app: Awaited<ReturnType<typeof getApp>>;
 beforeAll(async () => {
   app = await getApp();
 });
-
-async function csrfToken(agent: ReturnType<typeof supertest.agent>): Promise<string> {
-  const r = await agent.get('/api/auth/csrf-token');
-  return (r.body as { token?: string }).token ?? '';
-}
 
 async function loginAgent(suffix: string) {
   const agent = supertest.agent(app);
@@ -25,7 +20,7 @@ async function createDebt(
   agent: ReturnType<typeof supertest.agent>,
   overrides: Record<string, unknown> = {},
 ) {
-  const csrf = await csrfToken(agent);
+  const csrf = await getCsrfToken(agent);
   const res = await agent
     .post('/api/debts')
     .set('X-CSRF-Token', csrf)
@@ -86,7 +81,7 @@ describe('GET /api/reports/debt-projection', () => {
     const res = await agent.get('/api/reports/debt-projection?months=5').expect(200);
     const points = res.body as DebtProjectionPoint[];
 
-    for (let i = 2; i < points.length; i++) {
+    for (let i = 1; i < points.length; i++) {
       expect(points[i].total_balance_pence).toBeLessThan(points[i - 1].total_balance_pence);
     }
   });
@@ -99,7 +94,7 @@ describe('GET /api/reports/debt-projection', () => {
     const points = res.body as DebtProjectionPoint[];
 
     for (const point of points) {
-      const sumOfParts = point.per_debt.reduce((s: number, d: { balance_pence: number }) => s + d.balance_pence, 0);
+      const sumOfParts = point.per_debt.reduce((s, d) => s + d.balance_pence, 0);
       expect(point.total_balance_pence).toBe(sumOfParts);
     }
   });
