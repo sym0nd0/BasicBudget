@@ -153,4 +153,14 @@ describe('GET /api/savings-goals — month param validation', () => {
     const res = await agent.get('/api/savings-goals?month=2026-13');
     expect(res.status).toBe(400);
   });
+
+  it('returns 200 when month param is valid (first valid month)', async () => {
+    const res = await agent.get('/api/savings-goals?month=2026-01');
+    expect(res.status).toBe(200);
+  });
+
+  it('returns 200 when month param is valid (last valid month)', async () => {
+    const res = await agent.get('/api/savings-goals?month=2026-12');
+    expect(res.status).toBe(200);
+  });
 });
