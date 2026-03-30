@@ -4,9 +4,9 @@ import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { filterVisible } from '../utils/visibility.js';
 import { filterActiveInMonth, mapDebtToRecurringItem, type RecurringItem } from '../utils/recurring.js';
-import { computeRepayments } from './debts.js';
 import { computePayoffStrategy } from '../utils/debtPayoffStrategy.js';
-import type { Debt, DebtDealPeriod, CategoryBreakdown, MonthlyReportRow, DebtProjectionPoint } from '../../shared/types.js';
+import { calculateDebtTimeline } from '../utils/debtProjection.js';
+import type { Debt, DebtDealPeriod, CategoryBreakdown, MonthlyReportRow } from '../../shared/types.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -124,52 +124,10 @@ router.get('/debt-projection', (req: Request, res: Response) => {
 
   const visibleDebts = getEnrichedDebts(req.householdId!, req.userId!, householdOnly);
 
-  // Today's balance as starting point
   const today = new Date();
-  const cy = today.getFullYear();
-  const cm = today.getMonth() + 1;
-  const currentYM = `${cy}-${String(cm).padStart(2, '0')}`;
+  const currentYM = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-  // Compute repayment schedules for all visible debts
-  const schedules = visibleDebts.map(debt => computeRepayments(debt));
-
-  // Build a map: month → total balance
-  const monthMap = new Map<string, number>();
-  monthMap.set(currentYM, visibleDebts.reduce((s, d) => s + d.balance_pence, 0));
-
-  for (const summary of schedules) {
-    for (const row of summary.schedule) {
-      if (row.date <= currentYM) continue; // current month always shows the actual DB balance
-      const current = monthMap.get(row.date) ?? 0;
-      monthMap.set(row.date, current + row.closing_balance_pence);
-    }
-  }
-
-  // Sort and slice to requested range
-  const sorted = Array.from(monthMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .slice(0, numMonths);
-
-  // Build per-debt breakdown
-  const debtLines = schedules.map(summary => {
-    const debt = visibleDebts.find(d => d.id === summary.debtId)!;
-    const debtMonths = new Map<string, number>();
-    debtMonths.set(currentYM, debt.balance_pence);
-    for (const row of summary.schedule) {
-      if (row.date <= currentYM) continue; // current month keeps the actual DB balance
-      debtMonths.set(row.date, row.closing_balance_pence);
-    }
-    return { id: summary.debtId, name: summary.debtName, months: debtMonths };
-  });
-
-  const rows: DebtProjectionPoint[] = sorted.map(([month, total_balance_pence]) => ({
-    month,
-    total_balance_pence,
-    is_actual: month <= currentYM,
-    per_debt: debtLines.map(dl => ({ id: dl.id, name: dl.name, balance_pence: dl.months.get(month) ?? 0 })),
-  }));
-
-  res.json(rows);
+  res.json(calculateDebtTimeline(visibleDebts, currentYM, numMonths));
 });
 
 // GET /api/reports/debt-payoff-timeline?strategy=snowball|avalanche&household_only=true
