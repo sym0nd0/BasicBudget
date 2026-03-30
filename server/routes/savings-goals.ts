@@ -126,7 +126,7 @@ router.get('/', (req: Request, res: Response) => {
 
     goals = goals.map(goal => {
       const tx = stmt.get(goal.id, parsedMonth) as { balance_after_pence: number } | undefined;
-      return { ...goal, current_amount_pence: tx?.balance_after_pence ?? 0 };
+      return { ...goal, current_amount_pence: tx?.balance_after_pence ?? goal.current_amount_pence };
     });
   }
 

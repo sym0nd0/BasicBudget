@@ -53,14 +53,14 @@ describe('GET /api/savings-goals — month param', () => {
     expect(txRes.status).toBe(201);
   });
 
-  it('returns current_amount_pence = 0 for a month before any transactions', async () => {
+  it('returns stored current_amount_pence for a month before any transactions', async () => {
     const now = new Date();
     const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
     const twoMonthsAgoYM = `${twoMonthsAgo.getFullYear()}-${String(twoMonthsAgo.getMonth() + 1).padStart(2, '0')}`;
 
     const res = await agent.get(`/api/savings-goals?month=${twoMonthsAgoYM}`).expect(200);
     const goal = (res.body as { id: string; current_amount_pence: number }[]).find(g => g.id === testGoalId);
-    expect(goal?.current_amount_pence).toBe(0);
+    expect(goal?.current_amount_pence).toBe(50000);
   });
 
   it('returns balance_after_pence of last transaction in or before requested month', async () => {
@@ -190,5 +190,33 @@ describe('PUT /api/savings-goals/:id — name validation', () => {
       .send({ name: '   ' });
     expect(res.status).toBe(400);
     expect((res.body as { message: string }).message).toBe('name is required');
+  });
+});
+
+describe('GET /api/savings-goals — month fallback uses stored balance', () => {
+  let agent: ReturnType<typeof supertest.agent>;
+  let testGoalId: string;
+
+  beforeEach(async () => {
+    const result = await registerAndLogin(`sg_monfall_${Date.now()}`);
+    agent = result.agent;
+    const csrf = await csrfToken(agent);
+
+    const goalRes = await agent
+      .post('/api/savings-goals')
+      .set('X-CSRF-Token', csrf)
+      .send({ name: 'Fallback Test Goal', target_amount_pence: 100000, current_amount_pence: 30000, monthly_contribution_pence: 0, is_household: 0 });
+    expect(goalRes.status).toBe(201);
+    testGoalId = (goalRes.body as { id: string }).id;
+  });
+
+  it('returns stored current_amount_pence when no transactions exist for the queried month', async () => {
+    const now = new Date();
+    const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+    const twoMonthsAgoYM = `${twoMonthsAgo.getFullYear()}-${String(twoMonthsAgo.getMonth() + 1).padStart(2, '0')}`;
+
+    const res = await agent.get(`/api/savings-goals?month=${twoMonthsAgoYM}`).expect(200);
+    const goal = (res.body as { id: string; current_amount_pence: number }[]).find(g => g.id === testGoalId);
+    expect(goal?.current_amount_pence).toBe(30000);
   });
 });
