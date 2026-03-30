@@ -119,7 +119,18 @@ router.get('/overview', (req: Request, res: Response) => {
 
 // GET /api/reports/debt-projection?months=N (default 12, max 600)&household_only=true
 router.get('/debt-projection', (req: Request, res: Response) => {
-  const numMonths = Math.min(parseInt(req.query.months as string ?? '12', 10), 600);
+  const rawMonths = req.query.months as string | undefined;
+  let numMonths: number;
+  if (rawMonths === undefined) {
+    numMonths = 12;
+  } else {
+    const parsed = Number(rawMonths);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 600) {
+      res.status(400).json({ error: 'Invalid months parameter' });
+      return;
+    }
+    numMonths = parsed;
+  }
   const householdOnly = req.query.household_only === 'true';
 
   const visibleDebts = getEnrichedDebts(req.householdId!, req.userId!, householdOnly);

@@ -168,4 +168,24 @@ describe('GET /api/reports/debt-projection', () => {
       expect(futureNonZero[i].total_balance_pence).not.toBe(futureNonZero[i - 1].total_balance_pence);
     }
   });
+
+  it('returns 400 when months is not a valid integer', async () => {
+    await agent.get('/api/reports/debt-projection?months=abc').expect(400);
+    await agent.get('/api/reports/debt-projection?months=1.5').expect(400);
+    await agent.get('/api/reports/debt-projection?months=').expect(400);
+  });
+
+  it('returns 400 when months is out of range', async () => {
+    await agent.get('/api/reports/debt-projection?months=0').expect(400);
+    await agent.get('/api/reports/debt-projection?months=-1').expect(400);
+    await agent.get('/api/reports/debt-projection?months=601').expect(400);
+  });
+
+  it('uses default of 12 when months param is absent', async () => {
+    await createDebt(agent, { balance_pence: 100000, minimum_payment_pence: 5000, interest_rate: 0, posting_day: 1 });
+    const res = await agent.get('/api/reports/debt-projection').expect(200);
+    const points = res.body as DebtProjectionPoint[];
+    expect(points.length).toBeGreaterThan(0);
+    expect(points.length).toBeLessThanOrEqual(12);
+  });
 });
