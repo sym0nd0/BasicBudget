@@ -1,6 +1,8 @@
 import { useState, useMemo, Fragment } from 'react';
 import { useBudget } from '../context/BudgetContext';
 import { useFilter } from '../context/FilterContext';
+import { useApi } from '../hooks/useApi';
+import { addMonthsToYM } from '../utils/reportRanges';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -29,7 +31,9 @@ type ExpenseRow = Expense & {
 
 export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
   const { expenses, accounts, addExpense, updateExpense, deleteExpense } = useBudget();
-  const { filterCategory } = useFilter();
+  const { filterCategory, activeMonth } = useFilter();
+  const prevMonth = addMonthsToYM(activeMonth, -1);
+  const { data: prevExpenses } = useApi<Expense[]>(`/expenses?month=${prevMonth}`);
   const { isRangeActive, data: rangeOverview } = useRangeOverview();
   const prevPeriod = usePreviousPeriod();
   const [modalOpen, setModalOpen] = useState(false);
@@ -193,6 +197,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
               )}
               {filtered.map(expense => {
                 const isExpanded = expandedId === expense.id;
+                const prevExpense = prevExpenses?.find(p => p.id === expense.id) ?? null;
                 return (
                   <Fragment key={expense.id}>
                     <tr
@@ -218,9 +223,19 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                       </td>
                       <td className="px-5 py-3 font-mono text-[var(--color-text-muted)] text-center">
                         {formatCurrency(expense.display_full_pence)}
+                        <DeltaIndicator
+                          current={expense.display_full_pence}
+                          previous={prevExpense?.amount_pence ?? null}
+                          semantics="positive-down"
+                        />
                       </td>
                       <td className="px-5 py-3 font-mono font-semibold text-[var(--color-danger)] text-center">
                         {formatCurrency(expense.display_share_pence)}
+                        <DeltaIndicator
+                          current={expense.display_share_pence}
+                          previous={prevExpense ? Math.round(prevExpense.amount_pence * prevExpense.split_ratio) : null}
+                          semantics="positive-down"
+                        />
                       </td>
                       <td className="px-5 py-3 text-center">
                         <Badge variant="default">{formatOrdinal(expense.posting_day)}</Badge>

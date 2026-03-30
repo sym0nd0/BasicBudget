@@ -188,6 +188,8 @@ export interface Debt {
   notes?: string | null;
   reminder_months?: number;
   deal_periods?: DebtDealPeriod[];
+  /** Month-specific payment amount; only present on month-filtered GET /api/debts?month= responses */
+  effective_pence?: number;
   created_at?: string;
   updated_at?: string;
 }

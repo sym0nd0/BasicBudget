@@ -4,6 +4,7 @@ import db from '../db.js';
 import { randomUUID } from 'node:crypto';
 import { isMonthLocked } from './months.js';
 import { filterVisible, canModify } from '../utils/visibility.js';
+import { filterActiveInMonth, currentYearMonth, mapDebtToRecurringItem } from '../utils/recurring.js';
 import { requireAuth } from '../middleware/auth.js';
 import type { Debt, DebtDealPeriod, RepaymentRow, DebtPayoffSummary } from '../../shared/types.js';
 import { logger } from '../services/logger.js';
@@ -25,11 +26,59 @@ function enrichDebtWithPeriods(debt: Debt): Debt {
   return { ...debt, deal_periods: periods };
 }
 
-// GET /api/debts
+function monthsAgo(current: string, target: string): number {
+  const [cy, cm] = current.split('-').map(Number);
+  const [ty, tm] = target.split('-').map(Number);
+  return (cy - ty) * 12 + (cm - tm);
+}
+
+function estimatedBalanceNMonthsAgo(
+  debt: Debt,
+  monthlyPayment: number,
+  n: number,
+): number {
+  const now = new Date();
+  const currentMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
+  let b = debt.balance_pence;
+  for (let i = 0; i < n; i++) {
+    const monthlyRate = getMonthlyRateForDate(debt, currentMonthDate);
+    b = monthlyRate === 0
+      ? b + monthlyPayment
+      : (b + monthlyPayment) / (1 + monthlyRate);
+    currentMonthDate.setMonth(currentMonthDate.getMonth() - 1);
+  }
+  return Math.round(b);
+}
+
+// GET /api/debts  or  GET /api/debts?month=YYYY-MM
 router.get('/', (req: Request, res: Response) => {
+  const month = req.query['month'] as string | undefined;
+
   const rows = db.prepare('SELECT * FROM debts WHERE household_id = ? ORDER BY created_at').all(req.householdId!) as Record<string, unknown>[];
   const visible = filterVisible(rows, req.userId!);
-  res.json(visible.map(mapDebt).map(enrichDebtWithPeriods));
+  let debts = visible.map(mapDebt).map(enrichDebtWithPeriods);
+
+  if (month) {
+    const recurringItems = visible.map(mapDebtToRecurringItem);
+    const activeItems = filterActiveInMonth(recurringItems, month);
+    const activeItemMap = new Map(activeItems.map(item => [item.id as string, item]));
+
+    const activeDebts = debts.filter(d => activeItemMap.has(d.id));
+    const n = monthsAgo(currentYearMonth(), month);
+
+    debts = n <= 0
+      ? activeDebts.map(debt => ({ ...debt, effective_pence: activeItemMap.get(debt.id)!.effective_pence }))
+      : activeDebts.map(debt => {
+          const activeItem = activeItemMap.get(debt.id)!;
+          return {
+            ...debt,
+            effective_pence: activeItem.effective_pence,
+            balance_pence: estimatedBalanceNMonthsAgo(debt, activeItem.effective_pence, n),
+          };
+        });
+  }
+
+  res.json(debts);
 });
 
 // POST /api/debts

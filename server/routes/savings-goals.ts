@@ -6,7 +6,9 @@ import { requireAuth } from '../middleware/auth.js';
 import { filterVisible, canModify } from '../utils/visibility.js';
 import { logger } from '../services/logger.js';
 import type { SavingsGoal } from '../../shared/types.js';
-import { savingsGoalSchema, savingsTransactionSchema } from '../validation/schemas.js';
+import { savingsGoalSchema, savingsTransactionSchema, monthParam } from '../validation/schemas.js';
+
+export const BALANCE_UPDATED_NOTE = 'Balance updated';
 
 const router = Router();
 router.use(requireAuth);
@@ -104,7 +106,31 @@ router.get('/', (req: Request, res: Response) => {
   processAutoContributions(req.householdId!, req.userId!);
   const rows = db.prepare('SELECT * FROM savings_goals WHERE household_id = ? ORDER BY created_at').all(req.householdId!) as Record<string, unknown>[];
   const visible = filterVisible(rows, req.userId!);
-  res.json(visible.map(mapGoal));
+  let goals = visible.map(mapGoal);
+
+  const month = req.query['month'] as string | undefined;
+  if (month) {
+    const monthResult = monthParam.safeParse(month);
+    if (!monthResult.success) {
+      res.status(400).json({ message: 'Invalid month format' });
+      return;
+    }
+    const parsedMonth = monthResult.data;
+    const stmt = db.prepare(`
+      SELECT balance_after_pence
+      FROM savings_transactions
+      WHERE savings_goal_id = ? AND strftime('%Y-%m', created_at) <= ?
+      ORDER BY created_at DESC
+      LIMIT 1
+    `);
+
+    goals = goals.map(goal => {
+      const tx = stmt.get(goal.id, parsedMonth) as { balance_after_pence: number } | undefined;
+      return { ...goal, current_amount_pence: tx?.balance_after_pence ?? goal.current_amount_pence };
+    });
+  }
+
+  res.json(goals);
 });
 
 // POST /api/savings-goals
@@ -125,26 +151,35 @@ router.post('/', (req: Request, res: Response) => {
   }
   const rawBody = req.body as Partial<SavingsGoal>;
   const id = randomUUID();
+  const openingBalance = rawBody.current_amount_pence ?? 0;
   try {
-    db.prepare(`
-      INSERT INTO savings_goals
-        (id, household_id, user_id, contributor_user_id, name, target_amount_pence, current_amount_pence, monthly_contribution_pence, is_household, target_date, notes, auto_contribute, contribution_day)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      req.householdId!,
-      req.userId!,
-      body.contributor_user_id ?? null,
-      body.name.trim(),
-      body.target_amount_pence ?? 0,
-      rawBody.current_amount_pence ?? 0,
-      rawBody.monthly_contribution_pence ?? 0,
-      rawBody.is_household ? 1 : 0,
-      rawBody.target_date ?? null,
-      body.notes ?? null,
-      body.auto_contribute ? 1 : 0,
-      body.contribution_day ?? 1,
-    );
+    db.transaction(() => {
+      db.prepare(`
+        INSERT INTO savings_goals
+          (id, household_id, user_id, contributor_user_id, name, target_amount_pence, current_amount_pence, monthly_contribution_pence, is_household, target_date, notes, auto_contribute, contribution_day)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        req.householdId!,
+        req.userId!,
+        body.contributor_user_id ?? null,
+        body.name.trim(),
+        body.target_amount_pence ?? 0,
+        openingBalance,
+        rawBody.monthly_contribution_pence ?? 0,
+        rawBody.is_household ? 1 : 0,
+        rawBody.target_date ?? null,
+        body.notes ?? null,
+        body.auto_contribute ? 1 : 0,
+        body.contribution_day ?? 1,
+      );
+      // Insert opening snapshot so month-scoped queries can resolve the initial balance.
+      // Use start-of-month so any same-month contributions (datetime) sort after this row.
+      db.prepare(`
+        INSERT INTO savings_transactions (id, savings_goal_id, household_id, user_id, type, amount_pence, balance_after_pence, notes, created_at)
+        VALUES (?, ?, ?, ?, 'deposit', ?, ?, 'Opening balance', date('now', 'start of month'))
+      `).run(randomUUID(), id, req.householdId!, req.userId!, openingBalance, openingBalance);
+    })();
   } catch (err) {
     res.status(400).json({ message: (err as Error).message });
     return;
@@ -216,6 +251,11 @@ router.put('/:id', (req: Request, res: Response) => {
     return;
   }
   const body = parseResult.data;
+  const trimmedName = body.name !== undefined ? body.name.trim() : undefined;
+  if (trimmedName !== undefined && trimmedName === '') {
+    res.status(400).json({ message: 'name is required' });
+    return;
+  }
   const existing = db.prepare('SELECT * FROM savings_goals WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!existing) {
     res.status(404).json({ message: 'Savings goal not found' });
@@ -225,26 +265,42 @@ router.put('/:id', (req: Request, res: Response) => {
     res.status(403).json({ message: 'You can only edit your own entries' });
     return;
   }
+  const newBalance = body.current_amount_pence !== undefined
+    ? body.current_amount_pence
+    : (existing.current_amount_pence as number);
+  const balanceChanged = body.current_amount_pence !== undefined && body.current_amount_pence !== existing.current_amount_pence;
   try {
-    db.prepare(`
-      UPDATE savings_goals SET
-        name = ?, contributor_user_id = ?, target_amount_pence = ?, current_amount_pence = ?,
-        monthly_contribution_pence = ?, is_household = ?, target_date = ?, notes = ?,
-        auto_contribute = ?, contribution_day = ?, updated_at = datetime('now')
-      WHERE id = ?
-    `).run(
-      body.name?.trim() ?? existing.name,
-      body.contributor_user_id !== undefined ? body.contributor_user_id : existing.contributor_user_id,
-      body.target_amount_pence ?? existing.target_amount_pence,
-      body.current_amount_pence ?? existing.current_amount_pence,
-      body.monthly_contribution_pence ?? existing.monthly_contribution_pence,
-      body.is_household ?? existing.is_household,
-      body.target_date !== undefined ? body.target_date : existing.target_date,
-      body.notes !== undefined ? body.notes : existing.notes,
-      body.auto_contribute ?? existing.auto_contribute,
-      body.contribution_day ?? existing.contribution_day,
-      id,
-    );
+    db.transaction(() => {
+      db.prepare(`
+        UPDATE savings_goals SET
+          name = ?, contributor_user_id = ?, target_amount_pence = ?, current_amount_pence = ?,
+          monthly_contribution_pence = ?, is_household = ?, target_date = ?, notes = ?,
+          auto_contribute = ?, contribution_day = ?, updated_at = datetime('now')
+        WHERE id = ?
+      `).run(
+        trimmedName !== undefined ? trimmedName : existing.name as string,
+        body.contributor_user_id !== undefined ? body.contributor_user_id : existing.contributor_user_id,
+        body.target_amount_pence ?? existing.target_amount_pence,
+        newBalance,
+        body.monthly_contribution_pence ?? existing.monthly_contribution_pence,
+        body.is_household ?? existing.is_household,
+        body.target_date !== undefined ? body.target_date : existing.target_date,
+        body.notes !== undefined ? body.notes : existing.notes,
+        body.auto_contribute ?? existing.auto_contribute,
+        body.contribution_day ?? existing.contribution_day,
+        id,
+      );
+      if (balanceChanged) {
+        // Insert snapshot so month-scoped queries reflect the updated balance
+        const previousBalance = existing.current_amount_pence as number;
+        const delta = newBalance - previousBalance;
+        const snapshotType = delta >= 0 ? 'deposit' : 'withdrawal';
+        db.prepare(`
+          INSERT INTO savings_transactions (id, savings_goal_id, household_id, user_id, type, amount_pence, balance_after_pence, notes)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(randomUUID(), id, req.householdId!, req.userId!, snapshotType, Math.abs(delta), newBalance, BALANCE_UPDATED_NOTE);
+      }
+    })();
   } catch (err) {
     res.status(400).json({ message: (err as Error).message });
     return;

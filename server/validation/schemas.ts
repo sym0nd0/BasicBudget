@@ -3,7 +3,7 @@ import { z } from 'zod';
 // ─── Common patterns ──────────────────────────────────────────────────────────
 
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD');
-export const monthParam = z.string().regex(/^\d{4}-\d{2}$/, 'Month must be YYYY-MM');
+export const monthParam = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Month must be YYYY-MM');
 
 // ─── Expenses ─────────────────────────────────────────────────────────────────
 
