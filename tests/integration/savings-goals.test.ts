@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import supertest from 'supertest';
-import { getApp, makeTestUser } from '../helpers.js';
+import { getApp, makeTestUser, registerAndLoginDirect } from '../helpers.js';
 import db from '../../server/db.js';
 import { BALANCE_UPDATED_NOTE } from '../../server/routes/savings-goals.js';
 
@@ -18,10 +18,7 @@ async function csrfToken(agent: ReturnType<typeof supertest.agent>): Promise<str
 async function registerAndLogin(suffix: string) {
   const agent = supertest.agent(app);
   const user = makeTestUser(suffix);
-  let csrf = await csrfToken(agent);
-  await agent.post('/api/auth/register').set('X-CSRF-Token', csrf).send({ email: user.email, password: user.password });
-  csrf = await csrfToken(agent);
-  await agent.post('/api/auth/login').set('X-CSRF-Token', csrf).send({ email: user.email, password: user.password });
+  await registerAndLoginDirect(agent, user);
   return { agent };
 }
 
@@ -197,7 +194,7 @@ describe('GET /api/savings-goals — month fallback uses stored balance', () => 
   let agent: ReturnType<typeof supertest.agent>;
   let testGoalId: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const result = await registerAndLogin(`sg_monfall_${Date.now()}`);
     agent = result.agent;
     const csrf = await csrfToken(agent);
