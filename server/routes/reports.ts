@@ -139,6 +139,7 @@ router.get('/debt-projection', (req: Request, res: Response) => {
 
   for (const summary of schedules) {
     for (const row of summary.schedule) {
+      if (row.date <= currentYM) continue; // current month always shows the actual DB balance
       const current = monthMap.get(row.date) ?? 0;
       monthMap.set(row.date, current + row.closing_balance_pence);
     }
@@ -155,6 +156,7 @@ router.get('/debt-projection', (req: Request, res: Response) => {
     const debtMonths = new Map<string, number>();
     debtMonths.set(currentYM, debt.balance_pence);
     for (const row of summary.schedule) {
+      if (row.date <= currentYM) continue; // current month keeps the actual DB balance
       debtMonths.set(row.date, row.closing_balance_pence);
     }
     return { id: summary.debtId, name: summary.debtName, months: debtMonths };
