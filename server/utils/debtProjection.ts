@@ -1,7 +1,8 @@
 import type { Debt, DebtProjectionPoint } from '../../shared/types.js';
 import { computeRepayments } from './debtRepayments.js';
+import { config } from '../config.js';
 
-const DEBUG = process.env.DEBUG_DEBT_PROJECTION === 'true';
+const DEBUG = config.DEBUG_DEBT_PROJECTION === 'true';
 
 /**
  * Computes the projected monthly debt totals for all debts over numMonths months.
