@@ -19,7 +19,7 @@ export function calculateDebtTimeline(
   currentYM: string,
   numMonths: number,
 ): DebtProjectionPoint[] {
-  const schedules = debts.map(d => computeRepayments(d));
+  const schedules = debts.map(d => computeRepayments(d, currentYM));
 
   // Collect all months that appear in any schedule (plus current month)
   const allMonths = new Set<string>([currentYM]);

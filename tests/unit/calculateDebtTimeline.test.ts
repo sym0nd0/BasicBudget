@@ -141,4 +141,18 @@ describe('calculateDebtTimeline', () => {
     expect(result[0].total_balance_pence).toBe(0);
     expect(result[0].month).toBe(currentYM);
   });
+
+  it('schedule is anchored to currentYM, not new Date()', () => {
+    // Pass a currentYM well in the past. Without the fix, computeRepayments
+    // uses new Date() (2026), so schedule rows land in 2026 — but
+    // calculateDebtTimeline includes all rows > '2020-01', causing the output
+    // to jump from '2020-01' straight to April 2026 instead of staying in 2020.
+    const debts = [
+      makeDebt('a', { balance_pence: 30000, minimum_payment_pence: 10000, interest_rate: 0, posting_day: 1 }),
+    ];
+    const result = calculateDebtTimeline(debts, '2020-01', 6);
+    for (const point of result) {
+      expect(point.month.startsWith('2020-')).toBe(true);
+    }
+  });
 });

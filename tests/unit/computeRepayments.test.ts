@@ -135,4 +135,14 @@ describe('computeRepayments', () => {
     const dates = result.schedule.map(r => r.date);
     expect(new Set(dates).size).toBe(dates.length);
   });
+
+  it('schedule dates are anchored to the provided anchorYM, not new Date()', () => {
+    // Anchor is well in the past. Without the fix, schedule dates are in 2026 (today).
+    const debt = makeDebt({ balance_pence: 30000, minimum_payment_pence: 10000, interest_rate: 0 });
+    const result = computeRepayments(debt, '2020-01');
+    expect(result.schedule.length).toBeGreaterThan(0);
+    for (const row of result.schedule) {
+      expect(row.date.startsWith('2020-')).toBe(true);
+    }
+  });
 });

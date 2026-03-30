@@ -21,7 +21,7 @@ export function getMonthlyRateForDate(debt: Debt, dayStr: string): number {
   return rate / 100 / 12;
 }
 
-export function computeRepayments(debt: Debt): DebtPayoffSummary {
+export function computeRepayments(debt: Debt, anchorYM?: string): DebtPayoffSummary {
   const paymentPence = debt.minimum_payment_pence + debt.overpayment_pence;
   const schedule: RepaymentRow[] = [];
 
@@ -31,10 +31,13 @@ export function computeRepayments(debt: Debt): DebtPayoffSummary {
   let month = 0;
 
   const now = new Date();
-  const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const todayDay = now.getDate();
-  const postingDay = debt.posting_day ?? 1;
-  const monthOffset = todayDay <= postingDay ? 0 : 1;
+  const currentYM = anchorYM ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  // When an anchor is provided (e.g. from calculateDebtTimeline or tests), the
+  // "has the payment already occurred this month?" heuristic is not meaningful —
+  // start the schedule from the anchor month directly.
+  const monthOffset = anchorYM !== undefined
+    ? 0
+    : now.getDate() <= (debt.posting_day ?? 1) ? 0 : 1;
 
   while (currentBalance > 0 && month < MAX_MONTHS) {
     month++;
