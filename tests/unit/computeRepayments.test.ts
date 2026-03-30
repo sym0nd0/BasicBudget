@@ -213,4 +213,29 @@ describe('computeRepayments', () => {
     expect(result.schedule.length).toBeGreaterThan(0);
     expect(result.schedule[0].date).toBe('2026-02');
   });
+
+  it('posting_day 0 is clamped to 1 so deal period starting on the 1st applies', () => {
+    // posting_day 0 produces dayStr '2026-03-00' without a lower-bound clamp.
+    // The deal period starts on '2026-03-01'; the check is p.start_date <= dayStr.
+    // '2026-03-01' <= '2026-03-00' is FALSE → deal wrongly excluded → interest > 0.
+    // After the fix (clamp to min 1): dayStr = '2026-03-01' → deal IS applied → interest = 0.
+    const debt = makeDebt({
+      balance_pence: 100000,
+      interest_rate: 12,
+      minimum_payment_pence: 5000,
+      posting_day: 0,
+      deal_periods: [
+        {
+          id: 'dp1',
+          debt_id: 'test-debt',
+          interest_rate: 0,
+          start_date: '2026-03-01',
+          end_date: '2026-06-30',
+        },
+      ],
+    });
+    const result = computeRepayments(debt, '2026-03');
+    // posting_day 0 clamped to 1: dayStr = '2026-03-01', within the deal period → 0% interest
+    expect(result.schedule[0].interest_charge_pence).toBe(0);
+  });
 });

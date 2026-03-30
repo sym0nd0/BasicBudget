@@ -49,7 +49,7 @@ export function computeRepayments(debt: Debt, anchorYM?: string): DebtPayoffSumm
     month++;
     const monthStr = addMonths(currentYM, monthOffset + month - 1);
     const postingDay = debt.posting_day ?? 1;
-    const dayStr = `${monthStr}-${String(Math.min(postingDay, daysInMonth(monthStr))).padStart(2, '0')}`;
+    const dayStr = `${monthStr}-${String(Math.max(1, Math.min(postingDay, daysInMonth(monthStr)))).padStart(2, '0')}`;
 
     if (debt.end_date && dayStr > debt.end_date) {
       break;
