@@ -145,4 +145,72 @@ describe('computeRepayments', () => {
       expect(row.date.startsWith('2020-')).toBe(true);
     }
   });
+
+  it('end_date comparison uses posting_day not the 1st of the month', () => {
+    // Anchor: 2026-03. posting_day: 20. end_date: 2026-04-15.
+    // Month 1 → 2026-03, posting date 2026-03-20 ≤ 2026-04-15 → included.
+    // Month 2 → 2026-04, posting date 2026-04-20 > 2026-04-15 → loop breaks.
+    // Before fix: dayStr = 2026-04-01 ≤ 2026-04-15, so 2026-04 IS included (wrong).
+    // After fix:  dayStr = 2026-04-20 > 2026-04-15, so 2026-04 is NOT included (correct).
+    const debt = makeDebt({
+      balance_pence: 50000,
+      minimum_payment_pence: 10000,
+      interest_rate: 0,
+      posting_day: 20,
+      end_date: '2026-04-15',
+    });
+    const result = computeRepayments(debt, '2026-03');
+    const dates = result.schedule.map(r => r.date);
+    expect(dates).toContain('2026-03');
+    expect(dates).not.toContain('2026-04');
+  });
+
+  it('deal period rate boundary uses posting_day not the 1st of the month', () => {
+    // Anchor: 2026-03. posting_day: 20. Deal period 0% ends 2026-04-15.
+    // Month 1 → 2026-03, posting date 2026-03-20 ≤ 2026-04-15 → 0% rate (within deal).
+    // Month 2 → 2026-04, posting date 2026-04-20 > 2026-04-15 → base 12% rate applies.
+    // Before fix: dayStr = 2026-04-01 ≤ 2026-04-15, so April still gets 0% (wrong).
+    // After fix:  dayStr = 2026-04-20 > 2026-04-15, so April uses 12% (correct).
+    const debt = makeDebt({
+      balance_pence: 200000,
+      interest_rate: 12,
+      minimum_payment_pence: 5000,
+      posting_day: 20,
+      deal_periods: [
+        {
+          id: 'dp1',
+          debt_id: 'test-debt',
+          interest_rate: 0,
+          start_date: '2026-01-01',
+          end_date: '2026-04-15',
+        },
+      ],
+    });
+    const result = computeRepayments(debt, '2026-03');
+    // Month 1 (2026-03): posting is 2026-03-20, within deal period → 0 interest
+    expect(result.schedule[0].interest_charge_pence).toBe(0);
+    // Month 2 (2026-04): posting is 2026-04-20, after deal end → 12%/yr interest
+    if (result.schedule.length > 1) {
+      expect(result.schedule[1].interest_charge_pence).toBeGreaterThan(0);
+    }
+  });
+
+  it('posting_day 31 is clamped to last valid day in February so end_date comparison is correct', () => {
+    // Anchor: 2026-02. posting_day: 31. end_date: 2026-02-28.
+    // Clamped posting date for Feb: 2026-02-28 (28 days in Feb 2026).
+    // 2026-02-28 ≤ 2026-02-28 → loop continues → Feb IS included.
+    // Before fix (no clamp): dayStr = '2026-02-31' > '2026-02-28' lexicographically
+    //   → loop breaks immediately → schedule is empty (wrong).
+    // After fix: dayStr = '2026-02-28' ≤ '2026-02-28' → Feb included (correct).
+    const debt = makeDebt({
+      balance_pence: 30000,
+      minimum_payment_pence: 10000,
+      interest_rate: 0,
+      posting_day: 31,
+      end_date: '2026-02-28',
+    });
+    const result = computeRepayments(debt, '2026-02');
+    expect(result.schedule.length).toBeGreaterThan(0);
+    expect(result.schedule[0].date).toBe('2026-02');
+  });
 });

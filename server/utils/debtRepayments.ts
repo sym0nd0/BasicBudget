@@ -9,6 +9,12 @@ function addMonths(yearMonth: string, n: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
+function daysInMonth(yearMonth: string): number {
+  const [y, m] = yearMonth.split('-').map(Number);
+  // new Date(y, m, 0) is the last calendar day of month m in year y
+  return new Date(y, m, 0).getDate();
+}
+
 export function getMonthlyRateForDate(debt: Debt, dayStr: string): number {
   if (debt.end_date && dayStr > debt.end_date) {
     return 0;
@@ -42,7 +48,8 @@ export function computeRepayments(debt: Debt, anchorYM?: string): DebtPayoffSumm
   while (currentBalance > 0 && month < MAX_MONTHS) {
     month++;
     const monthStr = addMonths(currentYM, monthOffset + month - 1);
-    const dayStr = `${monthStr}-01`;
+    const postingDay = debt.posting_day ?? 1;
+    const dayStr = `${monthStr}-${String(Math.min(postingDay, daysInMonth(monthStr))).padStart(2, '0')}`;
 
     if (debt.end_date && dayStr > debt.end_date) {
       break;
