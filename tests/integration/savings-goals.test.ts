@@ -164,3 +164,31 @@ describe('GET /api/savings-goals — month param validation', () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe('PUT /api/savings-goals/:id — name validation', () => {
+  let agent: ReturnType<typeof supertest.agent>;
+  let csrf: string;
+  let goalId: string;
+
+  beforeAll(async () => {
+    const result = await registerAndLogin(`sg_nameval_${Date.now()}`);
+    agent = result.agent;
+    csrf = await csrfToken(agent);
+
+    const goalRes = await agent
+      .post('/api/savings-goals')
+      .set('X-CSRF-Token', csrf)
+      .send({ name: 'Name Test Goal', target_amount_pence: 100000, current_amount_pence: 0, monthly_contribution_pence: 0, is_household: 0 });
+    expect(goalRes.status).toBe(201);
+    goalId = (goalRes.body as { id: string }).id;
+  });
+
+  it('returns 400 when name is whitespace-only', async () => {
+    const res = await agent
+      .put(`/api/savings-goals/${goalId}`)
+      .set('X-CSRF-Token', csrf)
+      .send({ name: '   ' });
+    expect(res.status).toBe(400);
+    expect((res.body as { message: string }).message).toBe('name is required');
+  });
+});

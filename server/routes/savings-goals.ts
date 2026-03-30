@@ -251,6 +251,11 @@ router.put('/:id', (req: Request, res: Response) => {
     return;
   }
   const body = parseResult.data;
+  const trimmedName = body.name !== undefined ? body.name.trim() : undefined;
+  if (trimmedName !== undefined && trimmedName === '') {
+    res.status(400).json({ message: 'name is required' });
+    return;
+  }
   const existing = db.prepare('SELECT * FROM savings_goals WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!existing) {
     res.status(404).json({ message: 'Savings goal not found' });
@@ -273,7 +278,7 @@ router.put('/:id', (req: Request, res: Response) => {
           auto_contribute = ?, contribution_day = ?, updated_at = datetime('now')
         WHERE id = ?
       `).run(
-        body.name?.trim() ?? existing.name,
+        trimmedName !== undefined ? trimmedName : existing.name as string,
         body.contributor_user_id !== undefined ? body.contributor_user_id : existing.contributor_user_id,
         body.target_amount_pence ?? existing.target_amount_pence,
         newBalance,
