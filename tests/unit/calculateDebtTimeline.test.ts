@@ -128,11 +128,10 @@ describe('calculateDebtTimeline', () => {
     }
   });
 
-  it('returns at most numMonths entries', () => {
+  it('returns exactly numMonths entries', () => {
     const debts = [makeDebt('a', { balance_pence: 200000, minimum_payment_pence: 10000 })];
     const result = calculateDebtTimeline(debts, currentYM, 6);
-    expect(result.length).toBeLessThanOrEqual(6);
-    expect(result.length).toBeGreaterThan(0);
+    expect(result.length).toBe(6);
   });
 
   it('handles empty debts array', () => {
