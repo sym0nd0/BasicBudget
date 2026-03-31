@@ -4,6 +4,12 @@ import { config } from '../config.js';
 
 const DEBUG = config.DEBUG_DEBT_PROJECTION === 'true';
 
+function addMonths(yearMonth: string, n: number): string {
+  const [y, m] = yearMonth.split('-').map(Number);
+  const d = new Date(y, m - 1 + n, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 /**
  * Computes the projected monthly debt totals for all debts over numMonths months.
  *
@@ -22,52 +28,35 @@ export function calculateDebtTimeline(
 ): DebtProjectionPoint[] {
   const schedules = debts.map(d => computeRepayments(d, currentYM));
 
-  // Collect all months that appear in any schedule (plus current month)
-  const allMonths = new Set<string>([currentYM]);
-  for (const summary of schedules) {
-    for (const row of summary.schedule) {
-      if (row.date > currentYM) {
-        allMonths.add(row.date);
-      }
-    }
-  }
+  // Track each debt's last known balance for carry-forward when its schedule ends early
+  const lastBalance: number[] = debts.map(d => d.balance_pence);
 
-  // Sort and slice to requested range
-  const sortedMonths = Array.from(allMonths).sort().slice(0, numMonths);
+  const result: DebtProjectionPoint[] = [];
 
-  // Build a per-debt balance lookup: debtIndex → month → closingBalance
-  const debtBalanceByMonth: Map<string, number>[] = debts.map((d, i) => {
-    const m = new Map<string, number>();
-    m.set(currentYM, d.balance_pence);
-    for (const row of schedules[i].schedule) {
-      if (row.date > currentYM) {
-        m.set(row.date, row.closing_balance_pence);
+  for (let i = 0; i < numMonths; i++) {
+    const month = addMonths(currentYM, i);
 
-        if (DEBUG) {
-          console.log(JSON.stringify({
-            debug: 'debt_projection_row',
-            month: row.date,
-            debtId: schedules[i].debtId,
-            debtName: schedules[i].debtName,
-            openingBalance: row.opening_balance_pence,
-            interestCharge: row.interest_charge_pence,
-            payment: row.payment_pence,
-            closingBalance: row.closing_balance_pence,
-          }));
+    const perDebt = debts.map((d, di) => {
+      let balance: number;
+
+      if (i === 0) {
+        // Current month: always use the actual DB balance
+        balance = d.balance_pence;
+      } else {
+        // Future month i: schedule[i-1] is the closing balance after the i-th payment
+        const row = schedules[di].schedule[i - 1];
+        if (row !== undefined) {
+          balance = row.closing_balance_pence;
+          lastBalance[di] = balance;
+        } else {
+          // Schedule ended (e.g. debt hit end_date with remaining balance) — carry forward
+          balance = lastBalance[di];
         }
       }
-    }
-    return m;
-  });
 
-  return sortedMonths.map(month => {
-    const perDebt = debts.map((d, i) => ({
-      id: d.id,
-      name: d.name,
-      balance_pence: debtBalanceByMonth[i].get(month) ?? 0,
-    }));
+      return { id: d.id, name: d.name, balance_pence: balance };
+    });
 
-    // Derive total from per-debt sum — guarantees total === sum(per_debt) always
     const total_balance_pence = perDebt.reduce((s, d) => s + d.balance_pence, 0);
 
     if (DEBUG) {
@@ -79,11 +68,13 @@ export function calculateDebtTimeline(
       }));
     }
 
-    return {
+    result.push({
       month,
       total_balance_pence,
       is_actual: month <= currentYM,
       per_debt: perDebt,
-    };
-  });
+    });
+  }
+
+  return result;
 }
