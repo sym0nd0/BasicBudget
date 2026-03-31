@@ -128,6 +128,24 @@ describe('calculateDebtTimeline', () => {
     }
   });
 
+  it('future-start debt is absent before start month, then decreases month by month', () => {
+    const debts = [
+      makeDebt('future', {
+        balance_pence: 100000,
+        minimum_payment_pence: 10000,
+        interest_rate: 0,
+        start_date: '2026-05-01',
+      }),
+    ];
+
+    const result = calculateDebtTimeline(debts, currentYM, 4);
+
+    expect(result.find(r => r.month === '2026-03')!.total_balance_pence).toBe(0);
+    expect(result.find(r => r.month === '2026-04')!.total_balance_pence).toBe(0);
+    expect(result.find(r => r.month === '2026-05')!.total_balance_pence).toBe(90000);
+    expect(result.find(r => r.month === '2026-06')!.total_balance_pence).toBe(80000);
+  });
+
   it('returns exactly numMonths entries', () => {
     const debts = [makeDebt('a', { balance_pence: 200000, minimum_payment_pence: 10000 })];
     const result = calculateDebtTimeline(debts, currentYM, 6);
@@ -159,10 +177,10 @@ describe('calculateDebtTimeline', () => {
   });
   it('balance carries forward for months beyond end_date when balance remains', () => {
     // Debt: £1000, £100/month, 0% interest, posting_day 5, end_date 2026-04-15.
-    // With anchor 2026-03: schedule covers 2026-03 and 2026-04 (posting 2026-04-05 ≤ 2026-04-15).
+    // Current month 2026-03 uses the actual DB balance.
+    // Only the April 2026 posting is projected forward before the schedule stops at end_date.
     // After 2026-04, no more schedule rows, but balance is not zero.
-    // Bug: ?? 0 converts missing map entries to 0 — debt appears fully paid.
-    // Fix: carry forward last known balance (80000p after 2 payments of 10000p each).
+    // The remaining balance should carry forward rather than dropping to 0.
     const debt = makeDebt('a', {
       balance_pence: 100000,
       minimum_payment_pence: 10000,
@@ -176,8 +194,8 @@ describe('calculateDebtTimeline', () => {
     const beyondSchedule = result.filter(r => r.month >= '2026-05');
     expect(beyondSchedule.length).toBeGreaterThan(0);
     for (const point of beyondSchedule) {
-      // 100000 - 10000 (Mar payment) - 10000 (Apr payment) = 80000
-      expect(point.total_balance_pence).toBe(80000);
+      // 100000 - 10000 (Apr payment) = 90000
+      expect(point.total_balance_pence).toBe(90000);
     }
   });
 });

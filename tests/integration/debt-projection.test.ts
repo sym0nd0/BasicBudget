@@ -40,19 +40,33 @@ async function createDebt(
   return res.body as { id: string; balance_pence: number };
 }
 
+function yearMonthWithOffset(offset: number): string {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function uniqueSuffix(prefix: string): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
 describe('GET /api/reports/debt-projection', () => {
   let agent: ReturnType<typeof supertest.agent>;
 
   beforeEach(async () => {
-    agent = await loginAgent(`proj_${Date.now()}`);
+    agent = await loginAgent(uniqueSuffix('proj'));
   });
 
   it('returns 200 with an array of projection points', async () => {
     await createDebt(agent);
-    const res = await agent.get('/api/reports/debt-projection?months=3').expect(200);
-    const points = res.body as DebtProjectionPoint[];
-    expect(Array.isArray(points)).toBe(true);
-    expect(points.length).toBe(3);
+    const shortRes = await agent.get('/api/reports/debt-projection?months=3').expect(200);
+    const shortPoints = shortRes.body as DebtProjectionPoint[];
+    expect(Array.isArray(shortPoints)).toBe(true);
+    expect(shortPoints.length).toBe(3);
+
+    const defaultRes = await agent.get('/api/reports/debt-projection').expect(200);
+    const defaultPoints = defaultRes.body as DebtProjectionPoint[];
+    expect(defaultPoints.length).toBe(12);
   });
 
   it('current month total_balance_pence equals the actual debt balance', async () => {
@@ -169,6 +183,37 @@ describe('GET /api/reports/debt-projection', () => {
     }
   });
 
+  it('matches the month-filtered debts snapshot for the same future month', async () => {
+    await createDebt(agent, {
+      balance_pence: 100000,
+      minimum_payment_pence: 10000,
+      interest_rate: 0,
+      posting_day: 1,
+    });
+    await createDebt(agent, {
+      name: 'Future Debt',
+      balance_pence: 60000,
+      minimum_payment_pence: 5000,
+      interest_rate: 0,
+      posting_day: 1,
+      start_date: `${yearMonthWithOffset(2)}-01`,
+    });
+
+    const targetYM = yearMonthWithOffset(2);
+    const projectionRes = await agent.get('/api/reports/debt-projection?months=4').expect(200);
+    const debtsRes = await agent.get(`/api/debts?month=${targetYM}`).expect(200);
+
+    const point = (projectionRes.body as DebtProjectionPoint[]).find(p => p.month === targetYM);
+    const debts = debtsRes.body as Array<{ id: string; balance_pence: number }>;
+
+    expect(point).toBeDefined();
+    expect(point!.total_balance_pence).toBe(debts.reduce((sum, debt) => sum + debt.balance_pence, 0));
+    expect(point!.per_debt).toHaveLength(debts.length);
+    for (const debt of debts) {
+      expect(point!.per_debt.find(d => d.id === debt.id)?.balance_pence).toBe(debt.balance_pence);
+    }
+  });
+
   it('returns 400 when months is not a valid integer', async () => {
     await agent.get('/api/reports/debt-projection?months=abc').expect(400);
     await agent.get('/api/reports/debt-projection?months=1.5').expect(400);
@@ -179,12 +224,5 @@ describe('GET /api/reports/debt-projection', () => {
     await agent.get('/api/reports/debt-projection?months=0').expect(400);
     await agent.get('/api/reports/debt-projection?months=-1').expect(400);
     await agent.get('/api/reports/debt-projection?months=601').expect(400);
-  });
-
-  it('uses default of 12 when months param is absent', async () => {
-    await createDebt(agent, { balance_pence: 100000, minimum_payment_pence: 5000, interest_rate: 0, posting_day: 1 });
-    const res = await agent.get('/api/reports/debt-projection').expect(200);
-    const points = res.body as DebtProjectionPoint[];
-    expect(points.length).toBe(12);
   });
 });

@@ -57,10 +57,13 @@ export async function createTestUser(agent: ReturnType<typeof supertest.agent>, 
 
 export async function loginTestUser(agent: ReturnType<typeof supertest.agent>, user: TestUser): Promise<void> {
   const csrf = await getCsrfToken(agent);
-  await agent
+  const res = await agent
     .post('/api/auth/login')
     .set('X-CSRF-Token', csrf)
     .send({ email: user.email, password: user.password });
+  if (res.status >= 400) {
+    throw new Error(`loginTestUser failed with status ${res.status}`);
+  }
 }
 
 /**
@@ -93,4 +96,13 @@ export async function registerAndLoginDirect(
 
   // Log in via HTTP (which sets session cookie)
   await loginTestUser(agent, user);
+
+  const statusRes = await agent.get('/api/auth/status');
+  if (!(statusRes.body as { authenticated?: boolean }).authenticated) {
+    await loginTestUser(agent, user);
+    const retryStatusRes = await agent.get('/api/auth/status');
+    if (!(retryStatusRes.body as { authenticated?: boolean }).authenticated) {
+      throw new Error('registerAndLoginDirect failed to establish an authenticated session');
+    }
+  }
 }

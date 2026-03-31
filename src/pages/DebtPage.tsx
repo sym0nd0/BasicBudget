@@ -68,37 +68,6 @@ function RepaymentPanel({ debtId }: { debtId: string }) {
   );
 }
 
-function isDebtActiveThisMonth(debt: Debt, yearMonth?: string): boolean {
-  let monthStart: Date, monthEnd: Date;
-  if (yearMonth) {
-    const [y, m] = yearMonth.split('-').map(Number);
-    monthStart = new Date(y, m - 1, 1);
-    monthEnd = new Date(y, m, 0);
-  } else {
-    const now = new Date();
-    monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  }
-
-  const parseDate = (d: string | null | undefined): Date | null => {
-    if (!d) return null;
-    const [y, m, day] = d.split('-').map(Number);
-    return new Date(y, m - 1, day);
-  };
-
-  const startDate = parseDate(debt.start_date);
-  const endDate = parseDate(debt.end_date);
-
-  if (!debt.is_recurring) {
-    if (!startDate) return false;
-    return startDate >= monthStart && startDate <= monthEnd;
-  }
-
-  if (startDate && startDate > monthEnd) return false;
-  if (endDate && endDate < monthStart) return false;
-  return true;
-}
-
 export function DebtPage({ onMenuClick }: DebtPageProps) {
   const { addDebt, updateDebt, deleteDebt } = useDebt();
   const { activeMonth } = useFilter();
@@ -115,17 +84,14 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const paymentShare = (debt: Debt) => Math.round((debt.effective_pence ?? 0) * debt.split_ratio);
   const totalBalance = debts.reduce((s, d) => s + d.balance_pence, 0);
-  const totalPayments = debts
-    .filter(d => isDebtActiveThisMonth(d))
-    .reduce((s, d) => s + Math.round((d.minimum_payment_pence + d.overpayment_pence) * d.split_ratio), 0);
+  const totalPayments = debts.reduce((s, d) => s + paymentShare(d), 0);
   const totalInterestDebts = debts.filter(d => d.interest_rate > 0).length;
 
   const prevDebts = prevMonthDebts ?? [];
   const prevTotalBalance = prevDebts.reduce((s, d) => s + d.balance_pence, 0);
-  const prevTotalPayments = prevDebts
-    .filter(d => isDebtActiveThisMonth(d, prevMonth))
-    .reduce((s, d) => s + Math.round((d.minimum_payment_pence + (d.overpayment_pence ?? 0)) * (d.split_ratio ?? 1)), 0);
+  const prevTotalPayments = prevDebts.reduce((s, d) => s + paymentShare(d), 0);
 
   const handleSave = async (data: Omit<Debt, 'id' | 'created_at' | 'updated_at'>) => {
     if (!editing) {
@@ -259,12 +225,11 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
               )}
               {sortedDebts.map(debt => {
                 const isExpanded = expandedId === debt.id;
-                const isActive = isDebtActiveThisMonth(debt);
 
                 return (
                   <Fragment key={debt.id}>
                     <tr
-                      className={`border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-2)] cursor-pointer${!isActive ? ' opacity-50' : ''}`}
+                      className="border-t border-[var(--color-border)] transition-colors hover:bg-[var(--color-surface-2)] cursor-pointer"
                       onClick={() => toggleExpand(debt.id)}
                     >
                       <td className="px-5 py-3 font-medium text-[var(--color-text)] text-center">
@@ -312,7 +277,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                         {debt.overpayment_pence > 0 ? formatCurrency(debt.overpayment_pence) : '—'}
                       </td>
                       <td className="px-5 py-3 font-mono font-semibold text-[var(--color-warning)] text-center">
-                        {formatCurrency(Math.round((debt.minimum_payment_pence + debt.overpayment_pence) * debt.split_ratio))}
+                        {formatCurrency(paymentShare(debt))}
                       </td>
                       <td className="px-5 py-3 text-center" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-1 justify-center">
