@@ -110,6 +110,9 @@ describe('computeRepayments', () => {
     const lastDate = result.schedule[result.schedule.length - 1]?.date ?? '';
     expect(lastDate <= endMonth).toBe(true);
     expect(result.schedule[result.schedule.length - 1].closing_balance_pence).toBeGreaterThan(0);
+    // payoffDate is always set to the last schedule entry's date, even when balance remains.
+    // There is no separate 'payoff confirmed' flag on DebtPayoffSummary.
+    expect(result.payoffDate).toBe(lastDate);
   });
 
   it('closing_balance equals opening_balance + interest - payment for each row', () => {
