@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatDate, formatDateTime } from '../../src/utils/formatters';
+import { formatDate, formatDateTime, formatYearMonth } from '../../src/utils/formatters';
 
 const iso = '2026-03-24T10:30:00.000Z';
 
@@ -60,5 +60,11 @@ describe('formatDateTime', () => {
   it('honours 24h preference (no am/pm)', () => {
     const result = formatDateTime(iso, { date_format: 'DD/MM/YYYY', time_format: '24h' });
     expect(result.toLowerCase()).not.toMatch(/am|pm/);
+  });
+});
+
+describe('formatYearMonth', () => {
+  it('formats YYYY-MM as short month name and year', () => {
+    expect(formatYearMonth('2026-03')).toBe('Mar 2026');
   });
 });

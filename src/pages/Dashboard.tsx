@@ -5,6 +5,7 @@ import { usePreviousPeriod } from '../hooks/usePreviousPeriod';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { NewItemBadge } from '../components/ui/NewItemBadge';
 import { FilterBar } from '../components/layout/FilterBar';
 import { DeltaIndicator } from '../components/ui/DeltaIndicator';
 import { IncomeVsExpensesBar } from '../components/charts/IncomeVsExpensesBar';
@@ -99,6 +100,9 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
   const prevTotalOutgoing = prevPeriod != null
     ? prevPeriod.expenses + prevPeriod.debt + prevPeriod.savings
     : null;
+  const prevCategoryTotals = new Map(
+    (prevSummary?.category_breakdown ?? []).map(category => [category.category, category.total_pence] as const)
+  );
 
   return (
     <PageShell title="Dashboard" onMenuClick={onMenuClick}>
@@ -280,36 +284,40 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
                 </tr>
               </thead>
               <tbody>
-                {displaySummary?.category_breakdown.map(cat => (
-                  <tr key={cat.category} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors">
-                    <td className="px-5 py-3 font-medium text-[var(--color-text)] text-center">
-                      <Badge variant="default">{cat.category}</Badge>
-                    </td>
-                    <td className="px-5 py-3 font-mono text-[var(--color-danger)] text-center">
-                      {formatCurrency(cat.total_pence)}
-                      <DeltaIndicator
-                        current={cat.total_pence}
-                        previous={
-                          prevSummary
-                            ? (prevSummary.category_breakdown.find(p => p.category === cat.category)?.total_pence ?? null)
-                            : null
-                        }
-                        semantics="positive-down"
-                      />
-                    </td>
-                    <td className="px-5 py-3 text-[var(--color-text-muted)] text-center">
-                      {formatPercent(cat.percentage)}
-                    </td>
-                    <td className="px-5 py-3 text-center">
-                      <div className="w-full bg-[var(--color-surface-2)] rounded-full h-1.5">
-                        <div
-                          className="h-1.5 rounded-full bg-[var(--color-primary)]"
-                          style={{ width: `${Math.min(cat.percentage, 100)}%` }}
+                {displaySummary?.category_breakdown.map(cat => {
+                  const previousCategoryTotal = prevCategoryTotals.get(cat.category) ?? null;
+                  const isNewCategory = prevSummary != null && !prevCategoryTotals.has(cat.category);
+
+                  return (
+                    <tr key={cat.category} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)] transition-colors">
+                      <td className="px-5 py-3 font-medium text-[var(--color-text)] text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Badge variant="default">{cat.category}</Badge>
+                          {isNewCategory && <NewItemBadge />}
+                        </div>
+                      </td>
+                      <td className="px-5 py-3 font-mono text-[var(--color-danger)] text-center">
+                        {formatCurrency(cat.total_pence)}
+                        <DeltaIndicator
+                          current={cat.total_pence}
+                          previous={previousCategoryTotal}
+                          semantics="positive-down"
                         />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-5 py-3 text-[var(--color-text-muted)] text-center">
+                        {formatPercent(cat.percentage)}
+                      </td>
+                      <td className="px-5 py-3 text-center">
+                        <div className="w-full bg-[var(--color-surface-2)] rounded-full h-1.5">
+                          <div
+                            className="h-1.5 rounded-full bg-[var(--color-primary)]"
+                            style={{ width: `${Math.min(cat.percentage, 100)}%` }}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

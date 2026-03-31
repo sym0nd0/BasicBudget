@@ -10,6 +10,7 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
+import { NewItemBadge } from '../components/ui/NewItemBadge';
 import { FilterBar } from '../components/layout/FilterBar';
 import { SavingsGoalForm } from '../components/forms/SavingsGoalForm';
 import { SavingsGrowthChart } from '../components/charts/SavingsGrowthChart';
@@ -73,6 +74,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
   const prevMonth = addMonthsToYM(activeMonth, -1);
   const { data: prevSummary } = useApi<BudgetSummary>(`/summary?month=${prevMonth}`);
   const { data: prevGoals } = useApi<SavingsGoal[]>(`/savings-goals?month=${prevMonth}`);
+  const prevGoalMap = new Map((prevGoals ?? []).map(goal => [goal.id, goal] as const));
 
   const totalSaved = goals.reduce((s, g) => s + g.current_amount_pence, 0);
   const totalTarget = goals.reduce((s, g) => s + g.target_amount_pence, 0);
@@ -201,6 +203,8 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
             const progress = hasTarget ? progressPercent(goal) : 0;
             const months = hasTarget ? monthsToGoal(goal) : null;
             const achieved = hasTarget && progress >= 100;
+            const prevGoal = prevGoalMap.get(goal.id) ?? null;
+            const isNewGoal = prevGoals != null && prevGoal == null;
 
             return (
               <Card key={goal.id}>
@@ -208,6 +212,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-[var(--color-text)]">{goal.name}</h3>
+                      {isNewGoal && <NewItemBadge />}
                       {achieved && <Badge variant="success">Achieved!</Badge>}
                       {Boolean(goal.auto_contribute) && (
                         <Badge variant="primary">Auto</Badge>
@@ -272,7 +277,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
                   </span>
                   <DeltaIndicator
                     current={goal.current_amount_pence}
-                    previous={prevGoals ? (prevGoals.find(p => p.id === goal.id)?.current_amount_pence ?? null) : null}
+                    previous={prevGoal?.current_amount_pence ?? null}
                     semantics="positive-up"
                   />
                   {goal.monthly_contribution_pence > 0 && (
