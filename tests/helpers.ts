@@ -47,6 +47,20 @@ export function makeTestUser(suffix = ''): TestUser {
   };
 }
 
+export function yearMonthWithOffset(offset: number): string {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export function monthStartWithOffset(offset: number): string {
+  return `${yearMonthWithOffset(offset)}-01`;
+}
+
+export function uniqueSuffix(prefix: string): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
 export async function createTestUser(agent: ReturnType<typeof supertest.agent>, user: TestUser) {
   const csrf = await getCsrfToken(agent);
   await agent
