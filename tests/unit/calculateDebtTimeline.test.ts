@@ -128,18 +128,20 @@ describe('calculateDebtTimeline', () => {
     }
   });
 
-  it('returns at most numMonths entries', () => {
+  it('returns exactly numMonths entries', () => {
     const debts = [makeDebt('a', { balance_pence: 200000, minimum_payment_pence: 10000 })];
     const result = calculateDebtTimeline(debts, currentYM, 6);
-    expect(result.length).toBeLessThanOrEqual(6);
-    expect(result.length).toBeGreaterThan(0);
+    expect(result.length).toBe(6);
   });
 
   it('handles empty debts array', () => {
     const result = calculateDebtTimeline([], currentYM, 12);
-    expect(result).toHaveLength(1);
+    expect(result).toHaveLength(12);
     expect(result[0].total_balance_pence).toBe(0);
     expect(result[0].month).toBe(currentYM);
+    for (const point of result) {
+      expect(point.total_balance_pence).toBe(0);
+    }
   });
 
   it('schedule is anchored to currentYM, not new Date()', () => {
@@ -153,6 +155,29 @@ describe('calculateDebtTimeline', () => {
     const result = calculateDebtTimeline(debts, '2020-01', 6);
     for (const point of result) {
       expect(point.month.startsWith('2020-')).toBe(true);
+    }
+  });
+  it('balance carries forward for months beyond end_date when balance remains', () => {
+    // Debt: £1000, £100/month, 0% interest, posting_day 5, end_date 2026-04-15.
+    // With anchor 2026-03: schedule covers 2026-03 and 2026-04 (posting 2026-04-05 ≤ 2026-04-15).
+    // After 2026-04, no more schedule rows, but balance is not zero.
+    // Bug: ?? 0 converts missing map entries to 0 — debt appears fully paid.
+    // Fix: carry forward last known balance (80000p after 2 payments of 10000p each).
+    const debt = makeDebt('a', {
+      balance_pence: 100000,
+      minimum_payment_pence: 10000,
+      interest_rate: 0,
+      posting_day: 5,
+      end_date: '2026-04-15',
+    });
+    const result = calculateDebtTimeline([debt], '2026-03', 6);
+    expect(result).toHaveLength(6);
+    // Months 2026-05 onward: schedule ended, balance should be carried forward
+    const beyondSchedule = result.filter(r => r.month >= '2026-05');
+    expect(beyondSchedule.length).toBeGreaterThan(0);
+    for (const point of beyondSchedule) {
+      // 100000 - 10000 (Mar payment) - 10000 (Apr payment) = 80000
+      expect(point.total_balance_pence).toBe(80000);
     }
   });
 });
