@@ -39,6 +39,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
   const { data: prevExpenses } = useApi<Expense[]>(
     showComparisons ? `/expenses?month=${prevMonth}` : null,
   );
+  const prevExpensesForMonth = showComparisons ? prevExpenses ?? undefined : undefined;
   const prevPeriod = usePreviousPeriod();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | undefined>();
@@ -85,16 +86,16 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
         return sum + (categoryMatch?.total_pence ?? 0);
       }, 0)
     : tableTotalEffective;
-  const filteredPrevExpenses = showComparisons && prevExpenses != null
-    ? prevExpenses.filter(expense => filterCategory === 'all' || expense.category === filterCategory)
+  const filteredPrevExpenses = prevExpensesForMonth != null
+    ? prevExpensesForMonth.filter(expense => filterCategory === 'all' || expense.category === filterCategory)
     : [];
-  const prevExpenseMap = showComparisons && prevExpenses != null
-    ? new Map(prevExpenses.map(expense => [expense.id, expense] as const))
+  const prevExpenseMap = prevExpensesForMonth != null
+    ? new Map(filteredPrevExpenses.map(expense => [expense.id, expense] as const))
     : new Map<string, Expense>();
-  const previousTableTotalFull = showComparisons && prevExpenses != null
+  const previousTableTotalFull = prevExpensesForMonth != null
     ? filteredPrevExpenses.reduce((sum, expense) => sum + expense.amount_pence, 0)
     : null;
-  const previousTableTotalEffective = showComparisons && prevExpenses != null
+  const previousTableTotalEffective = prevExpensesForMonth != null
     ? filteredPrevExpenses.reduce((sum, expense) => sum + Math.round(expense.amount_pence * (expense.split_ratio ?? 1)), 0)
     : null;
 
@@ -214,7 +215,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
               {filtered.map(expense => {
                 const isExpanded = expandedId === expense.id;
                 const prevExpense = prevExpenseMap.get(expense.id) ?? null;
-                const isNewExpense = showComparisons && prevExpenses != null && prevExpense == null;
+                const isNewExpense = prevExpensesForMonth != null && prevExpense == null;
                 return (
                   <Fragment key={expense.id}>
                     <tr
