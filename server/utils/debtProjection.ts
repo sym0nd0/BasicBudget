@@ -64,7 +64,7 @@ export function calculateDebtTimeline(
         debug: 'debt_projection_month',
         month,
         total_balance_pence,
-        perDebt,
+        debtCount: debts.length,
       }));
     }
 
