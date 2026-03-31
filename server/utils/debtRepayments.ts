@@ -41,15 +41,15 @@ export function computeRepayments(debt: Debt, anchorYM?: string): DebtPayoffSumm
   // When an anchor is provided (e.g. from calculateDebtTimeline or tests), the
   // "has the payment already occurred this month?" heuristic is not meaningful —
   // start the schedule from the anchor month directly.
+  const postingDay = Math.max(1, debt.posting_day ?? 1);
   const monthOffset = anchorYM !== undefined
     ? 0
-    : now.getDate() <= (debt.posting_day ?? 1) ? 0 : 1;
+    : now.getDate() <= postingDay ? 0 : 1;
 
   while (currentBalance > 0 && month < MAX_MONTHS) {
     month++;
     const monthStr = addMonths(currentYM, monthOffset + month - 1);
-    const postingDay = debt.posting_day ?? 1;
-    const dayStr = `${monthStr}-${String(Math.max(1, Math.min(postingDay, daysInMonth(monthStr)))).padStart(2, '0')}`;
+    const dayStr = `${monthStr}-${String(Math.min(postingDay, daysInMonth(monthStr))).padStart(2, '0')}`;
 
     if (debt.end_date && dayStr > debt.end_date) {
       break;
