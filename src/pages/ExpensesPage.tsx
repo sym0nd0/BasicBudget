@@ -33,9 +33,12 @@ type ExpenseRow = Expense & {
 export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
   const { expenses, accounts, addExpense, updateExpense, deleteExpense } = useBudget();
   const { filterCategory, activeMonth } = useFilter();
-  const prevMonth = addMonthsToYM(activeMonth, -1);
-  const { data: prevExpenses } = useApi<Expense[]>(`/expenses?month=${prevMonth}`);
   const { isRangeActive, data: rangeOverview } = useRangeOverview();
+  const showComparisons = !isRangeActive;
+  const prevMonth = addMonthsToYM(activeMonth, -1);
+  const { data: prevExpenses } = useApi<Expense[]>(
+    showComparisons ? `/expenses?month=${prevMonth}` : null,
+  );
   const prevPeriod = usePreviousPeriod();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | undefined>();
@@ -82,17 +85,17 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
         return sum + (categoryMatch?.total_pence ?? 0);
       }, 0)
     : tableTotalEffective;
-  const showComparisons = !isRangeActive;
-  const prevExpenseMap = new Map((prevExpenses ?? []).map(expense => [expense.id, expense] as const));
+  const filteredPrevExpenses = showComparisons && prevExpenses != null
+    ? prevExpenses.filter(expense => filterCategory === 'all' || expense.category === filterCategory)
+    : [];
+  const prevExpenseMap = showComparisons && prevExpenses != null
+    ? new Map(prevExpenses.map(expense => [expense.id, expense] as const))
+    : new Map<string, Expense>();
   const previousTableTotalFull = showComparisons && prevExpenses != null
-    ? (prevExpenses ?? [])
-      .filter(expense => filterCategory === 'all' || expense.category === filterCategory)
-      .reduce((sum, expense) => sum + expense.amount_pence, 0)
+    ? filteredPrevExpenses.reduce((sum, expense) => sum + expense.amount_pence, 0)
     : null;
   const previousTableTotalEffective = showComparisons && prevExpenses != null
-    ? (prevExpenses ?? [])
-      .filter(expense => filterCategory === 'all' || expense.category === filterCategory)
-      .reduce((sum, expense) => sum + Math.round(expense.amount_pence * (expense.split_ratio ?? 1)), 0)
+    ? filteredPrevExpenses.reduce((sum, expense) => sum + Math.round(expense.amount_pence * (expense.split_ratio ?? 1)), 0)
     : null;
 
   const handleSave = async (data: Omit<Expense, 'id' | 'created_at' | 'updated_at'>) => {
@@ -352,7 +355,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                       />
                     )}
                   </td>
-                  <td colSpan={6} className="text-center"></td>
+                  <td colSpan={5} className="text-center"></td>
                 </tr>
               )}
             </tbody>
