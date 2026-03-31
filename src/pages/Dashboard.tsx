@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
-import { useDebt } from '../context/DebtContext';
 import { useFilter } from '../context/FilterContext';
 import { usePreviousPeriod } from '../hooks/usePreviousPeriod';
 import { PageShell } from '../components/layout/PageShell';
@@ -12,7 +11,7 @@ import { IncomeVsExpensesBar } from '../components/charts/IncomeVsExpensesBar';
 import { ExpenseDonut } from '../components/charts/ExpenseDonut';
 import { formatCurrency, formatPercent } from '../utils/formatters';
 import { addMonthsToYM } from '../utils/reportRanges';
-import type { BudgetSummary, MonthlyReportRow } from '../types';
+import type { BudgetSummary, Debt, MonthlyReportRow } from '../types';
 
 interface DashboardProps {
   onMenuClick: () => void;
@@ -50,9 +49,9 @@ function SummaryCard({ label, value, sub, colorClass, iconBgClass, icon, to, del
 }
 
 export function Dashboard({ onMenuClick }: DashboardProps) {
-  const { debts } = useDebt();
   const { activeMonth, fromMonth, toMonth, isRangeActive } = useFilter();
   const prevPeriod = usePreviousPeriod();
+  const { data: currentMonthDebts } = useApi<Debt[]>(`/debts?month=${activeMonth}`);
 
   const { data: summary } = useApi<BudgetSummary>(
     !isRangeActive ? `/summary?month=${activeMonth}` : null
@@ -92,8 +91,9 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
   })() : null;
 
   const displaySummary = isRangeActive ? rangeSummary : summary;
+  const dashboardDebts = currentMonthDebts ?? [];
 
-  const totalDebtPence = debts.reduce((s, d) => s + d.balance_pence, 0);
+  const totalDebtPence = dashboardDebts.reduce((s, d) => s + d.balance_pence, 0);
   const disposablePence = displaySummary?.disposable_income_pence ?? 0;
   const disposableVariant = disposablePence >= 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]';
   const prevTotalOutgoing = prevPeriod != null
@@ -152,7 +152,7 @@ export function Dashboard({ onMenuClick }: DashboardProps) {
         <SummaryCard
           label="Debt Payments"
           value={formatCurrency(displaySummary?.total_debt_payments_pence ?? 0)}
-          sub={`${debts.length} debt${debts.length !== 1 ? 's' : ''} — ${formatCurrency(totalDebtPence)} total`}
+          sub={`${dashboardDebts.length} debt${dashboardDebts.length !== 1 ? 's' : ''} — ${formatCurrency(totalDebtPence)} total`}
           colorClass="text-[var(--color-warning)]"
           iconBgClass="bg-[var(--color-warning-light)]"
           to="/debt"
