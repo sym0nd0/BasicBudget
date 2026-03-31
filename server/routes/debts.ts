@@ -39,11 +39,18 @@ function estimatedBalanceNMonthsAgo(
   n: number,
 ): number {
   const now = new Date();
+  const postingDay = Math.max(1, debt.posting_day ?? 1);
   let b = debt.balance_pence;
   for (let i = 0; i < n; i++) {
     // Walk backwards: month i steps before today
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const dayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+    const yearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const daysInThisMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const clampedDay = Math.min(postingDay, daysInThisMonth);
+    const dayStr = `${yearMonth}-${String(clampedDay).padStart(2, '0')}`;
+    if (debt.end_date && dayStr > debt.end_date) {
+      continue;
+    }
     const monthlyRate = getMonthlyRateForDate(debt, dayStr);
     b = monthlyRate === 0
       ? b + monthlyPayment
