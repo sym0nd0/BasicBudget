@@ -42,9 +42,8 @@ export function calculateDebtTimeline(
         // Current month: always use the actual DB balance
         balance = d.balance_pence;
       } else {
-        // Future month i: schedule[i-1] is the closing balance after the i-th payment
-        const row = schedules[di].schedule[i - 1];
-        if (row !== undefined) {
+        const row = schedules[di].schedule.find(r => r.date === month);
+        if (row) {
           balance = row.closing_balance_pence;
           lastBalance[di] = balance;
         } else {
@@ -70,7 +69,7 @@ export function calculateDebtTimeline(
     result.push({
       month,
       total_balance_pence,
-      is_actual: month <= currentYM,
+      is_actual: i === 0,
       per_debt: perDebt,
     });
   }
