@@ -30,6 +30,9 @@ const envSchema = z.object({
     z.enum(['true', 'false']).optional(),
   ),
 
+  // Developer-only flag: set to 'true' to log per-row and per-month debt projection data
+  DEBUG_DEBT_PROJECTION: z.string().optional(),
+
 });
 
 // In test environment, provide safe defaults for required fields

@@ -119,4 +119,73 @@ describe('GET /api/reports/debt-projection', () => {
     expect(hhCurrent.per_debt).toHaveLength(1);
     expect(hhCurrent.per_debt[0].name).toBe('Joint');
   });
+
+  it('total does not increase across 24 months when payments exceed interest — regression', async () => {
+    // Rate 12% annual = 1%/month; payment 15000p; monthly interest ~1000p → net decrease
+    await createDebt(agent, {
+      balance_pence: 100000,
+      minimum_payment_pence: 15000,
+      interest_rate: 12,
+      posting_day: 1,
+    });
+
+    const res = await agent.get('/api/reports/debt-projection?months=24').expect(200);
+    const points = res.body as DebtProjectionPoint[];
+
+    const today = new Date();
+    const currentYM = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const currentTotal = points.find(p => p.month === currentYM)!.total_balance_pence;
+
+    // No future month may exceed the starting balance
+    for (const p of points) {
+      expect(p.total_balance_pence).toBeLessThanOrEqual(currentTotal);
+    }
+
+    // All future non-zero points must be strictly decreasing
+    const futureNonZero = points.filter(p => p.month > currentYM && p.total_balance_pence > 0);
+    for (let i = 1; i < futureNonZero.length; i++) {
+      expect(futureNonZero[i].total_balance_pence).toBeLessThan(futureNonZero[i - 1].total_balance_pence);
+    }
+  });
+
+  it('consecutive future months have distinct totals when a debt is actively decreasing — regression', async () => {
+    await createDebt(agent, {
+      balance_pence: 100000,
+      minimum_payment_pence: 5000,
+      interest_rate: 0,
+      posting_day: 1,
+    });
+
+    const res = await agent.get('/api/reports/debt-projection?months=12').expect(200);
+    const points = res.body as DebtProjectionPoint[];
+
+    const today = new Date();
+    const currentYM = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const futureNonZero = points.filter(p => p.month > currentYM && p.total_balance_pence > 0);
+
+    // No two consecutive non-zero future months may share the same total
+    for (let i = 1; i < futureNonZero.length; i++) {
+      expect(futureNonZero[i].total_balance_pence).not.toBe(futureNonZero[i - 1].total_balance_pence);
+    }
+  });
+
+  it('returns 400 when months is not a valid integer', async () => {
+    await agent.get('/api/reports/debt-projection?months=abc').expect(400);
+    await agent.get('/api/reports/debt-projection?months=1.5').expect(400);
+    await agent.get('/api/reports/debt-projection?months=').expect(400);
+  });
+
+  it('returns 400 when months is out of range', async () => {
+    await agent.get('/api/reports/debt-projection?months=0').expect(400);
+    await agent.get('/api/reports/debt-projection?months=-1').expect(400);
+    await agent.get('/api/reports/debt-projection?months=601').expect(400);
+  });
+
+  it('uses default of 12 when months param is absent', async () => {
+    await createDebt(agent, { balance_pence: 100000, minimum_payment_pence: 5000, interest_rate: 0, posting_day: 1 });
+    const res = await agent.get('/api/reports/debt-projection').expect(200);
+    const points = res.body as DebtProjectionPoint[];
+    expect(points.length).toBeGreaterThan(0);
+    expect(points.length).toBeLessThanOrEqual(12);
+  });
 });
