@@ -157,7 +157,6 @@ describe('calculateDebtTimeline', () => {
       expect(point.month.startsWith('2020-')).toBe(true);
     }
   });
-
   it('balance carries forward for months beyond end_date when balance remains', () => {
     // Debt: £1000, £100/month, 0% interest, posting_day 5, end_date 2026-04-15.
     // With anchor 2026-03: schedule covers 2026-03 and 2026-04 (posting 2026-04-05 ≤ 2026-04-15).

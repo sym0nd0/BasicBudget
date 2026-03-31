@@ -9,7 +9,6 @@ function addMonths(yearMonth: string, n: number): string {
   const d = new Date(y, m - 1 + n, 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
-
 /**
  * Computes the projected monthly debt totals for all debts over numMonths months.
  *
@@ -56,7 +55,6 @@ export function calculateDebtTimeline(
 
       return { id: d.id, name: d.name, balance_pence: balance };
     });
-
     const total_balance_pence = perDebt.reduce((s, d) => s + d.balance_pence, 0);
 
     if (DEBUG) {
@@ -65,6 +63,7 @@ export function calculateDebtTimeline(
         month,
         total_balance_pence,
         debtCount: debts.length,
+        perDebt,
       }));
     }
 
