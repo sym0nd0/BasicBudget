@@ -3,7 +3,7 @@ import type { Request, Response } from 'express';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { filterVisible } from '../utils/visibility.js';
-import { filterActiveInMonth, mapDebtToRecurringItem, type RecurringItem } from '../utils/recurring.js';
+import { currentYearMonth, filterActiveInMonth, mapDebtToRecurringItem, type RecurringItem } from '../utils/recurring.js';
 import { computePayoffStrategy } from '../utils/debtPayoffStrategy.js';
 import { calculateDebtTimeline } from '../utils/debtProjection.js';
 import type { Debt, DebtDealPeriod, CategoryBreakdown, MonthlyReportRow } from '../../shared/types.js';
@@ -135,10 +135,7 @@ router.get('/debt-projection', (req: Request, res: Response) => {
 
   const visibleDebts = getEnrichedDebts(req.householdId!, req.userId!, householdOnly);
 
-  const today = new Date();
-  const currentYM = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-
-  res.json(calculateDebtTimeline(visibleDebts, currentYM, numMonths));
+  res.json(calculateDebtTimeline(visibleDebts, currentYearMonth(), numMonths));
 });
 
 // GET /api/reports/debt-payoff-timeline?strategy=snowball|avalanche&household_only=true

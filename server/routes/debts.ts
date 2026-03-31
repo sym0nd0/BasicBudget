@@ -4,11 +4,12 @@ import db from '../db.js';
 import { randomUUID } from 'node:crypto';
 import { isMonthLocked } from './months.js';
 import { filterVisible, canModify } from '../utils/visibility.js';
-import { filterActiveInMonth, currentYearMonth, mapDebtToRecurringItem } from '../utils/recurring.js';
+import { currentYearMonth } from '../utils/recurring.js';
 import { requireAuth } from '../middleware/auth.js';
 import type { Debt, DebtDealPeriod } from '../../shared/types.js';
 import { logger } from '../services/logger.js';
-import { computeRepayments, getMonthlyRateForDate } from '../utils/debtRepayments.js';
+import { computeRepayments } from '../utils/debtRepayments.js';
+import { getDebtSnapshotForMonth } from '../utils/debtProjection.js';
 import { debtSchema } from '../validation/schemas.js';
 
 const router = Router();
@@ -27,38 +28,6 @@ function enrichDebtWithPeriods(debt: Debt): Debt {
   return { ...debt, deal_periods: periods };
 }
 
-function monthsAgo(current: string, target: string): number {
-  const [cy, cm] = current.split('-').map(Number);
-  const [ty, tm] = target.split('-').map(Number);
-  return (cy - ty) * 12 + (cm - tm);
-}
-
-function estimatedBalanceNMonthsAgo(
-  debt: Debt,
-  monthlyPayment: number,
-  n: number,
-): number {
-  const now = new Date();
-  const postingDay = Math.max(1, debt.posting_day ?? 1);
-  let b = debt.balance_pence;
-  for (let i = 0; i < n; i++) {
-    // Walk backwards: month i steps before today
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const yearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const daysInThisMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-    const clampedDay = Math.min(postingDay, daysInThisMonth);
-    const dayStr = `${yearMonth}-${String(clampedDay).padStart(2, '0')}`;
-    if (debt.end_date && dayStr > debt.end_date) {
-      continue;
-    }
-    const monthlyRate = getMonthlyRateForDate(debt, dayStr);
-    b = monthlyRate === 0
-      ? b + monthlyPayment
-      : (b + monthlyPayment) / (1 + monthlyRate);
-  }
-  return Math.round(b);
-}
-
 // GET /api/debts  or  GET /api/debts?month=YYYY-MM
 router.get('/', (req: Request, res: Response) => {
   const month = req.query['month'] as string | undefined;
@@ -68,23 +37,7 @@ router.get('/', (req: Request, res: Response) => {
   let debts = visible.map(mapDebt).map(enrichDebtWithPeriods);
 
   if (month) {
-    const recurringItems = visible.map(mapDebtToRecurringItem);
-    const activeItems = filterActiveInMonth(recurringItems, month);
-    const activeItemMap = new Map(activeItems.map(item => [item.id as string, item]));
-
-    const activeDebts = debts.filter(d => activeItemMap.has(d.id));
-    const n = monthsAgo(currentYearMonth(), month);
-
-    debts = n <= 0
-      ? activeDebts.map(debt => ({ ...debt, effective_pence: activeItemMap.get(debt.id)!.effective_pence }))
-      : activeDebts.map(debt => {
-          const activeItem = activeItemMap.get(debt.id)!;
-          return {
-            ...debt,
-            effective_pence: activeItem.effective_pence,
-            balance_pence: estimatedBalanceNMonthsAgo(debt, activeItem.effective_pence, n),
-          };
-        });
+    debts = getDebtSnapshotForMonth(debts, month, currentYearMonth());
   }
 
   res.json(debts);

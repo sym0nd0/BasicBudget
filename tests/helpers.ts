@@ -47,6 +47,20 @@ export function makeTestUser(suffix = ''): TestUser {
   };
 }
 
+export function yearMonthWithOffset(offset: number): string {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export function monthStartWithOffset(offset: number): string {
+  return `${yearMonthWithOffset(offset)}-01`;
+}
+
+export function uniqueSuffix(prefix: string): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
 export async function createTestUser(agent: ReturnType<typeof supertest.agent>, user: TestUser) {
   const csrf = await getCsrfToken(agent);
   await agent
@@ -57,10 +71,13 @@ export async function createTestUser(agent: ReturnType<typeof supertest.agent>, 
 
 export async function loginTestUser(agent: ReturnType<typeof supertest.agent>, user: TestUser): Promise<void> {
   const csrf = await getCsrfToken(agent);
-  await agent
+  const res = await agent
     .post('/api/auth/login')
     .set('X-CSRF-Token', csrf)
     .send({ email: user.email, password: user.password });
+  if (res.status >= 400) {
+    throw new Error(`loginTestUser failed with status ${res.status}`);
+  }
 }
 
 /**
@@ -93,4 +110,13 @@ export async function registerAndLoginDirect(
 
   // Log in via HTTP (which sets session cookie)
   await loginTestUser(agent, user);
+
+  const statusRes = await agent.get('/api/auth/status');
+  if (!(statusRes.body as { authenticated?: boolean }).authenticated) {
+    await loginTestUser(agent, user);
+    const retryStatusRes = await agent.get('/api/auth/status');
+    if (!(retryStatusRes.body as { authenticated?: boolean }).authenticated) {
+      throw new Error('registerAndLoginDirect failed to establish an authenticated session');
+    }
+  }
 }
