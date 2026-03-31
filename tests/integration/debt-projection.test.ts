@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import supertest from 'supertest';
-import { getApp, makeTestUser, registerAndLoginDirect, getCsrfToken } from '../helpers.js';
+import {
+  getApp,
+  makeTestUser,
+  registerAndLoginDirect,
+  getCsrfToken,
+  uniqueSuffix,
+  yearMonthWithOffset,
+} from '../helpers.js';
 import type { DebtProjectionPoint } from '../../shared/types.js';
 
 let app: Awaited<ReturnType<typeof getApp>>;
@@ -38,16 +45,6 @@ async function createDebt(
     })
     .expect(201);
   return res.body as { id: string; balance_pence: number };
-}
-
-function yearMonthWithOffset(offset: number): string {
-  const now = new Date();
-  const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
-
-function uniqueSuffix(prefix: string): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 }
 
 describe('GET /api/reports/debt-projection', () => {

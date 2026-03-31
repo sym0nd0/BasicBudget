@@ -1,26 +1,20 @@
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import supertest from 'supertest';
-import { getApp, getCsrfToken, makeTestUser, registerAndLoginDirect } from '../helpers.js';
+import {
+  getApp,
+  getCsrfToken,
+  makeTestUser,
+  monthStartWithOffset,
+  registerAndLoginDirect,
+  uniqueSuffix,
+  yearMonthWithOffset,
+} from '../helpers.js';
 
 let app: Awaited<ReturnType<typeof getApp>>;
 
 beforeAll(async () => {
   app = await getApp();
 });
-
-function yearMonthWithOffset(offset: number): string {
-  const now = new Date();
-  const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-}
-
-function monthStartWithOffset(offset: number): string {
-  return `${yearMonthWithOffset(offset)}-01`;
-}
-
-function uniqueSuffix(prefix: string): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-}
 
 async function registerAndLogin(suffix: string) {
   const agent = supertest.agent(app);
