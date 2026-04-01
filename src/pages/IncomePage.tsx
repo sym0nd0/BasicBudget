@@ -20,6 +20,7 @@ import { usePreviousPeriod } from '../hooks/usePreviousPeriod';
 import { DeltaIndicator } from '../components/ui/DeltaIndicator';
 import { formatCurrency, formatOrdinal } from '../utils/formatters';
 import { findDuplicateIncome } from '../utils/duplicates';
+import { isNewInDisplayedMonth } from '../utils/newItem';
 import type { Income } from '../types';
 
 interface IncomePageProps {
@@ -248,7 +249,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
               )}
               {sortedIncomes.map(income => {
                 const prevIncome = prevIncomeMap.get(income.id) ?? null;
-                const showBadge = prevIncomes != null && prevIncome == null;
+                const showBadge = isNewInDisplayedMonth(income, activeMonth);
 
                 return (
                   <IncomeRow

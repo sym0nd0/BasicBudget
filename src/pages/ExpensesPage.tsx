@@ -19,6 +19,7 @@ import { usePreviousPeriod } from '../hooks/usePreviousPeriod';
 import { DeltaIndicator } from '../components/ui/DeltaIndicator';
 import { formatCurrency, formatOrdinal, formatPercent } from '../utils/formatters';
 import { findDuplicateExpense } from '../utils/duplicates';
+import { isNewInDisplayedMonth } from '../utils/newItem';
 import type { Expense } from '../types';
 
 interface ExpensesPageProps {
@@ -52,11 +53,12 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
         return true;
       })
       .map(expense => {
+        const effectiveFullPence = expense.effective_pence ?? expense.amount_pence;
         const splitRatio = expense.split_ratio ?? 1;
-        const monthlyShare = Math.round(expense.amount_pence * splitRatio);
+        const monthlyShare = Math.round(effectiveFullPence * splitRatio);
         const display_full_pence = isRangeActive
-          ? expense.range_full_pence ?? expense.amount_pence
-          : expense.amount_pence;
+          ? expense.range_full_pence ?? effectiveFullPence
+          : effectiveFullPence;
         const display_share_pence = isRangeActive
           ? expense.range_share_pence ?? monthlyShare
           : monthlyShare;
@@ -93,10 +95,10 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
     ? new Map(filteredPrevExpenses.map(expense => [expense.id, expense] as const))
     : new Map<string, Expense>();
   const previousTableTotalFull = prevExpensesForMonth != null
-    ? filteredPrevExpenses.reduce((sum, expense) => sum + expense.amount_pence, 0)
+    ? filteredPrevExpenses.reduce((sum, expense) => sum + (expense.effective_pence ?? expense.amount_pence), 0)
     : null;
   const previousTableTotalEffective = prevExpensesForMonth != null
-    ? filteredPrevExpenses.reduce((sum, expense) => sum + Math.round(expense.amount_pence * (expense.split_ratio ?? 1)), 0)
+    ? filteredPrevExpenses.reduce((sum, expense) => sum + Math.round((expense.effective_pence ?? expense.amount_pence) * (expense.split_ratio ?? 1)), 0)
     : null;
 
   const handleSave = async (data: Omit<Expense, 'id' | 'created_at' | 'updated_at'>) => {
@@ -215,7 +217,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
               {filtered.map(expense => {
                 const isExpanded = expandedId === expense.id;
                 const prevExpense = prevExpenseMap.get(expense.id) ?? null;
-                const isNewExpense = prevExpensesForMonth != null && prevExpense == null;
+                const isNewExpense = isNewInDisplayedMonth(expense, activeMonth);
                 return (
                   <Fragment key={expense.id}>
                     <tr
@@ -245,7 +247,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                         {showComparisons && (
                           <DeltaIndicator
                             current={expense.display_full_pence}
-                            previous={prevExpense?.amount_pence ?? null}
+                            previous={prevExpense?.effective_pence ?? prevExpense?.amount_pence ?? null}
                             semantics="positive-down"
                           />
                         )}
@@ -255,7 +257,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                         {showComparisons && (
                           <DeltaIndicator
                             current={expense.display_share_pence}
-                            previous={prevExpense ? Math.round(prevExpense.amount_pence * (prevExpense.split_ratio ?? 1)) : null}
+                            previous={prevExpense ? Math.round((prevExpense.effective_pence ?? prevExpense.amount_pence) * (prevExpense.split_ratio ?? 1)) : null}
                             semantics="positive-down"
                           />
                         )}
