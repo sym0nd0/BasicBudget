@@ -64,30 +64,28 @@ describe('computeRepayments', () => {
   });
 
   it('applies deal period rate for months within the period', () => {
-    // Base rate 12% (1%/month). Deal period 0% for next 3 months.
-    const now = new Date();
-    const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const threeMonthsLater = new Date(now.getFullYear(), now.getMonth() + 3, 28);
-    const dealEnd = `${threeMonthsLater.getFullYear()}-${String(threeMonthsLater.getMonth() + 1).padStart(2, '0')}-28`;
-
+    // Anchor the schedule so the deal period covers exactly Mar-May 2026.
     const debt = makeDebt({
       balance_pence: 120000,
       interest_rate: 12,
       minimum_payment_pence: 2000,
-      deal_periods: [{
-        id: 'dp1',
-        debt_id: 'test-debt',
-        interest_rate: 0,
-        start_date: `${ym}-01`,
-        end_date: dealEnd,
-      }],
+      posting_day: 1,
+      deal_periods: [
+        {
+          id: 'dp1',
+          debt_id: 'test-debt',
+          interest_rate: 0,
+          start_date: '2026-03-01',
+          end_date: '2026-05-31',
+        },
+      ],
     });
-    const result = computeRepayments(debt);
-    // First 3 months should have 0 interest (within deal period)
+    const result = computeRepayments(debt, '2026-03');
+    // Mar-May 2026 are inside the 0% deal period.
     for (let i = 0; i < Math.min(3, result.schedule.length); i++) {
       expect(result.schedule[i].interest_charge_pence).toBe(0);
     }
-    // Month 4+ should have positive interest (if balance > 0)
+    // June 2026 should use the base 12% annual rate if the debt is still open.
     if (result.schedule.length > 3) {
       expect(result.schedule[3].interest_charge_pence).toBeGreaterThan(0);
     }
