@@ -17,6 +17,7 @@ import { SavingsGrowthChart } from '../components/charts/SavingsGrowthChart';
 import { DeltaIndicator } from '../components/ui/DeltaIndicator';
 import { formatCurrency, formatDate, formatPercent } from '../utils/formatters';
 import { findDuplicateSavingsGoal } from '../utils/duplicates';
+import { isNewInDisplayedMonth } from '../utils/newItem';
 import { addMonthsToYM } from '../utils/reportRanges';
 import type { BudgetSummary, SavingsGoal, SavingsTransaction, SavingsTransactionType } from '../types';
 
@@ -209,7 +210,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
             const months = hasTarget ? monthsToGoal(goal) : null;
             const achieved = hasTarget && progress >= 100;
             const prevGoal = prevGoalMap.get(goal.id) ?? null;
-            const isNewGoal = prevGoals != null && prevGoal == null;
+            const isNewGoal = isNewInDisplayedMonth(goal, activeMonth);
 
             return (
               <Card key={goal.id}>

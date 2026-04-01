@@ -147,6 +147,7 @@ export interface Expense {
   notes?: string | null;
   created_at?: string;
   updated_at?: string;
+  effective_pence?: number;
   range_full_pence?: number;
   range_share_pence?: number;
 }

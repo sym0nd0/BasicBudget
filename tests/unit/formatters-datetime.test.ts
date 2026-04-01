@@ -67,4 +67,12 @@ describe('formatYearMonth', () => {
   it('formats YYYY-MM as short month name and year', () => {
     expect(formatYearMonth('2026-03')).toBe('Mar 2026');
   });
+
+  it('formats April 2026 as Apr 2026', () => {
+    expect(formatYearMonth('2026-04')).toBe('Apr 2026');
+  });
+
+  it('formats May 2026 as May 2026', () => {
+    expect(formatYearMonth('2026-05')).toBe('May 2026');
+  });
 });

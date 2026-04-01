@@ -17,6 +17,7 @@ import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { DebtBalanceChart } from '../components/charts/DebtBalanceChart';
 import { formatCurrency, formatPercent, formatYearMonth } from '../utils/formatters';
 import { findDuplicateDebt } from '../utils/duplicates';
+import { isNewInDisplayedMonth } from '../utils/newItem';
 import { addMonthsToYM } from '../utils/reportRanges';
 import type { Debt, RepaymentRow, DebtPayoffSummary } from '../types';
 
@@ -231,7 +232,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
               {sortedDebts.map(debt => {
                 const isExpanded = expandedId === debt.id;
                 const prevDebt = prevDebtMap.get(debt.id) ?? null;
-                const isNewDebt = prevMonthDebts != null && prevDebt == null;
+                const isNewDebt = isNewInDisplayedMonth(debt, activeMonth);
 
                 return (
                   <Fragment key={debt.id}>

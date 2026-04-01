@@ -1,4 +1,4 @@
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, formatYearMonth } from '../../utils/formatters';
 import type { MonthlyReportRow } from '../../types';
 
 interface MonthlyComparisonProps {
@@ -95,7 +95,7 @@ export function MonthlyComparison({ data }: MonthlyComparisonProps) {
       {/* This Month */}
       <div className="bg-[var(--color-surface-2)] rounded-lg p-4">
         <h3 className="text-sm font-semibold text-[var(--color-text)] mb-3">This Month</h3>
-        <p className="text-xs text-[var(--color-text-muted)] mb-3">{thisMonth.month}</p>
+        <p className="text-xs text-[var(--color-text-muted)] mb-3">{formatYearMonth(thisMonth.month)}</p>
         <div className="space-y-1">
           <ValueRow label="Income" value={thisMonth.income_pence} />
           <ValueRow label="Expenses" value={thisMonth.expenses_pence} />
@@ -108,7 +108,7 @@ export function MonthlyComparison({ data }: MonthlyComparisonProps) {
       {/* Change vs Last Month */}
       <div className="bg-[var(--color-surface-2)] rounded-lg p-4">
         <h3 className="text-sm font-semibold text-[var(--color-text)] mb-3">Change</h3>
-        <p className="text-xs text-[var(--color-text-muted)] mb-3">vs {lastMonth.month}</p>
+        <p className="text-xs text-[var(--color-text-muted)] mb-3">vs {formatYearMonth(lastMonth.month)}</p>
         <div className="space-y-1">
           <ComparisonRow label="Income" current={thisMonth.income_pence} previous={lastMonth.income_pence} />
           <ComparisonRow label="Expenses" current={thisMonth.expenses_pence} previous={lastMonth.expenses_pence} />
