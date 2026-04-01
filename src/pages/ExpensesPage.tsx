@@ -46,31 +46,31 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
   const [editing, setEditing] = useState<Expense | undefined>();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const preFiltered = useMemo<ExpenseRow[]>(() => {
-    return expenses
-      .filter(expense => {
-        if (filterCategory !== 'all' && expense.category !== filterCategory) return false;
-        return true;
-      })
-      .map(expense => {
-        const effectiveFullPence = expense.effective_pence ?? expense.amount_pence;
-        const splitRatio = expense.split_ratio ?? 1;
-        const monthlyShare = Math.round(effectiveFullPence * splitRatio);
-        const display_full_pence = isRangeActive
-          ? expense.range_full_pence ?? effectiveFullPence
-          : effectiveFullPence;
-        const display_share_pence = isRangeActive
-          ? expense.range_share_pence ?? monthlyShare
-          : monthlyShare;
-        return {
-          ...expense,
-          display_full_pence,
-          display_share_pence,
-        };
-      });
-  }, [expenses, filterCategory, isRangeActive]);
+  const displayRows = useMemo<ExpenseRow[]>(() => {
+    return expenses.map(expense => {
+      const effectiveFullPence = expense.effective_pence ?? expense.amount_pence;
+      const splitRatio = expense.split_ratio ?? 1;
+      const monthlyShare = Math.round(effectiveFullPence * splitRatio);
+      const display_full_pence = isRangeActive
+        ? expense.range_full_pence ?? effectiveFullPence
+        : effectiveFullPence;
+      const display_share_pence = isRangeActive
+        ? expense.range_share_pence ?? monthlyShare
+        : monthlyShare;
+      return {
+        ...expense,
+        display_full_pence,
+        display_share_pence,
+      };
+    });
+  }, [expenses, isRangeActive]);
 
-  const { sorted: filtered, sortKey, sortDir, toggleSort } = useSortableTable<ExpenseRow>(preFiltered, 'name');
+  const allTableTotalEffective = displayRows.reduce((sum, expense) => sum + expense.display_share_pence, 0);
+  const filteredRows = useMemo(
+    () => displayRows.filter(expense => filterCategory === 'all' || expense.category === filterCategory),
+    [displayRows, filterCategory],
+  );
+  const { sorted: filtered, sortKey, sortDir, toggleSort } = useSortableTable<ExpenseRow>(filteredRows, 'name');
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const toggleExpand = (id: string) => setExpandedId(prev => prev === id ? null : id);
@@ -79,7 +79,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
   const tableTotalFull = filtered.reduce((sum, e) => sum + e.display_full_pence, 0);
   const totalAll = isRangeActive && rangeOverview
     ? rangeOverview.reduce((sum, row) => sum + row.expenses_pence, 0)
-    : expenses.reduce((sum, e) => sum + Math.round(e.amount_pence * e.split_ratio), 0);
+    : allTableTotalEffective;
   const totalEffective = isRangeActive && rangeOverview
     ? filterCategory === 'all'
       ? rangeOverview.reduce((sum, row) => sum + row.expenses_pence, 0)

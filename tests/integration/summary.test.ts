@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import supertest from 'supertest';
-import { getApp, makeTestUser } from '../helpers.js';
+import { getApp, makeTestUser, registerAndLoginDirect } from '../helpers.js';
 
 let app: Awaited<ReturnType<typeof getApp>>;
 
@@ -123,5 +123,62 @@ describe('/api/summary total_saved_pence with auto_contribute projection', () =>
 
     const res = await agent.get(`/api/summary?month=${futureMonth}`).expect(200);
     expect((res.body as { total_saved_pence: number }).total_saved_pence).toBe(expectedSaved);
+  });
+});
+
+describe('/api/summary expense consistency', () => {
+  it('matches month-effective expense share totals across expenses, summary, and reports overview', async () => {
+    const agent = supertest.agent(app);
+    await registerAndLoginDirect(agent, makeTestUser('sum_expense_consistency'));
+    const csrf = await csrfToken(agent);
+    const targetMonth = '2026-03';
+
+    await agent
+      .post('/api/expenses')
+      .set('X-CSRF-Token', csrf)
+      .send({
+        name: 'Weekly Food',
+        amount_pence: 1000,
+        posting_day: 1,
+        category: 'Food & Groceries',
+        is_household: false,
+        split_ratio: 0.5,
+        is_recurring: true,
+        recurrence_type: 'weekly',
+        start_date: '2026-01-01',
+      })
+      .expect(201);
+
+    await agent
+      .post('/api/expenses')
+      .set('X-CSRF-Token', csrf)
+      .send({
+        name: 'Utilities',
+        amount_pence: 1250,
+        posting_day: 12,
+        category: 'Utilities',
+        is_household: false,
+        split_ratio: 1,
+        is_recurring: true,
+        recurrence_type: 'monthly',
+        start_date: '2026-01-01',
+      })
+      .expect(201);
+
+    const expensesRes = await agent.get(`/api/expenses?month=${targetMonth}`).expect(200);
+    const summaryRes = await agent.get(`/api/summary?month=${targetMonth}`).expect(200);
+    const reportsRes = await agent.get(`/api/reports/overview?from=${targetMonth}&to=${targetMonth}`).expect(200);
+
+    const expenses = expensesRes.body as Array<{ effective_pence?: number; amount_pence: number; split_ratio: number }>;
+    const expenseShareTotal = expenses.reduce(
+      (sum, expense) => sum + Math.round((expense.effective_pence ?? expense.amount_pence) * expense.split_ratio),
+      0,
+    );
+    const summary = summaryRes.body as { total_expenses_pence: number };
+    const reports = reportsRes.body as Array<{ expenses_pence: number }>;
+
+    expect(summary.total_expenses_pence).toBe(expenseShareTotal);
+    expect(reports).toHaveLength(1);
+    expect(reports[0]?.expenses_pence).toBe(expenseShareTotal);
   });
 });

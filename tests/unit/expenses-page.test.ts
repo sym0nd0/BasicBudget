@@ -80,6 +80,43 @@ describe('ExpensesPage', () => {
     mockState.previousExpenses = [];
   });
 
+  it('keeps the all-expenses share card consistent with the your share table total', async () => {
+    mockState.expenses = [
+      {
+        id: 'expense-1',
+        name: 'Weekly Food',
+        amount_pence: 1000,
+        effective_pence: 5000,
+        posting_day: 1,
+        category: 'Food & Groceries',
+        is_household: false,
+        split_ratio: 0.5,
+        is_recurring: true,
+        recurrence_type: 'weekly',
+        start_date: '2026-05-01',
+      },
+      {
+        id: 'expense-2',
+        name: 'Utilities',
+        amount_pence: 1250,
+        effective_pence: 1250,
+        posting_day: 15,
+        category: 'Utilities',
+        is_household: false,
+        split_ratio: 1,
+        is_recurring: true,
+        recurrence_type: 'monthly',
+        start_date: '2026-01-01',
+      },
+    ];
+
+    const { ExpensesPage } = await import('../../src/pages/ExpensesPage');
+    const html = renderToStaticMarkup(React.createElement(ExpensesPage, { onMenuClick: vi.fn() }));
+
+    expect(html).toMatch(/Your Share \(All Expenses\).*?£37\.50/s);
+    expect(html).toMatch(/Total \(2\).*?£37\.50/s);
+  });
+
   it('renders delta indicators using month-effective expense values', async () => {
     mockState.expenses = [
       {
@@ -183,5 +220,60 @@ describe('ExpensesPage', () => {
     expect(html).toContain('New');
     expect(rowMarkup).not.toContain('↑ £25.00');
     expect(rowMarkup).not.toContain('↓ £25.00');
+  });
+
+  it('lets totals change because of a new row without inventing a numeric row delta', async () => {
+    mockState.expenses = [
+      {
+        id: 'expense-1',
+        name: 'Stable Rent',
+        amount_pence: 3000,
+        effective_pence: 3000,
+        posting_day: 1,
+        category: 'Housing',
+        is_household: false,
+        split_ratio: 1,
+        is_recurring: true,
+        recurrence_type: 'monthly',
+        start_date: '2026-01-01',
+      },
+      {
+        id: 'expense-2',
+        name: 'New Streaming',
+        amount_pence: 900,
+        effective_pence: 900,
+        posting_day: 12,
+        category: 'Subscriptions',
+        is_household: false,
+        split_ratio: 1,
+        is_recurring: true,
+        recurrence_type: 'monthly',
+        start_date: '2026-05-01',
+      },
+    ];
+    mockState.previousExpenses = [
+      {
+        id: 'expense-1',
+        name: 'Stable Rent',
+        amount_pence: 3000,
+        effective_pence: 3000,
+        posting_day: 1,
+        category: 'Housing',
+        is_household: false,
+        split_ratio: 1,
+        is_recurring: true,
+        recurrence_type: 'monthly',
+        start_date: '2026-01-01',
+      },
+    ];
+
+    const { ExpensesPage } = await import('../../src/pages/ExpensesPage');
+    const html = renderToStaticMarkup(React.createElement(ExpensesPage, { onMenuClick: vi.fn() }));
+    const newRowMarkup = html.split('New Streaming')[1]?.split('Total (2)')[0] ?? '';
+
+    expect(html).toContain('↑ £9.00');
+    expect(newRowMarkup).not.toContain('↑ £9.00');
+    expect(newRowMarkup).not.toContain('↓ £9.00');
+    expect(newRowMarkup).toContain('New');
   });
 });
