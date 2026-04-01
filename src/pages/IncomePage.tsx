@@ -29,12 +29,12 @@ interface IncomePageProps {
 interface HouseholdMember { user_id: string; display_name: string; email: string }
 
 interface IncomeRowProps {
-  income: Income;
-  prevIncome: Income | null;
-  showBadge: boolean;
-  getMemberName: (userId: string | null | undefined) => string;
-  onEdit: (income: Income) => void;
-  onDelete: (id: string) => void;
+  readonly income: Income;
+  readonly prevIncome: Income | null;
+  readonly showBadge: boolean;
+  readonly getMemberName: (userId: string | null | undefined) => string;
+  readonly onEdit: (income: Income) => void;
+  readonly onDelete: (id: string) => void;
 }
 
 function IncomeRow({ income, prevIncome, showBadge, getMemberName, onEdit, onDelete }: IncomeRowProps) {
@@ -73,7 +73,12 @@ function IncomeRow({ income, prevIncome, showBadge, getMemberName, onEdit, onDel
       </td>
       <td className="px-5 py-3 text-center">
         <div className="flex items-center gap-1 justify-center">
-          <Button variant="ghost" size="sm" onClick={() => onEdit(income)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(income)}
+            aria-label={`Edit ${income.name || income.id}`}
+          >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
             </svg>
@@ -83,6 +88,7 @@ function IncomeRow({ income, prevIncome, showBadge, getMemberName, onEdit, onDel
             size="sm"
             onClick={() => onDelete(income.id)}
             className="hover:text-[var(--color-danger)] hover:bg-[var(--color-danger-light)]"
+            aria-label={`Delete ${income.name || income.id}`}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -102,7 +108,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
   const prevPeriod = usePreviousPeriod();
   const { activeMonth } = useFilter();
   const prevMonth = addMonthsToYM(activeMonth, -1);
-  const { data: prevIncomes } = useApi<Income[]>(
+  const { data: prevIncomes, refetch: refetchPrevIncomes } = useApi<Income[]>(
     showComparisons ? `/incomes?month=${prevMonth}` : null,
   );
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
@@ -139,6 +145,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
       } else {
         await addIncome(data);
       }
+      refetchPrevIncomes();
       setModalOpen(false);
       setEditing(undefined);
       setErrorMsg(null);
@@ -156,6 +163,7 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
     if (!await confirm('Delete Income', 'Delete this income entry?', 'danger')) return;
     try {
       await deleteIncome(id);
+      refetchPrevIncomes();
     } catch (err) {
       setErrorMsg((err as Error).message);
     }
