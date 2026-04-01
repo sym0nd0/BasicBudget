@@ -32,10 +32,13 @@ export function IncomePage({ onMenuClick }: IncomePageProps) {
   const { incomes, addIncome, updateIncome, deleteIncome } = useBudget();
   const { sorted: sortedIncomes, sortKey, sortDir, toggleSort } = useSortableTable<Income>(incomes, 'name');
   const { isRangeActive, data: rangeOverview } = useRangeOverview();
+  const showComparisons = !isRangeActive;
   const prevPeriod = usePreviousPeriod();
   const { activeMonth } = useFilter();
   const prevMonth = addMonthsToYM(activeMonth, -1);
-  const { data: prevIncomes } = useApi<Income[]>(`/incomes?month=${prevMonth}`);
+  const { data: prevIncomes } = useApi<Income[]>(
+    showComparisons ? `/incomes?month=${prevMonth}` : null,
+  );
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Income | undefined>();

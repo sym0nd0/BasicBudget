@@ -53,7 +53,7 @@ function txTypeLabel(type: SavingsTransactionType): string {
 
 export function SavingsPage({ onMenuClick }: SavingsPageProps) {
   const { goals, addGoal, updateGoal, deleteGoal, createTransaction, refetchGoals } = useSavings();
-  const { fromMonth, toMonth, activeMonth } = useFilter();
+  const { fromMonth, toMonth, activeMonth, isRangeActive } = useFilter();
   const { user } = useAuth();
   const { confirm, ConfirmDialogElement } = useConfirmDialog();
 
@@ -71,9 +71,14 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
   const txUrl = `/savings-goals/transactions?from=${fromMonth}&to=${toMonth}`;
   const { data: transactions, refetch: refetchTx } = useApi<SavingsTransaction[]>(txUrl);
 
+  const showComparisons = !isRangeActive;
   const prevMonth = addMonthsToYM(activeMonth, -1);
-  const { data: prevSummary } = useApi<BudgetSummary>(`/summary?month=${prevMonth}`);
-  const { data: prevGoals } = useApi<SavingsGoal[]>(`/savings-goals?month=${prevMonth}`);
+  const { data: prevSummary } = useApi<BudgetSummary>(
+    showComparisons ? `/summary?month=${prevMonth}` : null,
+  );
+  const { data: prevGoals } = useApi<SavingsGoal[]>(
+    showComparisons ? `/savings-goals?month=${prevMonth}` : null,
+  );
   const prevGoalMap = new Map((prevGoals ?? []).map(goal => [goal.id, goal] as const));
 
   const totalSaved = goals.reduce((s, g) => s + g.current_amount_pence, 0);

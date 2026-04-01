@@ -71,11 +71,14 @@ function RepaymentPanel({ debtId }: { debtId: string }) {
 
 export function DebtPage({ onMenuClick }: DebtPageProps) {
   const { addDebt, updateDebt, deleteDebt } = useDebt();
-  const { activeMonth } = useFilter();
+  const { activeMonth, isRangeActive } = useFilter();
+  const showComparisons = !isRangeActive;
   const prevMonth = addMonthsToYM(activeMonth, -1);
 
   const { data: currentMonthDebts, refetch: refetchCurrentDebts } = useApi<Debt[]>(`/debts?month=${activeMonth}`);
-  const { data: prevMonthDebts } = useApi<Debt[]>(`/debts?month=${prevMonth}`);
+  const { data: prevMonthDebts } = useApi<Debt[]>(
+    showComparisons ? `/debts?month=${prevMonth}` : null,
+  );
 
   const debts = currentMonthDebts ?? [];
   const { sorted: sortedDebts, sortKey, sortDir, toggleSort } = useSortableTable<Debt>(debts, 'name');
