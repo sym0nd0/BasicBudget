@@ -18,6 +18,7 @@ interface UseApiResult<T> {
  */
 export function useApi<T>(url: string | null, options?: UseApiOptions): UseApiResult<T> {
   const [data, setData] = useState<T | null>(null);
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
   const [trigger, setTrigger] = useState(0);
@@ -25,7 +26,10 @@ export function useApi<T>(url: string | null, options?: UseApiOptions): UseApiRe
   const prevUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!url) return;
+    if (!url) {
+      abortRef.current?.abort();
+      return;
+    }
 
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -34,6 +38,7 @@ export function useApi<T>(url: string | null, options?: UseApiOptions): UseApiRe
     if (url !== prevUrlRef.current) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setData(null);
+      setDataUrl(null);
     }
     prevUrlRef.current = url;
     setLoading(true);
@@ -55,6 +60,7 @@ export function useApi<T>(url: string | null, options?: UseApiOptions): UseApiRe
       })
       .then(d => {
         setData(d);
+        setDataUrl(url);
         setLoading(false);
       })
       .catch(err => {
@@ -74,5 +80,8 @@ export function useApi<T>(url: string | null, options?: UseApiOptions): UseApiRe
     return () => clearInterval(id);
   }, [url, options?.pollInterval, refetch]);
 
-  return { data, loading, error, refetch };
+  const visibleData = !url || url !== dataUrl ? null : data;
+  const visibleLoading = url ? loading : false;
+
+  return { data: visibleData, loading: visibleLoading, error, refetch };
 }

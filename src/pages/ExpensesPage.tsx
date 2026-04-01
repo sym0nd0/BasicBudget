@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { ExpenseForm } from '../components/forms/ExpenseForm';
 import { Badge } from '../components/ui/Badge';
+import { NewItemBadge } from '../components/ui/NewItemBadge';
 import { FilterBar } from '../components/layout/FilterBar';
 import { SortableHeader } from '../components/ui/SortableHeader';
 import { useSortableTable } from '../hooks/useSortableTable';
@@ -32,9 +33,13 @@ type ExpenseRow = Expense & {
 export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
   const { expenses, accounts, addExpense, updateExpense, deleteExpense } = useBudget();
   const { filterCategory, activeMonth } = useFilter();
-  const prevMonth = addMonthsToYM(activeMonth, -1);
-  const { data: prevExpenses } = useApi<Expense[]>(`/expenses?month=${prevMonth}`);
   const { isRangeActive, data: rangeOverview } = useRangeOverview();
+  const showComparisons = !isRangeActive;
+  const prevMonth = addMonthsToYM(activeMonth, -1);
+  const { data: prevExpenses } = useApi<Expense[]>(
+    showComparisons ? `/expenses?month=${prevMonth}` : null,
+  );
+  const prevExpensesForMonth = showComparisons ? prevExpenses ?? undefined : undefined;
   const prevPeriod = usePreviousPeriod();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | undefined>();
@@ -81,6 +86,18 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
         return sum + (categoryMatch?.total_pence ?? 0);
       }, 0)
     : tableTotalEffective;
+  const filteredPrevExpenses = prevExpensesForMonth != null
+    ? prevExpensesForMonth.filter(expense => filterCategory === 'all' || expense.category === filterCategory)
+    : [];
+  const prevExpenseMap = prevExpensesForMonth != null
+    ? new Map(filteredPrevExpenses.map(expense => [expense.id, expense] as const))
+    : new Map<string, Expense>();
+  const previousTableTotalFull = prevExpensesForMonth != null
+    ? filteredPrevExpenses.reduce((sum, expense) => sum + expense.amount_pence, 0)
+    : null;
+  const previousTableTotalEffective = prevExpensesForMonth != null
+    ? filteredPrevExpenses.reduce((sum, expense) => sum + Math.round(expense.amount_pence * (expense.split_ratio ?? 1)), 0)
+    : null;
 
   const handleSave = async (data: Omit<Expense, 'id' | 'created_at' | 'updated_at'>) => {
     if (!editing) {
@@ -197,7 +214,8 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
               )}
               {filtered.map(expense => {
                 const isExpanded = expandedId === expense.id;
-                const prevExpense = prevExpenses?.find(p => p.id === expense.id) ?? null;
+                const prevExpense = prevExpenseMap.get(expense.id) ?? null;
+                const isNewExpense = prevExpensesForMonth != null && prevExpense == null;
                 return (
                   <Fragment key={expense.id}>
                     <tr
@@ -213,6 +231,7 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                           </svg>
                           {expense.name}
+                          {isNewExpense && <NewItemBadge />}
                           {expense.is_household && (
                             <Badge variant="primary" className="text-[10px]">½</Badge>
                           )}
@@ -223,19 +242,23 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                       </td>
                       <td className="px-5 py-3 font-mono text-[var(--color-text-muted)] text-center">
                         {formatCurrency(expense.display_full_pence)}
-                        <DeltaIndicator
-                          current={expense.display_full_pence}
-                          previous={prevExpense?.amount_pence ?? null}
-                          semantics="positive-down"
-                        />
+                        {showComparisons && (
+                          <DeltaIndicator
+                            current={expense.display_full_pence}
+                            previous={prevExpense?.amount_pence ?? null}
+                            semantics="positive-down"
+                          />
+                        )}
                       </td>
                       <td className="px-5 py-3 font-mono font-semibold text-[var(--color-danger)] text-center">
                         {formatCurrency(expense.display_share_pence)}
-                        <DeltaIndicator
-                          current={expense.display_share_pence}
-                          previous={prevExpense ? Math.round(prevExpense.amount_pence * prevExpense.split_ratio) : null}
-                          semantics="positive-down"
-                        />
+                        {showComparisons && (
+                          <DeltaIndicator
+                            current={expense.display_share_pence}
+                            previous={prevExpense ? Math.round(prevExpense.amount_pence * (prevExpense.split_ratio ?? 1)) : null}
+                            semantics="positive-down"
+                          />
+                        )}
                       </td>
                       <td className="px-5 py-3 text-center">
                         <Badge variant="default">{formatOrdinal(expense.posting_day)}</Badge>
@@ -315,11 +338,25 @@ export function ExpensesPage({ onMenuClick }: ExpensesPageProps) {
                   </td>
                   <td className="px-5 py-3 font-mono text-[var(--color-text-muted)] text-center">
                     {formatCurrency(tableTotalFull)}
+                    {showComparisons && (
+                      <DeltaIndicator
+                        current={tableTotalFull}
+                        previous={previousTableTotalFull}
+                        semantics="positive-down"
+                      />
+                    )}
                   </td>
                   <td className="px-5 py-3 font-mono font-bold text-[var(--color-danger)] text-center">
                     {formatCurrency(tableTotalEffective)}
+                    {showComparisons && (
+                      <DeltaIndicator
+                        current={tableTotalEffective}
+                        previous={previousTableTotalEffective}
+                        semantics="positive-down"
+                      />
+                    )}
                   </td>
-                  <td colSpan={6} className="text-center"></td>
+                  <td colSpan={5} className="text-center"></td>
                 </tr>
               )}
             </tbody>

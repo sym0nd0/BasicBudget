@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { DebtForm } from '../components/forms/DebtForm';
 import { Badge } from '../components/ui/Badge';
+import { NewItemBadge } from '../components/ui/NewItemBadge';
 import { DeltaIndicator } from '../components/ui/DeltaIndicator';
 import { SortableHeader } from '../components/ui/SortableHeader';
 import { useSortableTable } from '../hooks/useSortableTable';
@@ -70,11 +71,14 @@ function RepaymentPanel({ debtId }: { debtId: string }) {
 
 export function DebtPage({ onMenuClick }: DebtPageProps) {
   const { addDebt, updateDebt, deleteDebt } = useDebt();
-  const { activeMonth } = useFilter();
+  const { activeMonth, isRangeActive } = useFilter();
+  const showComparisons = !isRangeActive;
   const prevMonth = addMonthsToYM(activeMonth, -1);
 
   const { data: currentMonthDebts, refetch: refetchCurrentDebts } = useApi<Debt[]>(`/debts?month=${activeMonth}`);
-  const { data: prevMonthDebts } = useApi<Debt[]>(`/debts?month=${prevMonth}`);
+  const { data: prevMonthDebts } = useApi<Debt[]>(
+    showComparisons ? `/debts?month=${prevMonth}` : null,
+  );
 
   const debts = currentMonthDebts ?? [];
   const { sorted: sortedDebts, sortKey, sortDir, toggleSort } = useSortableTable<Debt>(debts, 'name');
@@ -90,6 +94,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
   const totalInterestDebts = debts.filter(d => d.interest_rate > 0).length;
 
   const prevDebts = prevMonthDebts ?? [];
+  const prevDebtMap = new Map(prevDebts.map(debt => [debt.id, debt] as const));
   const prevTotalBalance = prevDebts.reduce((s, d) => s + d.balance_pence, 0);
   const prevTotalPayments = prevDebts.reduce((s, d) => s + paymentShare(d), 0);
 
@@ -225,6 +230,8 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
               )}
               {sortedDebts.map(debt => {
                 const isExpanded = expandedId === debt.id;
+                const prevDebt = prevDebtMap.get(debt.id) ?? null;
+                const isNewDebt = prevMonthDebts != null && prevDebt == null;
 
                 return (
                   <Fragment key={debt.id}>
@@ -241,6 +248,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                           </svg>
                           {debt.name}
+                          {isNewDebt && <NewItemBadge />}
                           {debt.is_household && (
                             <Badge variant="primary" className="text-[10px]">½</Badge>
                           )}
@@ -259,7 +267,7 @@ export function DebtPage({ onMenuClick }: DebtPageProps) {
                         {formatCurrency(debt.balance_pence)}
                         <DeltaIndicator
                           current={debt.balance_pence}
-                          previous={prevMonthDebts ? (prevDebts.find(p => p.id === debt.id)?.balance_pence ?? null) : null}
+                          previous={prevDebt?.balance_pence ?? null}
                           semantics="positive-down"
                         />
                       </td>

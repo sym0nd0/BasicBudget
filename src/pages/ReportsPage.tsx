@@ -13,7 +13,7 @@ import { DebtToIncomeTrend } from '../components/charts/DebtToIncomeTrend';
 import { ReportSection } from '../components/reports/ReportSection';
 import { MonthlyComparison } from '../components/reports/MonthlyComparison';
 import { DeltaIndicator } from '../components/ui/DeltaIndicator';
-import { formatCurrency, formatPercent } from '../utils/formatters';
+import { formatCurrency, formatPercent, formatYearMonth } from '../utils/formatters';
 import { resolveRange, previousRange } from '../utils/reportRanges';
 import type { ReportRange, MonthlyReportRow } from '../types';
 
@@ -275,7 +275,7 @@ export function ReportsPage({ onMenuClick }: ReportsPageProps) {
                     const prevRow = idx > 0 ? overview[idx - 1] : null;
                     return (
                       <tr key={idx} className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)]">
-                        <td className="px-4 py-2 font-medium text-[var(--color-text)]">{row.month}</td>
+                        <td className="px-4 py-2 font-medium text-[var(--color-text)]">{formatYearMonth(row.month)}</td>
                         <td className="text-right px-4 py-2 font-mono text-[var(--color-success)]">
                           {formatCurrency(row.income_pence)}
                           <DeltaIndicator current={row.income_pence} previous={prevRow?.income_pence ?? null} semantics="positive-up" />
