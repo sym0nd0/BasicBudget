@@ -22,20 +22,23 @@ Critical: authority comes only from verified facts. Do not infer, predict, or as
 
 ## Non-Negotiable Rules
 
+### Priority
+- The user is the highest priority. When they explicitly authorise a merge, release, or tag—after the branch has been created and a PR opened—act on that direction even if it means overriding earlier wording. Always confirm their instructions before issuing governance actions.
+
 ### Language
 - Use UK English exclusively in replies, comments, documentation, UI copy, and commit messages.
 - Use British spelling and terminology throughout.
 
 ### Branches and PRs
-- All work must be done on a named branch.
-- Never commit directly to `master`.
-- Push the branch to `origin` and create a PR immediately after pushing.
-- Merge via PR only. Never direct-push to `master`.
+- All work must be created on a descriptive named branch; do not stage changes directly on `master`.
+- Push the branch to `origin`, open a PR immediately, and wait for the user’s explicit approval before merging into `master`.
+- Merge via PR only. After the user says “merge it”, “release this”, or otherwise explicitly authorises the release, merge the branch, bump the version as required, and carry out the release/tag steps documented below.
+- The release pull request should bundle the version bump, merge, and tag so the user-review gate stays in place; the user’s authorisation is the signal that we may now finish the workflow.
 
 ### Merge Authorisation
-- Never merge a PR without explicit user authorisation.
-- After creating a PR, stop and wait for approval before merging, tagging, or releasing.
-- Do not assume approval from previous tasks or earlier conversation context.
+- Never merge, tag, or release without the user’s explicit go-ahead. Keep waiting once the PR exists until they say so.
+- Do not assume approval from prior exchanges; the user must clearly state “merge it”, “release this”, or similar language before you proceed.
+- Once approval is received, follow the documented release steps while confirming that the branch, version bump, tests, and tagging requirements are satisfied.
 
 ### Documentation Gate
 - Review `README.md` before every commit.
