@@ -83,6 +83,14 @@ Server imports must use `.js` extensions even for `.ts` source files (NodeNext r
 
 All GET list endpoints filter through `filterActiveInMonth(items, yearMonth)` before responding. This determines whether each income/expense/debt is active in the requested month based on `recurrence_type`, `start_date`, `end_date`, and `posting_day`. Weekly items get `amount_pence` multiplied by the number of occurrences in the month.
 
+### Month-scoped UI comparisons
+
+- The **New** badge for month-scoped item rows must be based on the item's **first relevant month**, not on whether it was missing from the immediately previous month.
+- For income, expenses, and debts, the first relevant month comes from `start_date.slice(0, 7)` when `start_date` exists.
+- For savings goals, use `created_at.slice(0, 7)` as the month anchor because the model does not have a separate `start_date`.
+- Do not use `prevItem == null` on its own to decide whether a row is new — that misclassifies items that skip months or reappear later.
+- Month-scoped expense comparisons must use `effective_pence` when present, because recurring expense rows can differ from raw `amount_pence` in weekly or fortnightly months.
+
 ### Duplicate detection (`src/utils/duplicates.ts`)
 
 `norm(v)` canonicalises values before comparison: `null`/`undefined`/`''` → `null`, strings → lowercase trimmed, booleans → `'1'`/`'0'` (matching SQLite integer storage), numbers → `String(v)`. This is critical — SQLite booleans return as integers; skipping this coercion silently breaks duplicate checks.
@@ -312,6 +320,8 @@ This is **non-negotiable and applies without exception** — no conditions, no s
 
 ### 3a. Commit Authorisation
 Creating commits is authorised without separate confirmation, provided the work is on a named branch and follows the workflow rules in this file.
+
+Once the requested work is completed and the required checks have passed, create a commit on the named branch without waiting for an additional prompt.
 
 When a commit is created, include a clear commit note in the response stating the commit message and resulting commit id.
 
@@ -597,6 +607,7 @@ Before completing any task, ensure:
 - Integration tests use a real SQLite `:memory:` database spun up in `tests/setup.ts` — do not mock the database.
 - Use `supertest.agent(app)` (not `supertest(app)`) when a test needs to preserve cookies across multiple requests.
 - Run with `npm test` (executes `vitest run`).
+- Vitest is configured with `environment: 'node'`. For frontend regression coverage that does not need a browser DOM, prefer pure utility tests or `react-dom/server` rendering tests rather than assuming `jsdom` is available.
 
 ### Docker
 
