@@ -310,6 +310,11 @@ This is **non-negotiable and applies without exception** — no conditions, no s
 
 **Violation of this rule:** Merging without explicit user authorisation is a critical breach of control and trust and must never occur.
 
+### 3a. Commit Authorisation
+Creating commits is authorised without separate confirmation, provided the work is on a named branch and follows the workflow rules in this file.
+
+When a commit is created, include a clear commit note in the response stating the commit message and resulting commit id.
+
 ---
 
 ## Workflow Rules (mandatory — no exceptions)
