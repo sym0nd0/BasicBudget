@@ -323,6 +323,8 @@ Creating commits is authorised without separate confirmation, provided the work 
 
 Once the requested work is completed and the required checks have passed, create a commit on the named branch without waiting for an additional prompt.
 
+After creating the commit, push the named branch to GitHub without waiting for an additional prompt.
+
 When a commit is created, include a clear commit note in the response stating the commit message and resulting commit id.
 
 ---
