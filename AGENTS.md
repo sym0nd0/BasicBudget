@@ -382,6 +382,8 @@ Every branch pushed to origin must have a corresponding Pull Request opened imme
 - A summary of what changed and why
 - A note on README.md: either what was updated, or an explicit statement that no README update was required and why
 
+**Never open draft PRs.** All pull requests must be created as ready for review immediately.
+
 ### 4. Pre-push checklist
 
 **STOP: Before running `git push`, confirm ALL of the following. Do not push if any item fails.**
