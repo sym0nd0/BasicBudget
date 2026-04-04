@@ -25,6 +25,7 @@ SESSION_SECRET=dev-secret-change-me
 TOTP_ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
 APP_URL=http://localhost:5173
 NODE_ENV=development
+LOG_LEVEL=debug
 ```
 
 > **Security:** Never use these placeholder values in a production environment. See [[Configuration]] for how to generate secure keys.
@@ -43,6 +44,8 @@ This starts two processes concurrently:
 | **Express API server** | `:3001` | Backend API with tsx watch |
 
 Open `http://localhost:5173` in your browser.
+
+Server logs are written as JSON lines to stdout/stderr in the terminal. Set `LOG_LEVEL=debug` for verbose diagnostics until the Admin logging setting is saved.
 
 ## Build for Production
 

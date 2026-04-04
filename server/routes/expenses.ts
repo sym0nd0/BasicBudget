@@ -6,6 +6,7 @@ import { filterActiveInMonth, currentYearMonth, isActiveInMonth, type RecurringI
 import { filterVisible, canModify } from '../utils/visibility.js';
 import { isMonthLocked } from './months.js';
 import { requireAuth } from '../middleware/auth.js';
+import { logValidationFailure } from '../middleware/validate.js';
 import type { Expense } from '../../shared/types.js';
 import { logger } from '../services/logger.js';
 import { expenseSchema, monthParam } from '../validation/schemas.js';
@@ -48,6 +49,8 @@ router.get('/', (req: Request, res: Response) => {
     const fromResult = monthParam.safeParse(from);
     const toResult = monthParam.safeParse(to);
     if (!fromResult.success || !toResult.success) {
+      if (!fromResult.success) logValidationFailure(req, fromResult.error.issues, 'query.from');
+      if (!toResult.success) logValidationFailure(req, toResult.error.issues, 'query.to');
       res.status(400).json({ message: 'Invalid month format' });
       return;
     }
@@ -90,6 +93,7 @@ router.get('/', (req: Request, res: Response) => {
   const month = (req.query.month as string) ?? currentYearMonth();
   const monthResult = monthParam.safeParse(month);
   if (!monthResult.success) {
+    logValidationFailure(req, monthResult.error.issues, 'query.month');
     res.status(400).json({ message: 'Invalid month format' });
     return;
   }
@@ -106,6 +110,7 @@ router.get('/', (req: Request, res: Response) => {
 router.post('/', (req: Request, res: Response) => {
   const result = expenseSchema.safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'expense.create');
     res.status(400).json({ message: 'Validation error' });
     return;
   }
@@ -140,12 +145,12 @@ router.post('/', (req: Request, res: Response) => {
       body.notes ?? null,
     );
   } catch (err) {
-    logger.error('Failed to save expense', { error: err });
+    logger.error('Failed to save expense', { request_id: req.requestId, id, userId: req.userId, error: err });
     res.status(500).json({ message: 'Failed to save expense' });
     return;
   }
   const row = db.prepare('SELECT * FROM expenses WHERE id = ?').get(id) as Record<string, unknown>;
-  logger.info('Expense created', { id, userId: req.userId, name: body.name.trim() });
+  logger.info('Expense created', { request_id: req.requestId, id, userId: req.userId });
   res.status(201).json(mapExpense(row));
 });
 
@@ -154,6 +159,7 @@ router.put('/:id', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
   const result = expenseSchema.partial().safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'expense.update');
     res.status(400).json({ message: 'Validation error' });
     return;
   }
@@ -207,12 +213,12 @@ router.put('/:id', (req: Request, res: Response) => {
       id,
     );
   } catch (err) {
-    logger.error('Failed to save expense', { error: err });
+    logger.error('Failed to save expense', { request_id: req.requestId, id, userId: req.userId, error: err });
     res.status(500).json({ message: 'Failed to save expense' });
     return;
   }
   const row = db.prepare('SELECT * FROM expenses WHERE id = ?').get(id) as Record<string, unknown>;
-  logger.info('Expense updated', { id, userId: req.userId });
+  logger.info('Expense updated', { request_id: req.requestId, id, userId: req.userId });
   res.json(mapExpense(row));
 });
 
@@ -239,11 +245,11 @@ router.delete('/:id', (req: Request, res: Response) => {
   try {
     db.prepare('DELETE FROM expenses WHERE id = ?').run(id);
   } catch (err) {
-    logger.error('Failed to delete expense', { error: err });
+    logger.error('Failed to delete expense', { request_id: req.requestId, id, userId: req.userId, error: err });
     res.status(500).json({ message: 'Failed to delete expense' });
     return;
   }
-  logger.info('Expense deleted', { id, userId: req.userId });
+  logger.info('Expense deleted', { request_id: req.requestId, id, userId: req.userId });
   res.status(204).send();
 });
 

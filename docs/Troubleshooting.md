@@ -27,6 +27,8 @@ npm start  # logs appear in the terminal
 
 Increase verbosity via the **Admin** panel → **Log Level** → set to `debug`.
 
+If you need debug logs before first login, set `LOG_LEVEL=debug` in the container or `.env` file. Once the Admin log level is saved, the DB value overrides the environment default.
+
 ### Check the Browser Console
 
 For frontend errors, open your browser's developer tools (F12) and check the **Console** and **Network** tabs for error messages.

@@ -41,8 +41,6 @@ describe('GET /api/savings-goals — month param', () => {
 
     // Create a transaction whose created_at falls in the current month (the server
     // filters by strftime('%Y-%m', created_at), not by the notes field)
-    const now = new Date();
-    const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const txRes = await agent
       .post(`/api/savings-goals/${testGoalId}/transactions`)
       .set('X-CSRF-Token', csrf)

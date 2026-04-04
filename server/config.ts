@@ -3,6 +3,7 @@ import { z } from 'zod';
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().default('3001'),
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 
   // Database
   DB_PATH: z.string().optional(),
@@ -32,7 +33,6 @@ const envSchema = z.object({
 
   // Developer-only flag: set to 'true' to log per-row and per-month debt projection data
   DEBUG_DEBT_PROJECTION: z.string().optional(),
-
 });
 
 // In test environment, provide safe defaults for required fields

@@ -2,18 +2,45 @@ import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { config } from './config.js';
 import { migrateEncryptedSettings } from './services/settings.js';
 
-const DATA_DIR = process.env.DB_PATH
-  ? path.dirname(process.env.DB_PATH)
+type DbLogLevel = 'debug' | 'info' | 'warn' | 'error';
+
+const DB_LEVEL_ORDER: Record<DbLogLevel, number> = { debug: 0, info: 1, warn: 2, error: 3 };
+let dbLogLevel: DbLogLevel = config.LOG_LEVEL;
+
+function writeDbLog(level: DbLogLevel, message: string, meta?: Record<string, unknown>): void {
+  if (DB_LEVEL_ORDER[level] < DB_LEVEL_ORDER[dbLogLevel]) return;
+  const line: Record<string, unknown> = {
+    timestamp: new Date().toISOString(),
+    level,
+    message,
+    meta: {
+      source: 'db-init',
+      ...meta,
+    },
+  };
+  const stream = level === 'error' ? process.stderr : process.stdout;
+  stream.write(JSON.stringify(line) + '\n');
+}
+
+const DATA_DIR = config.DB_PATH
+  ? path.dirname(config.DB_PATH)
   : path.join(process.cwd(), 'data');
 
-const DB_FILE = process.env.DB_PATH ?? path.join(DATA_DIR, 'basicbudget.db');
+const DB_FILE = config.DB_PATH ?? path.join(DATA_DIR, 'basicbudget.db');
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
+  writeDbLog('info', 'Created database data directory', { data_dir: DATA_DIR });
 }
+
+writeDbLog('info', 'Opening SQLite database', {
+  db_path: DB_FILE,
+  configured_log_level: dbLogLevel,
+});
 
 let db: Database.Database = new Database(DB_FILE);
 
@@ -39,6 +66,8 @@ let db: Database.Database = new Database(DB_FILE);
 let journalMode: string;
 try {
   db.pragma('journal_mode = WAL');
+  journalMode = 'wal';
+  writeDbLog('info', 'SQLite journal mode configured', { journal_mode: journalMode });
 } catch {
   // Step 1 — close the broken connection.
   try { db.close(); } catch { /* ignore */ }
@@ -84,14 +113,12 @@ try {
     off:    'WAL and MEMORY journal modes both unavailable — using OFF journal mode (no journal; writes go directly to the database file; not crash-safe).',
     delete: 'WAL, MEMORY, and OFF journal modes all unavailable — falling back to DELETE mode. Writes requiring a journal file may fail on this filesystem.',
   };
-  process.stderr.write(JSON.stringify({
-    timestamp: new Date().toISOString(),
-    level: 'warn',
-    message: modeMessages[journalMode] ?? 'Journal mode fallback active.',
-    meta: { source: 'db-init' },
-  }) + '\n');
+  writeDbLog('warn', modeMessages[journalMode] ?? 'Journal mode fallback active.', {
+    journal_mode: journalMode,
+  });
 }
 db.pragma('foreign_keys = ON');
+writeDbLog('debug', 'SQLite foreign key enforcement enabled', { pragma: 'foreign_keys = ON' });
 
 // Apply schema
 try {
@@ -100,6 +127,9 @@ try {
     'utf8',
   );
   db.exec(schema);
+  writeDbLog('info', 'Schema applied successfully', {
+    schema_path: path.join(process.cwd(), 'server', 'schema.sql'),
+  });
 } catch (err) {
   // Schema exec may fail on Docker filesystems that cannot create auxiliary
   // journal files (required by DELETE journal mode for write transactions).
@@ -114,25 +144,32 @@ try {
   } catch { /* cannot query — treat as uninitialised */ }
 
   if (!isInitialised) {
-    process.stderr.write(`Failed to load schema.sql: ${err}\n`);
+    writeDbLog('error', 'Failed to apply schema to an uninitialised database', { error: String(err) });
     process.exit(1);
   }
-  process.stderr.write(JSON.stringify({
-    timestamp: new Date().toISOString(),
-    level: 'warn',
-    message: `Schema exec failed on an already-initialised database — continuing with existing schema. Error: ${err}`,
-    meta: { source: 'db-init' },
-  }) + '\n');
+  writeDbLog(
+    'warn',
+    'Schema exec failed on an already-initialised database — continuing with existing schema',
+    { error: String(err) },
+  );
 }
 
+function refreshDbLogLevelFromSettings(): void {
+  try {
+    const row = db.prepare('SELECT value FROM system_settings WHERE key = ?').get('log.level') as { value: string } | undefined;
+    if (row?.value && row.value in DB_LEVEL_ORDER) {
+      dbLogLevel = row.value as DbLogLevel;
+    }
+  } catch {
+    // Keep env-configured fallback if the settings table is unavailable.
+  }
+}
+
+refreshDbLogLevelFromSettings();
+
 // DB logging helper (local to avoid circular imports with logger.ts)
-function dbLog(message: string): void {
-  process.stdout.write(JSON.stringify({
-    timestamp: new Date().toISOString(),
-    level: 'info',
-    message,
-    meta: { source: 'db-migration' },
-  }) + '\n');
+function dbLog(message: string, level: DbLogLevel = 'info', meta?: Record<string, unknown>): void {
+  writeDbLog(level, message, { source: 'db-migration', ...meta });
 }
 
 // Migrate SMTP/OIDC settings from environment variables to DB (one-time, for existing deployments)

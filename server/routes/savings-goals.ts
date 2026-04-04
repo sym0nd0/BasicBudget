@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import db from '../db.js';
 import { randomUUID } from 'node:crypto';
 import { requireAuth } from '../middleware/auth.js';
+import { logValidationFailure } from '../middleware/validate.js';
 import { filterVisible, canModify } from '../utils/visibility.js';
 import { logger } from '../services/logger.js';
 import type { SavingsGoal } from '../../shared/types.js';
@@ -112,6 +113,7 @@ router.get('/', (req: Request, res: Response) => {
   if (month) {
     const monthResult = monthParam.safeParse(month);
     if (!monthResult.success) {
+      logValidationFailure(req, monthResult.error.issues, 'query.month');
       res.status(400).json({ message: 'Invalid month format' });
       return;
     }
@@ -137,6 +139,7 @@ router.get('/', (req: Request, res: Response) => {
 router.post('/', (req: Request, res: Response) => {
   const result = savingsGoalSchema.safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'savings-goal.create');
     res.status(400).json({ message: 'Validation error' });
     return;
   }
@@ -181,11 +184,12 @@ router.post('/', (req: Request, res: Response) => {
       `).run(randomUUID(), id, req.householdId!, req.userId!, openingBalance, openingBalance);
     })();
   } catch (err) {
-    res.status(400).json({ message: (err as Error).message });
+    logger.error('Failed to save savings goal', { request_id: req.requestId, id, userId: req.userId, error: err });
+    res.status(500).json({ message: 'Failed to save savings goal' });
     return;
   }
   const row = db.prepare('SELECT * FROM savings_goals WHERE id = ?').get(id) as Record<string, unknown>;
-  logger.info('Savings goal created', { id, userId: req.userId, name: body.name.trim() });
+  logger.info('Savings goal created', { request_id: req.requestId, id, userId: req.userId });
   res.status(201).json(mapGoal(row));
 });
 
@@ -210,7 +214,11 @@ router.get('/:id/transactions', (req: Request, res: Response) => {
 router.post('/:id/transactions', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
   const result = savingsTransactionSchema.safeParse(req.body);
-  if (!result.success) { res.status(400).json({ message: 'Validation error' }); return; }
+  if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'savings-transaction.create');
+    res.status(400).json({ message: 'Validation error' });
+    return;
+  }
 
   const existing = db.prepare('SELECT * FROM savings_goals WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!existing) { res.status(404).json({ message: 'Savings goal not found' }); return; }
@@ -238,7 +246,13 @@ router.post('/:id/transactions', (req: Request, res: Response) => {
   doInsert();
 
   const tx = db.prepare('SELECT * FROM savings_transactions WHERE id = ?').get(txId);
-  logger.info('Savings transaction created', { id: txId, goalId: id, type, userId: req.userId });
+  logger.info('Savings transaction created', {
+    request_id: req.requestId,
+    id: txId,
+    goalId: id,
+    type,
+    userId: req.userId,
+  });
   res.status(201).json(tx);
 });
 
@@ -247,6 +261,7 @@ router.put('/:id', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
   const parseResult = savingsGoalSchema.partial().safeParse(req.body);
   if (!parseResult.success) {
+    logValidationFailure(req, parseResult.error.issues, 'savings-goal.update');
     res.status(400).json({ message: 'Validation error' });
     return;
   }
@@ -302,11 +317,12 @@ router.put('/:id', (req: Request, res: Response) => {
       }
     })();
   } catch (err) {
-    res.status(400).json({ message: (err as Error).message });
+    logger.error('Failed to update savings goal', { request_id: req.requestId, id, userId: req.userId, error: err });
+    res.status(500).json({ message: 'Failed to update savings goal' });
     return;
   }
   const row = db.prepare('SELECT * FROM savings_goals WHERE id = ?').get(id) as Record<string, unknown>;
-  logger.info('Savings goal updated', { id, userId: req.userId });
+  logger.info('Savings goal updated', { request_id: req.requestId, id, userId: req.userId });
   res.json(mapGoal(row));
 });
 
@@ -325,10 +341,11 @@ router.delete('/:id', (req: Request, res: Response) => {
   try {
     db.prepare('DELETE FROM savings_goals WHERE id = ?').run(id);
   } catch (err) {
-    res.status(400).json({ message: (err as Error).message });
+    logger.error('Failed to delete savings goal', { request_id: req.requestId, id, userId: req.userId, error: err });
+    res.status(500).json({ message: 'Failed to delete savings goal' });
     return;
   }
-  logger.info('Savings goal deleted', { id, userId: req.userId });
+  logger.info('Savings goal deleted', { request_id: req.requestId, id, userId: req.userId });
   res.status(204).send();
 });
 

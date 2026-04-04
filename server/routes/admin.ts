@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import db from '../db.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
+import { logValidationFailure } from '../middleware/validate.js';
 import { auditLog } from '../services/audit.js';
 import {
   setSetting,
@@ -14,8 +15,7 @@ import {
 import { DEFAULT_EXPENSE_CATEGORIES, getExpenseCategories } from './categories.js';
 import { resetOidcClient } from './oidc.js';
 import { sendTestEmail } from '../services/email.js';
-import { logger } from '../services/logger.js';
-import type { LogLevel } from '../services/logger.js';
+import { getCurrentLogLevel, logger } from '../services/logger.js';
 import { getBackupConfig, getAutoBackupStatus, restartScheduler } from '../services/autoBackup.js';
 import { autoBackupConfigSchema } from '../validation/schemas.js';
 import { backupStatusLimiter, backupConfigWriteLimiter } from '../middleware/rate-limit.js';
@@ -99,6 +99,7 @@ router.put('/users/:id/role', (req: Request, res: Response) => {
   const userId = req.params['id'] as string;
   const result = z.object({ role: z.enum(['admin', 'user']) }).safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'admin.user-role');
     res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
     return;
   }
@@ -132,6 +133,7 @@ router.put('/users/:id/lock', (req: Request, res: Response) => {
   const userId = req.params['id'] as string;
   const result = z.object({ locked: z.boolean() }).safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'admin.user-lock');
     res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
     return;
   }
@@ -201,6 +203,7 @@ const smtpSchema = z.object({
 router.put('/settings/smtp', (req: Request, res: Response) => {
   const result = smtpSchema.safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'admin.smtp');
     res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
     return;
   }
@@ -252,6 +255,7 @@ const oidcSchema = z.object({
 router.put('/settings/oidc', (req: Request, res: Response) => {
   const result = oidcSchema.safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'admin.oidc');
     res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
     return;
   }
@@ -330,6 +334,7 @@ router.put('/settings/categories', (req: Request, res: Response) => {
   });
   const result = schema.safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'admin.categories');
     res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
     return;
   }
@@ -352,18 +357,25 @@ const loggingSchema = z.object({ level: z.enum(VALID_LOG_LEVELS) });
 
 // GET /api/admin/settings/logging
 router.get('/settings/logging', (_req: Request, res: Response) => {
-  const level = (getSetting('log.level') ?? 'info') as LogLevel;
-  res.json({ level });
+  res.json({ level: getCurrentLogLevel() });
 });
 
 // PUT /api/admin/settings/logging
 router.put('/settings/logging', (req: Request, res: Response) => {
   const result = loggingSchema.safeParse(req.body);
-  if (!result.success) { res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' }); return; }
+  if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'admin.logging');
+    res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
+    return;
+  }
   const { level } = result.data;
+  logger.info('Log level changed by admin', {
+    request_id: req.requestId,
+    level,
+    admin_id: req.userId,
+  });
   setSetting('log.level', level);
   auditLog(req.userId!, 'admin_log_level_changed', { level }, req.ip, req.get('user-agent'));
-  logger.info('Log level changed by admin', { level, admin_id: req.userId });
   res.json({ message: `Log level set to ${level}` });
 });
 
@@ -380,11 +392,19 @@ router.get('/settings/registration', (_req: Request, res: Response) => {
 // PUT /api/admin/settings/registration
 router.put('/settings/registration', (req: Request, res: Response) => {
   const result = registrationSchema.safeParse(req.body);
-  if (!result.success) { res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' }); return; }
+  if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'admin.registration');
+    res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
+    return;
+  }
   const { disabled } = result.data;
   setSetting('registration.disabled', String(disabled));
   auditLog(req.userId!, 'admin_registration_toggled', { disabled }, req.ip, req.get('user-agent'));
-  logger.info('Registration toggle changed by admin', { disabled, admin_id: req.userId });
+  logger.info('Registration toggle changed by admin', {
+    request_id: req.requestId,
+    disabled,
+    admin_id: req.userId,
+  });
   res.json({ message: `Registration ${disabled ? 'disabled' : 'enabled'}.` });
 });
 
@@ -401,6 +421,7 @@ router.get('/settings/backup', backupStatusLimiter, (_req: Request, res: Respons
 router.put('/settings/backup', backupConfigWriteLimiter, (req: Request, res: Response) => {
   const result = autoBackupConfigSchema.safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'admin.backup');
     res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
     return;
   }
@@ -410,7 +431,13 @@ router.put('/settings/backup', backupConfigWriteLimiter, (req: Request, res: Res
   setSetting('backup.max_backups', String(max_backups));
   restartScheduler();
   auditLog(req.userId!, 'admin_auto_backup_updated', { enabled, interval_hours, max_backups }, req.ip, req.get('user-agent'));
-  logger.info('Automated backup settings updated', { enabled, interval_hours, max_backups, admin_id: req.userId });
+  logger.info('Automated backup settings updated', {
+    request_id: req.requestId,
+    enabled,
+    interval_hours,
+    max_backups,
+    admin_id: req.userId,
+  });
   res.json({ message: `Automated backups ${enabled ? 'enabled' : 'disabled'}.` });
 });
 

@@ -1,4 +1,6 @@
 import express from 'express';
+import type { Server } from 'node:http';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -32,14 +34,64 @@ import backupRouter from './routes/backup.js';
 import categoriesRouter from './routes/categories.js';
 import { checkAndSendDealReminders } from './services/debtNotifications.js';
 import { refreshVersionCheck, getVersionInfo } from './services/versionChecker.js';
-import { initAutoBackup } from './services/autoBackup.js';
+import { initAutoBackup, stopAutoBackup } from './services/autoBackup.js';
 import versionRouter from './routes/version.js';
-import { logger } from './services/logger.js';
+import { getCurrentLogLevel, logger } from './services/logger.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const PORT = parseInt(config.PORT, 10);
+
+function routeLabel(req: express.Request): string {
+  if (req.route?.path) {
+    const routePath = Array.isArray(req.route.path) ? req.route.path.join('|') : req.route.path;
+    return `${req.baseUrl}${routePath}`;
+  }
+  return req.baseUrl ? `${req.baseUrl}${req.path}` : req.path;
+}
+
+function requestMeta(req: express.Request): Record<string, unknown> {
+  return {
+    request_id: req.requestId,
+    method: req.method,
+    path: req.path,
+    route: routeLabel(req),
+    userId: req.userId ?? req.session?.userId,
+    householdId: req.householdId ?? req.session?.householdId,
+  };
+}
+
+function logApiRequest(req: express.Request, res: express.Response, next: express.NextFunction): void {
+  req.requestId = randomUUID();
+  const startedAt = process.hrtime.bigint();
+
+  logger.debug('HTTP request started', {
+    ...requestMeta(req),
+    query_keys: Object.keys(req.query),
+  });
+
+  res.on('finish', () => {
+    const durationMs = Number((process.hrtime.bigint() - startedAt) / 1_000_000n);
+    const completionMeta = {
+      ...requestMeta(req),
+      status: res.statusCode,
+      duration_ms: durationMs,
+    };
+
+    if (res.statusCode >= 500) {
+      logger.error('HTTP request completed', completionMeta);
+      return;
+    }
+    if (res.statusCode >= 400) {
+      logger.warn('HTTP request completed', completionMeta);
+      return;
+    }
+    logger.info('HTTP request completed', completionMeta);
+  });
+
+  next();
+}
 
 // Print ASCII banner + version
 const BANNER = [
@@ -52,6 +104,16 @@ const BANNER = [
 ];
 for (const line of BANNER) logger.info(line);
 logger.info(`v${getVersionInfo().current}  |  ${config.NODE_ENV}`);
+logger.info('Runtime configuration loaded', {
+  node_env: config.NODE_ENV,
+  port: PORT,
+  cors_origin: config.CORS_ORIGIN,
+  app_url: config.APP_URL,
+  db_path_set: Boolean(config.DB_PATH),
+  secure_cookies: config.COOKIE_SECURE ?? 'auto',
+  log_level: getCurrentLogLevel(),
+  env_log_level: config.LOG_LEVEL,
+});
 
 // Warn when APP_URL is HTTPS but COOKIE_SECURE is not explicitly overridden.
 // In this state, cookies are marked secure: true — browsers will reject them over
@@ -96,6 +158,7 @@ app.use(cors({
 }));
 
 // 4. JSON body parser
+app.use('/api', logApiRequest);
 app.use(express.json({ limit: '1mb' }));
 
 // 4b. Cookie parser (required by csrf-csrf to read the CSRF cookie)
@@ -143,6 +206,12 @@ app.use('/api/version', versionRouter);
 
 // 10. API 404 handler
 app.use('/api', (_req, res) => {
+  logger.warn('API route not found', {
+    request_id: _req.requestId,
+    method: _req.method,
+    path: _req.path,
+    route: routeLabel(_req),
+  });
   res.status(404).json({ message: 'Not found' });
 });
 
@@ -169,6 +238,7 @@ app.use((err: Error & { status?: number; code?: string }, req: express.Request, 
         ? req.cookies['bb.csrf'] === csrfHeader
         : false;
     logger.warn('CSRF token validation failed', {
+      ...requestMeta(req),
       error: err instanceof Error ? err.message : String(err),
       hasCsrfCookie,
       hasCsrfHeader,
@@ -185,7 +255,11 @@ app.use((err: Error & { status?: number; code?: string }, req: express.Request, 
     res.status(403).json({ message: 'Invalid CSRF token' });
     return;
   }
-  logger.error('Unhandled request error', { error: err instanceof Error ? err : String(err) });
+  logger.error('Unhandled request error', {
+    ...requestMeta(req),
+    status: err.status ?? 500,
+    error: err instanceof Error ? err : String(err),
+  });
   const status = err.status ?? 500;
   const message = config.NODE_ENV === 'production' && status === 500
     ? 'Internal server error'
@@ -194,16 +268,37 @@ app.use((err: Error & { status?: number; code?: string }, req: express.Request, 
 });
 
 if (config.NODE_ENV !== 'test') {
+  let versionCheckInterval: ReturnType<typeof setInterval> | null = null;
+  let dealReminderDelay: ReturnType<typeof setTimeout> | null = null;
+  let dealReminderInterval: ReturnType<typeof setInterval> | null = null;
+
+  function stopBackgroundJobs(): void {
+    if (versionCheckInterval) {
+      clearInterval(versionCheckInterval);
+      versionCheckInterval = null;
+    }
+    if (dealReminderDelay) {
+      clearTimeout(dealReminderDelay);
+      dealReminderDelay = null;
+    }
+    if (dealReminderInterval) {
+      clearInterval(dealReminderInterval);
+      dealReminderInterval = null;
+    }
+    stopAutoBackup();
+  }
+
   // Version check — run immediately at startup, then every hour
   refreshVersionCheck().catch(err => logger.error('Version check failed', { error: String(err) }));
-  setInterval(() => {
+  versionCheckInterval = setInterval(() => {
     refreshVersionCheck().catch(err => logger.error('Version check failed', { error: String(err) }));
   }, 30 * 60 * 1000);
 
   // Deal reminders — 10s delay then every 24h
-  setTimeout(() => {
+  dealReminderDelay = setTimeout(() => {
+    dealReminderDelay = null;
     checkAndSendDealReminders().catch(err => logger.error('Deal reminder check failed', { error: String(err) }));
-    setInterval(() => {
+    dealReminderInterval = setInterval(() => {
       checkAndSendDealReminders().catch(err => logger.error('Deal reminder check failed', { error: String(err) }));
     }, 24 * 60 * 60 * 1000);
   }, 10_000);
@@ -211,9 +306,47 @@ if (config.NODE_ENV !== 'test') {
   // Automated backups — reads config from system_settings, starts scheduler if enabled
   initAutoBackup();
 
-  app.listen(PORT, () => {
+  const server: Server = app.listen(PORT, () => {
     logger.info('Server listening', { port: PORT });
   });
+
+  const logShutdownSignal = async (signal: NodeJS.Signals): Promise<void> => {
+    logger.info('Shutdown signal received', { signal, port: PORT });
+
+    stopBackgroundJobs();
+
+    const shutdownTimeout = setTimeout(() => {
+      logger.error('Forced shutdown after timeout', { signal, port: PORT });
+      process.exit(1);
+    }, 10_000);
+    shutdownTimeout.unref();
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        server.close((err?: Error) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve();
+        });
+      });
+      clearTimeout(shutdownTimeout);
+      logger.info('HTTP server closed cleanly', { signal, port: PORT });
+      process.exit(0);
+    } catch (err) {
+      clearTimeout(shutdownTimeout);
+      logger.error('HTTP server shutdown failed', {
+        signal,
+        port: PORT,
+        error: err,
+      });
+      process.exit(1);
+    }
+  };
+
+  process.once('SIGINT', logShutdownSignal);
+  process.once('SIGTERM', logShutdownSignal);
 }
 
 export default app;

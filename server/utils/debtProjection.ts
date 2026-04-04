@@ -1,9 +1,7 @@
 import type { Debt, DebtProjectionPoint } from '../../shared/types.js';
+import { logger } from '../services/logger.js';
 import { getMonthlyRateForDate } from './debtRepayments.js';
 import { currentYearMonth, filterActiveInMonth } from './recurring.js';
-import { config } from '../config.js';
-
-const DEBUG = config.DEBUG_DEBT_PROJECTION === 'true';
 
 function addMonthsToYM(yearMonth: string, n: number): string {
   const [y, m] = yearMonth.split('-').map(Number);
@@ -182,15 +180,14 @@ export function calculateDebtTimeline(
     const perDebt = snapshot.map(d => ({ id: d.id, name: d.name, balance_pence: d.balance_pence }));
     const total_balance_pence = perDebt.reduce((s, d) => s + d.balance_pence, 0);
 
-    if (DEBUG) {
-      console.log(JSON.stringify({
-        debug: 'debt_projection_month',
-        month,
-        total_balance_pence,
-        debtCount: perDebt.length,
-        perDebt,
-      }));
-    }
+    logger.debug('Debt projection month calculated', {
+      month,
+      month_index: i,
+      is_actual: i === 0,
+      projected_debt_count: perDebt.length,
+      source_debt_count: debts.length,
+      has_projected_balance: total_balance_pence > 0,
+    });
 
     result.push({
       month,

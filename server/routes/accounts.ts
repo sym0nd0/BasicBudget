@@ -3,7 +3,9 @@ import type { Request, Response } from 'express';
 import db from '../db.js';
 import { randomUUID } from 'node:crypto';
 import { requireAuth } from '../middleware/auth.js';
+import { logValidationFailure } from '../middleware/validate.js';
 import { canModify } from '../utils/visibility.js';
+import { logger } from '../services/logger.js';
 import type { Account } from '../../shared/types.js';
 import { accountSchema } from '../validation/schemas.js';
 
@@ -27,6 +29,7 @@ router.get('/', (req: Request, res: Response) => {
 router.post('/', (req: Request, res: Response) => {
   const parseResult = accountSchema.safeParse(req.body);
   if (!parseResult.success) {
+    logValidationFailure(req, parseResult.error.issues, 'account.create');
     res.status(400).json({ message: 'Validation error' });
     return;
   }
@@ -42,10 +45,12 @@ router.post('/', (req: Request, res: Response) => {
       'INSERT INTO accounts (id, household_id, user_id, name, sort_order, is_joint) VALUES (?, ?, ?, ?, ?, ?)',
     ).run(id, req.householdId!, req.userId!, name.trim(), sort_order, is_joint ? 1 : 0);
   } catch (err) {
-    res.status(400).json({ message: (err as Error).message });
+    logger.error('Failed to save account', { request_id: req.requestId, id, userId: req.userId, error: err });
+    res.status(500).json({ message: 'Internal server error' });
     return;
   }
   const row = db.prepare('SELECT * FROM accounts WHERE id = ?').get(id) as Record<string, unknown>;
+  logger.info('Account created', { request_id: req.requestId, id, userId: req.userId });
   res.status(201).json(mapAccount(row));
 });
 
@@ -54,6 +59,7 @@ router.put('/:id', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
   const parseResult = accountSchema.partial().safeParse(req.body);
   if (!parseResult.success) {
+    logValidationFailure(req, parseResult.error.issues, 'account.update');
     res.status(400).json({ message: 'Validation error' });
     return;
   }
@@ -85,10 +91,12 @@ router.put('/:id', (req: Request, res: Response) => {
       db.prepare('UPDATE accounts SET is_joint = ? WHERE id = ?').run(is_joint ? 1 : 0, id);
     }
   } catch (err) {
-    res.status(400).json({ message: (err as Error).message });
+    logger.error('Failed to update account', { request_id: req.requestId, id, userId: req.userId, error: err });
+    res.status(500).json({ message: 'Internal server error' });
     return;
   }
   const row = db.prepare('SELECT * FROM accounts WHERE id = ?').get(id) as Record<string, unknown>;
+  logger.info('Account updated', { request_id: req.requestId, id, userId: req.userId });
   res.json(mapAccount(row));
 });
 
@@ -108,9 +116,11 @@ router.delete('/:id', (req: Request, res: Response) => {
     db.prepare('UPDATE expenses SET account_id = NULL WHERE account_id = ?').run(id);
     db.prepare('DELETE FROM accounts WHERE id = ?').run(id);
   } catch (err) {
-    res.status(400).json({ message: (err as Error).message });
+    logger.error('Failed to delete account', { request_id: req.requestId, id, userId: req.userId, error: err });
+    res.status(500).json({ message: 'Internal server error' });
     return;
   }
+  logger.info('Account deleted', { request_id: req.requestId, id, userId: req.userId });
   res.status(204).send();
 });
 
