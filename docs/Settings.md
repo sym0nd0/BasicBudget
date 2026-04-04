@@ -1,12 +1,6 @@
 # Settings
 
-The Settings page lets you manage your profile, payment accounts, month locking, and appearance. CSV import and JSON export are also accessed here.
-
-## Profile
-
-- **Display Name** — Update the name shown in the sidebar and household views.
-- **Change Password** — Enter your current password and a new password to update it.
-- **Change Email** — Update the email address associated with your account.
+The Settings page lets you manage payment accounts, import/export, appearance, security, household membership, and month locking.
 
 ## Payment Accounts
 
@@ -14,11 +8,10 @@ Payment accounts represent the bank accounts, credit cards, or wallets you use t
 
 | Action | Description |
 |---|---|
-| **Add Account** | Create a new account with a name and optional notes. |
-| **Edit Account** | Update the name or notes for an existing account. |
+| **Add Account** | Create a new account with a name and optional joint-account flag. |
+| **Edit Account** | Update the name or joint-account flag for an existing account. |
 | **Delete Account** | Remove an account. Expenses linked to it will become unassigned. |
-| **Joint Account** | Mark an account as jointly held with another household member. |
-| **Sort Order** | Drag accounts to reorder how they appear in dropdowns. |
+| **Joint Account** | Mark an account as visible to all household members. |
 
 ## Month Locking
 
@@ -35,7 +28,7 @@ Bulk-import financial data from a CSV file. See [[Importing Data\|Importing-Data
 
 ## JSON Export
 
-Click **Export Data** to download a full JSON export of all your income, expenses, debts, and savings goals. See [[Exporting Data\|Exporting-Data]] for details.
+Click **Export JSON** to download a JSON export of your accounts, income, expenses, debts, savings goals, and month locks. See [[Exporting Data\|Exporting-Data]] for details.
 
 ## Colour Blindness Palettes
 
@@ -51,6 +44,21 @@ Choose your preferred date and time display format. These settings apply to all 
 ## Theme
 
 Choose between **Light**, **Dark**, or **System** (follows your operating system preference). See [[Customisation]] for details.
+
+## Security
+
+- **Change Password** — Enter your current password and a new password.
+- **Set up 2FA** — Scan a QR code with an authenticator app, confirm a 6-digit code, and save the one-time recovery codes.
+- **Reset 2FA** — Disable 2FA by entering your password plus an OTP or recovery code.
+- **Lost access to authenticator** — Request a delayed reset email link that becomes usable after 24 hours.
+- **Active Sessions** — View current sessions and revoke any session except the one you are currently using.
+
+## Household
+
+- **View members** — Load the current household member list.
+- **Change roles** — Household owners can switch members between Owner and Member.
+- **Remove members** — Household owners can remove a member; the member's private data is moved into a new one-person household and their sessions are revoked.
+- **Invite Member** — Household owners can invite a new member by email and rescind outstanding invites.
 
 ---
 

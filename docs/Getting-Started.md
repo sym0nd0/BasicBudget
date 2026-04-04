@@ -25,11 +25,11 @@ As the first user (and admin), configure the application before inviting others:
 
 ## Invite Household Members
 
-If you share finances with others, invite them from the Household page:
+If you share finances with others, invite them from Settings:
 
-1. Go to **Household** in the sidebar.
+1. Go to **Settings** → **Household**.
 2. Enter the email address of the person you want to invite.
-3. Click **Send Invite**.
+3. Click **Invite**.
 
 They will receive an email with a link valid for 7 days.
 

@@ -18,10 +18,6 @@ Click the **remove icon** next to a category to delete it.
 
 > **Note:** Expenses assigned to the deleted category will become uncategorised. They will not be deleted.
 
-### Reordering Categories
-
-Drag categories in the list to change the order they appear in expense form dropdowns.
-
 ### Resetting to Defaults
 
 Click **Reset to Defaults** to restore the built-in category list. This does not affect existing expense assignments.
@@ -45,7 +41,7 @@ BasicBudget ships with a default set of categories suitable for a typical househ
 
 ## Using Categories
 
-When adding or editing an expense, select a category from the **Category** dropdown. You can filter by category on the Dashboard using the filter bar, and view category-level spending breakdowns on the [[Reports]] page.
+When adding or editing an expense, select a category from the **Category** dropdown. You can filter the Expenses page by category using its filter bar, and view category-level spending breakdowns on the Dashboard and [[Reports]] page.
 
 ---
 

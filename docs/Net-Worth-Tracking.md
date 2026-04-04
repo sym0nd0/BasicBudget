@@ -6,8 +6,8 @@ While BasicBudget does not calculate a single net worth figure, it provides the 
 
 | Metric | Where to find it |
 |---|---|
-| **Total savings balance** | Dashboard summary card — Total Savings |
-| **Total debt balance** | Dashboard summary card — Total Debt |
+| **Total savings balance** | Dashboard summary card — Monthly Savings sub-value, or Savings → Total Saved |
+| **Total debt balance** | Debt → Total Debt, or Dashboard → Debt Payments sub-value |
 | **Monthly disposable income** | Reports → Budget Performance → Disposable Income chart |
 | **Savings rate trend** | Reports → Budget Performance → Savings Rate chart |
 | **Debt reduction over time** | Reports → Debt Charts → Debt Projection chart |

@@ -10,12 +10,12 @@ Go to **Settings** in the sidebar, then scroll to the **Payment Accounts** secti
 
 1. Click **Add Account**.
 2. Enter a name (e.g. "Barclays Current", "Amex Credit Card").
-3. Optionally add notes (e.g. account number, sort code for reference).
-4. Click **Save**.
+3. Tick **Joint account** if all household members should be able to use the account on expenses.
+4. Click **Add Account**.
 
 ### Editing an Account
 
-Click the **edit icon** next to any account to update its name or notes.
+Click the **edit icon** next to any account to update its name or joint-account flag.
 
 ### Deleting an Account
 
@@ -25,15 +25,11 @@ Click the **delete icon** next to an account to remove it.
 
 ### Joint Accounts
 
-Tick **Joint Account** to mark an account as jointly held with another household member. This is informational and used in Household split calculations.
-
-### Sort Order
-
-Drag accounts to reorder how they appear in the account dropdown when adding or editing expenses.
+Tick **Joint account** to make the account available to all household members when they create or edit expenses.
 
 ## Assigning Expenses to Accounts
 
-When adding or editing an expense, select the account from the **Account** dropdown. The Dashboard filter bar includes an **Account** filter to show only expenses from a specific account.
+When adding or editing an expense, select the account from the **Account** dropdown. The Expenses table shows the linked account for each row.
 
 ---
 

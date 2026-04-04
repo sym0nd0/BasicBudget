@@ -44,7 +44,7 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 | `POST` | `/api/auth/logout` | Log out and destroy the session |
 | `POST` | `/api/auth/forgot-password` | Request a password reset email |
 | `POST` | `/api/auth/reset-password` | Complete password reset via token |
-| `GET` | `/api/auth/verify-email` | Verify email address via token |
+| `POST` | `/api/auth/verify-email` | Verify email address via token |
 | `GET` | `/api/auth/status` | Check authentication status |
 | `GET` | `/api/auth/csrf-token` | Get the CSRF token for the current session |
 | `GET` | `/api/auth/registration-status` | Check whether public registration is enabled |
@@ -78,6 +78,7 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 | `GET` | `/api/auth/profile` | Get current user profile |
 | `PUT` | `/api/auth/profile` | Update display name |
 | `PUT` | `/api/auth/profile/palette` | Set colour blindness palette |
+| `PUT` | `/api/auth/profile/datetime-format` | Set date and time format preferences |
 | `PUT` | `/api/auth/profile/notify-updates` | Toggle version update notifications |
 | `POST` | `/api/auth/profile/change-password` | Change password (requires current password) |
 | `POST` | `/api/auth/profile/change-email` | Request email change |
@@ -111,7 +112,6 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 |---|---|---|
 | `GET` | `/api/incomes?month=YYYY-MM` | List income entries active for the given month |
 | `POST` | `/api/incomes` | Create a new income entry |
-| `GET` | `/api/incomes/:id` | Get a single income entry |
 | `PUT` | `/api/incomes/:id` | Update an existing income entry |
 | `DELETE` | `/api/incomes/:id` | Delete an income entry |
 
@@ -121,7 +121,6 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 |---|---|---|
 | `GET` | `/api/expenses?month=YYYY-MM` | List expense entries active for the given month |
 | `POST` | `/api/expenses` | Create a new expense entry |
-| `GET` | `/api/expenses/:id` | Get a single expense entry |
 | `PUT` | `/api/expenses/:id` | Update an existing expense entry |
 | `DELETE` | `/api/expenses/:id` | Delete an expense entry |
 
@@ -131,7 +130,6 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 |---|---|---|
 | `GET` | `/api/debts` | List all debt entries |
 | `POST` | `/api/debts` | Create a new debt entry |
-| `GET` | `/api/debts/:id` | Get a single debt entry |
 | `PUT` | `/api/debts/:id` | Update an existing debt entry |
 | `DELETE` | `/api/debts/:id` | Delete a debt entry |
 | `GET` | `/api/debts/:id/repayments` | Get the repayment schedule for a debt |
@@ -143,7 +141,6 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 | `GET` | `/api/savings-goals` | List all savings goals |
 | `POST` | `/api/savings-goals` | Create a new savings goal |
 | `POST` | `/api/savings-goals/process-auto-contributions` | Catch up scheduled auto-contributions |
-| `GET` | `/api/savings-goals/:id` | Get a single savings goal |
 | `PUT` | `/api/savings-goals/:id` | Update an existing savings goal |
 | `DELETE` | `/api/savings-goals/:id` | Delete a savings goal |
 | `GET` | `/api/savings-goals/transactions` | List all savings transactions |
@@ -164,6 +161,7 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 |---|---|---|
 | `GET` | `/api/reports/overview?from=YYYY-MM&to=YYYY-MM` | Overview summary for a date range |
 | `GET` | `/api/reports/debt-projection?household_only=true` | Debt projection data |
+| `GET` | `/api/reports/debt-payoff-timeline?strategy=snowball&household_only=false` | Per-debt payoff timeline projection |
 
 ## Import / Export Endpoints
 

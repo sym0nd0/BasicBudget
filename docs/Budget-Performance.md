@@ -10,9 +10,9 @@ Five summary cards appear at the top of the Reports page, each with a trend indi
 |---|---|
 | **Total Income** | Sum of income over the selected period |
 | **Total Expenses** | Sum of expenses over the selected period |
+| **Debt Payments** | Sum of debt payments over the selected period |
+| **Savings** | Sum of savings contributions over the selected period |
 | **Disposable Income** | Income minus Expenses |
-| **Savings Rate** | Disposable income as a percentage of total income |
-| **Total Debt** | Current outstanding debt balance |
 
 The trend arrows show whether each metric has improved or worsened compared to the previous period of the same length.
 
@@ -24,19 +24,19 @@ A grouped bar chart showing monthly income and expenses side by side.
 - The gap between the bars represents disposable income for that month
 - Months where expenses exceed income are easy to spot
 
-## Disposable Income Line Chart
+## Month-over-Month Comparison
 
-A line chart of monthly disposable income (income minus expenses) over the period.
+A compact comparison card shows each month in the selected period against the previous month.
+
+## Disposable Income & Savings Rate Chart
+
+A combined line chart shows monthly disposable income and savings rate over the period.
 
 - A positive line indicates surplus for that month
 - A negative dip indicates the month's expenses exceeded income
 
-## Savings Rate Chart
-
-A line chart showing the percentage of income saved each month.
-
 ```
-Savings Rate = (Disposable Income ÷ Total Income) × 100
+Savings Rate = (Savings ÷ Total Income) × 100
 ```
 
 A rate above 20% is generally considered healthy for long-term financial stability.

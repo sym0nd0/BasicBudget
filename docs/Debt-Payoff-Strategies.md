@@ -4,7 +4,7 @@ BasicBudget provides tools to help you plan and accelerate debt repayment.
 
 ## Repayment Schedule
 
-Click **View Schedule** on any debt to see a month-by-month projection table:
+Click a debt row on the Debt page to expand a month-by-month projection table:
 
 | Column | Description |
 |---|---|
@@ -18,7 +18,7 @@ The schedule projects forward until the debt reaches zero.
 
 ## Payoff Summary
 
-Below the schedule, a summary shows:
+The expanded repayment panel shows:
 
 - **Months remaining** until the debt is paid off
 - **Total interest** that will be paid over the repayment period
@@ -44,20 +44,19 @@ Deal Periods track promotional interest rates (e.g. 0% balance transfer offers).
 
 1. Open the debt's edit form.
 2. Scroll to the **Deal Periods** section.
-3. Click **Add Deal Period** and fill in the fields:
+3. Click **Add Period** and fill in the fields:
 
 | Field | Description |
 |---|---|
-| **Deal Name** | A label for the deal (e.g. "0% BT Offer"). |
-| **Interest Rate (%)** | The promotional APR during this period. |
+| **Period** | A generated period number shown in the form. |
+| **Rate %** | The promotional APR during this period. |
 | **Start Date** | When the promotional rate begins. |
 | **End Date** | When the promotional rate expires. |
-| **Email Reminder** | Enable to receive an email reminder before the deal expires. |
-| **Reminder Days** | How many days before expiry to send the reminder. |
+| **Deal Period Reminder** | Set how many months before expiry an email reminder should be sent. Use `0` to disable reminders. |
 
 ### Email Reminders
 
-When Email Reminder is enabled, BasicBudget sends an email to your registered address the specified number of days before the deal period expires. This requires SMTP to be configured in the [[Admin]] panel.
+When a reminder is configured, BasicBudget sends an email to your registered address the specified number of months before the deal period expires. This requires SMTP to be configured in the [[Admin]] panel.
 
 ### Effect on Repayment Schedule
 

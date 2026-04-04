@@ -6,7 +6,7 @@ BasicBudget can export all your financial data as a JSON file. This is useful fo
 
 1. Go to **Settings** in the sidebar.
 2. Scroll to the **JSON Export** section.
-3. Click **Export Data**.
+3. Click **Export JSON**.
 
 A JSON file is downloaded immediately to your browser.
 
@@ -14,10 +14,12 @@ A JSON file is downloaded immediately to your browser.
 
 The export contains all of your personal data:
 
+- Payment accounts (your own accounts plus joint accounts)
 - Income entries
 - Expense entries
 - Debt entries (including deal periods)
 - Savings goals
+- Month locks
 
 > **Note:** The export includes only your own data, not other household members' personal entries. Household-flagged items that you own are included.
 
@@ -27,10 +29,14 @@ The exported file is a JSON object with top-level keys for each data type:
 
 ```json
 {
+  "schema_version": 3,
+  "exported_at": "2026-04-04T12:00:00.000Z",
+  "accounts": [...],
   "incomes": [...],
   "expenses": [...],
   "debts": [...],
-  "savingsGoals": [...]
+  "savings_goals": [...],
+  "month_locks": [...]
 }
 ```
 

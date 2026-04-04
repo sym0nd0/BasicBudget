@@ -24,8 +24,8 @@ Use **Start Date** and **End Date** to limit when a recurring entry is active:
 
 | Field | Format | Behaviour |
 |---|---|---|
-| **Start Date** | `YYYY-MM` | Entry is not shown before this month. Leave blank to start from the beginning. |
-| **End Date** | `YYYY-MM` | Entry is not shown after this month. Leave blank for no end date. |
+| **Start Date** | `YYYY-MM-DD` | Entry is not shown before this date. Leave blank to start from the beginning. Weekly and fortnightly entries require a start date. |
+| **End Date** | `YYYY-MM-DD` | Entry is not shown after this date. Leave blank for no end date. |
 
 ## Weekly Multiplier
 

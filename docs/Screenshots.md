@@ -66,6 +66,14 @@ The Settings page lets each user manage their profile, theme, colour palette, ac
 |---|---|
 | ![Settings Light](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/settings-light.png) | ![Settings Dark](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/settings-dark.png) |
 
+## Admin Users
+
+The Admin Users page (admin-only) lists registered users, account status, system role, 2FA/OIDC state, and account actions.
+
+| Light | Dark |
+|---|---|
+| ![Admin Users Light](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/admin-users-light.png) | ![Admin Users Dark](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/admin-users-dark.png) |
+
 ## Admin Settings
 
 The Admin Settings page (admin-only) provides system configuration: SMTP, OIDC single sign-on, expense categories, registration control, automated database backups, and log level.
@@ -73,6 +81,14 @@ The Admin Settings page (admin-only) provides system configuration: SMTP, OIDC s
 | Light | Dark |
 |---|---|
 | ![Admin Settings Light](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/admin-settings-light.png) | ![Admin Settings Dark](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/admin-settings-dark.png) |
+
+## Admin Audit Log
+
+The Admin Audit Log page (admin-only) provides a paginated, filterable record of authentication and administrative actions with expandable detail rows.
+
+| Light | Dark |
+|---|---|
+| ![Admin Audit Log Light](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/admin-audit-log-light.png) | ![Admin Audit Log Dark](https://raw.githubusercontent.com/sym0nd0/BasicBudget/master/docs/screenshots/admin-audit-log-dark.png) |
 
 ---
 
