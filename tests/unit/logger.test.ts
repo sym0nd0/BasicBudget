@@ -66,6 +66,18 @@ describe('logger', () => {
     expect(getCurrentLogLevel()).toBe('debug');
   });
 
+  it('ignores inherited object property names when resolving persisted log levels', async () => {
+    process.env.LOG_LEVEL = 'warn';
+    vi.resetModules();
+
+    const { setSetting } = await import('../../server/services/settings.js');
+    const { getCurrentLogLevel } = await import('../../server/services/logger.js');
+
+    setSetting('log.level', 'toString');
+
+    expect(getCurrentLogLevel()).toBe('warn');
+  });
+
   it('redacts sensitive metadata and serialises errors with stack traces', async () => {
     process.env.LOG_LEVEL = 'debug';
     vi.resetModules();

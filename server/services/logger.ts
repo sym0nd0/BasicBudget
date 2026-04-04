@@ -9,7 +9,9 @@ const SENSITIVE_KEY_PATTERN =
   /(^|[_-])(password|pass|secret|token|cookie|authori[sz]ation|email|user-agent|subject|html|name|balance_pence|amount_pence|current_amount_pence|target_amount_pence|monthly_contribution_pence|minimum_payment_pence|overpayment_pence|interest_rate)([_-]|$)/i;
 
 function resolveLogLevel(value: string | null | undefined): LogLevel | null {
-  return value && value in LEVEL_ORDER ? value as LogLevel : null;
+  return value && Object.prototype.hasOwnProperty.call(LEVEL_ORDER, value)
+    ? value as LogLevel
+    : null;
 }
 
 export function getCurrentLogLevel(): LogLevel {
