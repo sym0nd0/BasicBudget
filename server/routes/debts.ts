@@ -6,6 +6,7 @@ import { isMonthLocked } from './months.js';
 import { filterVisible, canModify } from '../utils/visibility.js';
 import { currentYearMonth } from '../utils/recurring.js';
 import { requireAuth } from '../middleware/auth.js';
+import { logValidationFailure } from '../middleware/validate.js';
 import type { Debt, DebtDealPeriod } from '../../shared/types.js';
 import { logger } from '../services/logger.js';
 import { computeRepayments } from '../utils/debtRepayments.js';
@@ -47,6 +48,7 @@ router.get('/', (req: Request, res: Response) => {
 router.post('/', (req: Request, res: Response) => {
   const result = debtSchema.safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'debt.create');
     res.status(400).json({ message: 'Validation error' });
     return;
   }
@@ -120,13 +122,13 @@ router.post('/', (req: Request, res: Response) => {
         .run(randomUUID(), id, req.householdId!, body.balance_pence, today);
     })();
   } catch (err) {
-    logger.error('Failed to save debt', { error: err });
+    logger.error('Failed to save debt', { request_id: req.requestId, id, userId: req.userId, error: err });
     res.status(500).json({ message: 'Failed to save debt' });
     return;
   }
   const row = db.prepare('SELECT * FROM debts WHERE id = ?').get(id) as Record<string, unknown>;
 
-  logger.info('Debt created', { id, userId: req.userId, name: nameValue });
+  logger.info('Debt created', { request_id: req.requestId, id, userId: req.userId });
   res.status(201).json(enrichDebtWithPeriods(mapDebt(row)));
 });
 
@@ -135,6 +137,7 @@ router.put('/:id', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
   const result = debtSchema.partial().safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'debt.update');
     res.status(400).json({ message: 'Validation error' });
     return;
   }
@@ -229,12 +232,12 @@ router.put('/:id', (req: Request, res: Response) => {
       }
     })();
   } catch (err) {
-    logger.error('Failed to save debt', { error: err });
+    logger.error('Failed to save debt', { request_id: req.requestId, id, userId: req.userId, error: err });
     res.status(500).json({ message: 'Failed to save debt' });
     return;
   }
   const row = db.prepare('SELECT * FROM debts WHERE id = ?').get(id) as Record<string, unknown>;
-  logger.info('Debt updated', { id, userId: req.userId });
+  logger.info('Debt updated', { request_id: req.requestId, id, userId: req.userId });
   res.json(enrichDebtWithPeriods(mapDebt(row)));
 });
 
@@ -261,10 +264,11 @@ router.delete('/:id', (req: Request, res: Response) => {
   try {
     db.prepare('DELETE FROM debts WHERE id = ?').run(id);
   } catch (err) {
+    logger.error('Failed to delete debt', { request_id: req.requestId, id, userId: req.userId, error: err });
     res.status(400).json({ message: (err as Error).message });
     return;
   }
-  logger.info('Debt deleted', { id, userId: req.userId });
+  logger.info('Debt deleted', { request_id: req.requestId, id, userId: req.userId });
   res.status(204).send();
 });
 

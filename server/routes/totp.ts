@@ -5,6 +5,7 @@ import { z } from 'zod';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { otpLimiter, totpResetLimiter, sensitiveActionLimiter } from '../middleware/rate-limit.js';
+import { logValidationFailure } from '../middleware/validate.js';
 import {
   generateTotpSecret,
   encryptSecret,
@@ -22,6 +23,7 @@ import { verifyPassword } from '../auth/password.js';
 import { auditLog } from '../services/audit.js';
 import { deviceFingerprint, isNewDevice, recordDevice } from '../auth/device.js';
 import { sendLoginAlert } from '../services/email.js';
+import { logger } from '../services/logger.js';
 import type { TotpSetupResponse, User } from '../../shared/types.js';
 
 const router = Router();
@@ -65,13 +67,18 @@ router.post('/setup', requireAuth, async (req: Request, res: Response) => {
 
   const qrDataUrl = await generateQrDataUrl(totp.toString());
   const resp: TotpSetupResponse = { otpauthUrl: totp.toString(), qrDataUrl, base32Secret: base32 };
+  logger.info('TOTP setup initiated', { request_id: req.requestId, userId: req.userId });
   res.json(resp);
 });
 
 // POST /api/auth/totp/verify-setup  (requireAuth)
 router.post('/verify-setup', requireAuth, otpLimiter, async (req: Request, res: Response) => {
   const result = otpSchema.safeParse(req.body);
-  if (!result.success) { res.status(400).json({ message: 'A 6-digit token is required' }); return; }
+  if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'totp.verify-setup');
+    res.status(400).json({ message: 'A 6-digit token is required' });
+    return;
+  }
 
   const secretRow = db.prepare('SELECT * FROM totp_secrets WHERE user_id = ?').get(req.userId!) as {
     encrypted_secret: string; iv: string; auth_tag: string; verified: number
@@ -80,6 +87,10 @@ router.post('/verify-setup', requireAuth, otpLimiter, async (req: Request, res: 
 
   const base32 = decryptSecret(secretRow.encrypted_secret, secretRow.iv, secretRow.auth_tag);
   if (!verifyTotp(base32, result.data.token)) {
+    logger.warn('TOTP setup verification failed: invalid OTP code', {
+      request_id: req.requestId,
+      userId: req.userId,
+    });
     res.status(400).json({ message: 'Invalid OTP code' });
     return;
   }
@@ -87,6 +98,10 @@ router.post('/verify-setup', requireAuth, otpLimiter, async (req: Request, res: 
   // Check for replay attack
   const period = Math.floor(Date.now() / 1000 / 30);
   if (isTotpTokenUsed(req.userId!, result.data.token, period)) {
+    logger.warn('TOTP setup verification failed: replayed OTP token', {
+      request_id: req.requestId,
+      userId: req.userId,
+    });
     res.status(401).json({ message: 'Invalid or expired code' });
     return;
   }
@@ -106,6 +121,7 @@ router.post('/verify-setup', requireAuth, otpLimiter, async (req: Request, res: 
   }
 
   auditLog(req.userId!, '2fa_enabled', {}, req.ip, req.get('user-agent'));
+  logger.info('TOTP enabled', { request_id: req.requestId, userId: req.userId });
   res.json({ recoveryCodes: plainCodes, message: 'Two-factor authentication enabled. Save these recovery codes in a safe place — they will not be shown again.' });
 });
 
@@ -116,7 +132,11 @@ router.post('/verify', otpLimiter, async (req: Request, res: Response) => {
     return;
   }
   const result = otpSchema.safeParse(req.body);
-  if (!result.success) { res.status(400).json({ message: 'A 6-digit token is required' }); return; }
+  if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'totp.verify');
+    res.status(400).json({ message: 'A 6-digit token is required' });
+    return;
+  }
 
   const secretRow = db.prepare('SELECT * FROM totp_secrets WHERE user_id = ? AND verified = 1').get(req.session.userId) as {
     encrypted_secret: string; iv: string; auth_tag: string;
@@ -125,6 +145,10 @@ router.post('/verify', otpLimiter, async (req: Request, res: Response) => {
 
   const base32 = decryptSecret(secretRow.encrypted_secret, secretRow.iv, secretRow.auth_tag);
   if (!verifyTotp(base32, result.data.token)) {
+    logger.warn('TOTP login verification failed: invalid OTP code', {
+      request_id: req.requestId,
+      userId: req.session.userId,
+    });
     res.status(401).json({ message: 'Invalid OTP code' });
     return;
   }
@@ -132,6 +156,10 @@ router.post('/verify', otpLimiter, async (req: Request, res: Response) => {
   // Check for replay attack
   const period = Math.floor(Date.now() / 1000 / 30);
   if (isTotpTokenUsed(req.session.userId, result.data.token, period)) {
+    logger.warn('TOTP login verification failed: replayed OTP token', {
+      request_id: req.requestId,
+      userId: req.session.userId,
+    });
     res.status(401).json({ message: 'Invalid or expired code' });
     return;
   }
@@ -148,13 +176,26 @@ router.post('/verify', otpLimiter, async (req: Request, res: Response) => {
   if (isNewDevice(req.session.userId, fp)) {
     recordDevice(req.session.userId, fp, req.ip, req.get('user-agent'));
     const userRow = db.prepare('SELECT email FROM users WHERE id = ?').get(req.session.userId) as { email: string } | undefined;
-    if (userRow) sendLoginAlert(userRow.email, req.ip, req.get('user-agent')).catch(() => {});
+    if (userRow) {
+      sendLoginAlert(userRow.email, req.ip, req.get('user-agent')).catch((err) => {
+        logger.warn('New-device TOTP login alert email failed', {
+          request_id: req.requestId,
+          userId: req.session.userId,
+          error: err,
+        });
+      });
+    }
+    logger.info('New device recorded for TOTP login', {
+      request_id: req.requestId,
+      userId: req.session.userId,
+    });
   }
 
   const userRow = db.prepare('SELECT * FROM users WHERE id = ?').get(req.session.userId) as Record<string, unknown>;
   const memberRow = db.prepare('SELECT household_id FROM household_members WHERE user_id = ? LIMIT 1').get(req.session.userId) as { household_id: string } | undefined;
 
   auditLog(req.session.userId, 'login_totp_success', {}, req.ip, req.get('user-agent'));
+  logger.info('TOTP login successful', { request_id: req.requestId, userId: req.session.userId });
   res.json({ user: mapUser(userRow), household: memberRow ? { id: memberRow.household_id } : null });
 });
 
@@ -165,7 +206,11 @@ router.post('/verify-recovery', otpLimiter, async (req: Request, res: Response) 
     return;
   }
   const result = recoverySchema.safeParse(req.body);
-  if (!result.success) { res.status(400).json({ message: 'Recovery code is required' }); return; }
+  if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'totp.verify-recovery');
+    res.status(400).json({ message: 'Recovery code is required' });
+    return;
+  }
 
   const codes = db.prepare('SELECT * FROM recovery_codes WHERE user_id = ? AND used = 0').all(req.session.userId) as {
     id: string; code_hash: string;
@@ -180,6 +225,10 @@ router.post('/verify-recovery', otpLimiter, async (req: Request, res: Response) 
   }
 
   if (!matchedId) {
+    logger.warn('TOTP recovery login failed: invalid or already-used recovery code', {
+      request_id: req.requestId,
+      userId: req.session.userId,
+    });
     res.status(401).json({ message: 'Invalid or already-used recovery code' });
     return;
   }
@@ -192,6 +241,7 @@ router.post('/verify-recovery', otpLimiter, async (req: Request, res: Response) 
   const memberRow = db.prepare('SELECT household_id FROM household_members WHERE user_id = ? LIMIT 1').get(req.session.userId) as { household_id: string } | undefined;
 
   auditLog(req.session.userId, 'recovery_code_used', {}, req.ip, req.get('user-agent'));
+  logger.info('TOTP recovery login successful', { request_id: req.requestId, userId: req.session.userId });
   res.json({ user: mapUser(userRow), household: memberRow ? { id: memberRow.household_id } : null });
 });
 
@@ -235,6 +285,7 @@ router.post('/disable', requireAuth, sensitiveActionLimiter, async (req: Request
   })();
 
   auditLog(req.userId!, '2fa_disabled', {}, req.ip, req.get('user-agent'));
+  logger.info('TOTP disabled', { request_id: req.requestId, userId: req.userId });
   res.json({ message: 'Two-factor authentication disabled.' });
 });
 
@@ -246,9 +297,16 @@ router.post('/request-reset', requireAuth, totpResetLimiter, async (req: Request
   createToken(req.userId!, 'totp_reset');
   try {
     await sendTotpResetNotification(userRow.email);
-  } catch { /* ignore */ }
+  } catch (err) {
+    logger.warn('TOTP reset notification email failed', {
+      request_id: req.requestId,
+      userId: req.userId,
+      error: err,
+    });
+  }
 
   auditLog(req.userId!, '2fa_reset_requested', {}, req.ip, req.get('user-agent'));
+  logger.info('TOTP reset requested', { request_id: req.requestId, userId: req.userId });
   res.json({ message: 'A 2FA reset has been requested. You will receive an email notification. The reset will be available after 24 hours.' });
 });
 
@@ -273,6 +331,7 @@ router.post('/confirm-reset', sensitiveActionLimiter, async (req: Request, res: 
   })();
 
   auditLog(consumed.userId, '2fa_reset', {}, req.ip, req.get('user-agent'));
+  logger.info('TOTP reset completed', { request_id: req.requestId, userId: consumed.userId });
   res.json({ message: 'Two-factor authentication has been reset. Please log in again.' });
 });
 

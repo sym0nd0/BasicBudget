@@ -119,7 +119,7 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 - **User management**: list all users, promote/demote roles, lock/unlock accounts, delete users
 - **System settings**: configure SMTP (email), OIDC (SSO), structured logging, expense categories, and registration at runtime via the UI — no restart required
   - **Registration**: toggle public sign-up on or off; when disabled, new accounts can only be created via household invites or directly by admins (the first user on a fresh instance can always register)
-  - **Logging**: set minimum log level (debug, info, warn, error) to control verbosity of server output; output is JSON-formatted for container and log aggregation compatibility
+  - **Logging**: set minimum log level (debug, info, warn, error) to control verbosity of server output; output is JSON-formatted for container and log aggregation compatibility. `LOG_LEVEL` is the bootstrap default, then the persisted Admin setting takes precedence.
   - **Expense categories**: add, remove, reorder, or reset to defaults
 - **Database backup and restore**: download a full JSON backup of all users, households, budget data, and system settings; restore from a backup file for instance migration or disaster recovery (admin-only; invalidates all sessions on restore); **automated scheduled backups** to server disk with configurable interval and retention limit
 - **Audit log**: paginated, filterable log of all authentication and admin actions
@@ -278,6 +278,7 @@ Compiles the frontend to `dist/` and the server to `dist-server/`. Run with `npm
 | `APP_URL` | No | Public URL of the app (default `http://localhost:5173`); set in production for correct email links |
 | `CORS_ORIGIN` | No | Allowed CORS origin (defaults to `APP_URL` value) |
 | `DB_PATH` | No | Path to SQLite file (default `data/basicbudget.db`) |
+| `LOG_LEVEL` | No | Bootstrap server log level: `debug`, `info`, `warn`, or `error` (default `info`). Once Admin → System Settings → Logging is saved, the DB value takes precedence without a restart |
 | `PORT` | No | Server port (default `3001`; Docker uses `3000`) |
 | `NODE_ENV` | No | Execution environment: `development`, `production`, or `test` (default `development`) |
 | `COOKIE_SECURE` | No | Set to `false` when `APP_URL` is `http://` (a startup warning fires if this may be needed); defaults to `true` in production, `false` in development |
@@ -310,6 +311,16 @@ APP_URL=https://budget.example.com
 SMTP and OIDC are configured through the Admin Panel after first login.
 
 Data is persisted in a named Docker volume (`bb-data`) mounted at `/app/data`. The container is configured with `restart: unless-stopped` to automatically recover from failures.
+
+### Container logs
+
+Server logs are written as structured JSON to stdout/stderr, so Docker captures them directly:
+
+```bash
+docker compose logs -f basicbudget
+```
+
+Set `LOG_LEVEL=debug` in your `.env` file for first-start debugging, then adjust the runtime level from **Admin → System Settings → Logging**.
 
 ### Update to the latest image
 

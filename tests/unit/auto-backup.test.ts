@@ -2,7 +2,6 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { z } from 'zod';
 
 // Mock the settings service so these unit tests don't need a real DB
 vi.mock('../../server/services/settings.js', () => ({

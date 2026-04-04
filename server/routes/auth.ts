@@ -11,6 +11,7 @@ import { deviceFingerprint, isNewDevice, recordDevice } from '../auth/device.js'
 import { sendLoginAlert } from '../services/email.js';
 import { loginLimiter, passwordResetLimiter, registrationLimiter } from '../middleware/rate-limit.js';
 import { generateCsrfToken } from '../middleware/csrf.js';
+import { logValidationFailure } from '../middleware/validate.js';
 import type { User, AuthStatusResponse } from '../../shared/types.js';
 import { getSetting } from '../services/settings.js';
 import { logger } from '../services/logger.js';
@@ -77,6 +78,7 @@ function mapUser(row: Record<string, unknown>): User {
 router.post('/register', registrationLimiter, async (req: Request, res: Response) => {
   const result = registerSchema.safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'auth.register');
     res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
     return;
   }
@@ -84,12 +86,14 @@ router.post('/register', registrationLimiter, async (req: Request, res: Response
 
   const strength = validatePasswordStrength(password);
   if (!strength.valid) {
+    logger.warn('Registration blocked: weak password', { request_id: req.requestId });
     res.status(400).json({ message: strength.message });
     return;
   }
 
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
   if (existing) {
+    logger.warn('Registration blocked: account already exists', { request_id: req.requestId });
     res.status(409).json({ message: 'An account with this email already exists' });
     return;
   }
@@ -99,6 +103,7 @@ router.post('/register', registrationLimiter, async (req: Request, res: Response
   const isFirstUser = countRow.count === 0;
 
   if (!isFirstUser && !invite_token && getSetting('registration.disabled') === 'true') {
+    logger.warn('Registration blocked: public registration disabled', { request_id: req.requestId });
     res.status(403).json({ message: 'Registration is currently disabled.' });
     return;
   }
@@ -143,12 +148,14 @@ router.post('/register', registrationLimiter, async (req: Request, res: Response
   try {
     const token = createToken(userId, 'email_verify');
     await sendEmailVerification(email, token);
-  } catch { /* ignore */ }
+  } catch (err) {
+    logger.warn('Registration email delivery failed', { request_id: req.requestId, userId, error: err });
+  }
 
   // Stdout logs are operational telemetry — no PII.
   // Full details (email, IP, UA) are written to the audit_log table only.
   auditLog(userId, 'register', { email }, req.ip, req.get('user-agent'));
-  logger.info('User registered', { userId });
+  logger.info('User registered', { request_id: req.requestId, userId });
   res.status(201).json({ message: 'Registration successful. Please check your email to verify your account.' });
 });
 
@@ -156,6 +163,7 @@ router.post('/register', registrationLimiter, async (req: Request, res: Response
 router.post('/login', loginLimiter, async (req: Request, res: Response) => {
   const result = loginSchema.safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'auth.login');
     res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
     return;
   }
@@ -165,14 +173,14 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
   if (!row || !row.password_hash) {
     // Perform timing-normalisation verification to prevent user enumeration
     await verifyPassword(await getDummyHash(), password);
-    logger.warn('Login failed: user not found or no password hash');
+    logger.warn('Login failed: user not found or no password hash', { request_id: req.requestId });
     res.status(401).json({ message: 'Invalid email or password' });
     return;
   }
 
   // Check lockout
   if (row.locked_until && new Date(row.locked_until as string) > new Date()) {
-    logger.warn('Login blocked: account locked', { userId: row.id as string });
+    logger.warn('Login blocked: account locked', { request_id: req.requestId, userId: row.id as string });
     res.status(423).json({ message: 'Account is temporarily locked due to too many failed login attempts. Try again later.' });
     return;
   }
@@ -187,7 +195,11 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
       UPDATE users SET failed_login_count = ?, locked_until = ?, updated_at = datetime('now') WHERE id = ?
     `).run(failCount, locked_until, row.id);
     auditLog(row.id as string, 'login_failed', { email }, req.ip, req.get('user-agent'));
-    logger.warn('Login failed: invalid password', { userId: row.id as string, failCount });
+    logger.warn('Login failed: invalid password', {
+      request_id: req.requestId,
+      userId: row.id as string,
+      failCount,
+    });
     res.status(401).json({ message: 'Invalid email or password' });
     return;
   }
@@ -221,7 +233,10 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
     req.session.systemRole = row.system_role as 'admin' | 'user';
     req.session.totpPending = true;
     auditLog(row.id as string, 'login_totp_required', {}, req.ip, req.get('user-agent'));
-    logger.info('Login: TOTP verification required', { userId: row.id as string });
+    logger.info('Login: TOTP verification required', {
+      request_id: req.requestId,
+      userId: row.id as string,
+    });
     res.json({ totp_required: true });
     return;
   }
@@ -238,23 +253,34 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
   const fp = deviceFingerprint(req.get('user-agent'), req.ip);
   if (isNewDevice(row.id as string, fp)) {
     recordDevice(row.id as string, fp, req.ip, req.get('user-agent'));
-    sendLoginAlert(row.email as string, req.ip, req.get('user-agent')).catch(() => {});
+    sendLoginAlert(row.email as string, req.ip, req.get('user-agent')).catch((err) => {
+      logger.warn('New-device login alert email failed', {
+        request_id: req.requestId,
+        userId: row.id as string,
+        error: err,
+      });
+    });
     auditLog(row.id as string, 'login_new_device', { ip: req.ip }, req.ip, req.get('user-agent'));
+    logger.info('New device recorded for login', {
+      request_id: req.requestId,
+      userId: row.id as string,
+    });
   }
 
   auditLog(row.id as string, 'login_success', {}, req.ip, req.get('user-agent'));
-  logger.info('Login successful', { userId: row.id as string });
+  logger.info('Login successful', { request_id: req.requestId, userId: row.id as string });
   res.json({ user: mapUser(row), household: memberRow ? { id: memberRow.household_id } : null });
 });
 
 // POST /api/auth/logout
 router.post('/logout', (req: Request, res: Response) => {
   const userId = req.session.userId;
-  req.session.destroy(() => {
+  req.session.destroy((err) => {
     res.clearCookie('bb.sid');
     res.clearCookie('bb.csrf');
     if (userId) auditLog(userId, 'logout', {}, req.ip, req.get('user-agent'));
-    if (userId) logger.info('Logout', { userId });
+    if (err) logger.error('Logout session destroy failed', { request_id: req.requestId, userId, error: err });
+    if (userId) logger.info('Logout', { request_id: req.requestId, userId });
     res.status(204).send();
   });
 });
@@ -263,6 +289,7 @@ router.post('/logout', (req: Request, res: Response) => {
 router.post('/forgot-password', passwordResetLimiter, async (req: Request, res: Response) => {
   const result = forgotSchema.safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'auth.forgot-password');
     res.json({ message: 'If an account exists with that email, a reset link has been sent.' });
     return;
   }
@@ -274,7 +301,14 @@ router.post('/forgot-password', passwordResetLimiter, async (req: Request, res: 
       const token = createToken(row.id, 'password_reset');
       await sendPasswordReset(email, token);
       auditLog(row.id, 'password_reset_requested', {}, req.ip, req.get('user-agent'));
-    } catch { /* ignore */ }
+      logger.info('Password reset email requested', { request_id: req.requestId, userId: row.id });
+    } catch (err) {
+      logger.warn('Password reset email delivery failed', {
+        request_id: req.requestId,
+        userId: row.id,
+        error: err,
+      });
+    }
   }
 
   res.json({ message: 'If an account exists with that email, a reset link has been sent.' });
@@ -284,6 +318,7 @@ router.post('/forgot-password', passwordResetLimiter, async (req: Request, res: 
 router.post('/reset-password', async (req: Request, res: Response) => {
   const result = resetSchema.safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'auth.reset-password');
     res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
     return;
   }
@@ -291,12 +326,14 @@ router.post('/reset-password', async (req: Request, res: Response) => {
 
   const strength = validatePasswordStrength(password);
   if (!strength.valid) {
+    logger.warn('Password reset blocked: weak password', { request_id: req.requestId });
     res.status(400).json({ message: strength.message });
     return;
   }
 
   const consumed = validateAndConsumeToken(token, 'password_reset');
   if (!consumed) {
+    logger.warn('Password reset blocked: invalid or expired token', { request_id: req.requestId });
     res.status(400).json({ message: 'Invalid or expired reset token' });
     return;
   }
@@ -311,6 +348,7 @@ router.post('/reset-password', async (req: Request, res: Response) => {
   db.prepare("DELETE FROM sessions WHERE user_id = ?").run(consumed.userId);
 
   auditLog(consumed.userId, 'password_reset_completed', {}, req.ip, req.get('user-agent'));
+  logger.info('Password reset completed', { request_id: req.requestId, userId: consumed.userId });
   res.json({ message: 'Password reset successful. Please log in.' });
 });
 
@@ -318,18 +356,21 @@ router.post('/reset-password', async (req: Request, res: Response) => {
 router.post('/verify-email', (req: Request, res: Response) => {
   const result = verifyEmailSchema.safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'auth.verify-email');
     res.status(400).json({ message: 'Token is required' });
     return;
   }
 
   const consumed = validateAndConsumeToken(result.data.token, 'email_verify');
   if (!consumed) {
+    logger.warn('Email verification blocked: invalid or expired token', { request_id: req.requestId });
     res.status(400).json({ message: 'Invalid or expired verification token' });
     return;
   }
 
   db.prepare("UPDATE users SET email_verified = 1, updated_at = datetime('now') WHERE id = ?").run(consumed.userId);
   auditLog(consumed.userId, 'email_verified', {}, req.ip, req.get('user-agent'));
+  logger.info('Email verified', { request_id: req.requestId, userId: consumed.userId });
   res.json({ message: 'Email verified successfully.' });
 });
 

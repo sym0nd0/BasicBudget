@@ -142,12 +142,6 @@ describe('POST /api/admin/backup/restore', () => {
   });
 
   it('round-trips backup and restore', async () => {
-    // Create a fresh admin for this isolated test
-    const agent = supertest.agent(app);
-    const user = makeTestUser('roundtrip');
-    // This user won't be admin (adminUser is already registered), so we need to use adminAgent
-    // Use adminAgent for this roundtrip test (it's already authenticated as admin)
-
     // Create an income
     let csrf = await csrfToken(adminAgent);
     await adminAgent.post('/api/incomes').set('X-CSRF-Token', csrf)

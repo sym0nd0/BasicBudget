@@ -6,6 +6,7 @@ import { filterActiveInMonth, currentYearMonth, type RecurringItem } from '../ut
 import { filterVisible, canModify } from '../utils/visibility.js';
 import { isMonthLocked } from './months.js';
 import { requireAuth } from '../middleware/auth.js';
+import { logValidationFailure } from '../middleware/validate.js';
 import type { Income } from '../../shared/types.js';
 import { logger } from '../services/logger.js';
 import { incomeSchema, monthParam } from '../validation/schemas.js';
@@ -26,6 +27,7 @@ router.get('/', (req: Request, res: Response) => {
   const month = (req.query.month as string) ?? currentYearMonth();
   const monthResult = monthParam.safeParse(month);
   if (!monthResult.success) {
+    logValidationFailure(req, monthResult.error.issues, 'query.month');
     res.status(400).json({ message: 'Invalid month format' });
     return;
   }
@@ -39,6 +41,7 @@ router.get('/', (req: Request, res: Response) => {
 router.post('/', (req: Request, res: Response) => {
   const result = incomeSchema.safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'income.create');
     res.status(400).json({ message: 'Validation error' });
     return;
   }
@@ -70,12 +73,12 @@ router.post('/', (req: Request, res: Response) => {
       body.notes ?? null,
     );
   } catch (err) {
-    logger.error('Failed to save income', { error: err });
+    logger.error('Failed to save income', { request_id: req.requestId, id, userId: req.userId, error: err });
     res.status(500).json({ message: 'Failed to save income' });
     return;
   }
   const row = db.prepare('SELECT * FROM incomes WHERE id = ?').get(id) as Record<string, unknown>;
-  logger.info('Income created', { id, userId: req.userId, name: body.name.trim() });
+  logger.info('Income created', { request_id: req.requestId, id, userId: req.userId });
   res.status(201).json(mapIncome(row));
 });
 
@@ -84,6 +87,7 @@ router.put('/:id', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
   const result = incomeSchema.partial().safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'income.update');
     res.status(400).json({ message: 'Validation error' });
     return;
   }
@@ -131,12 +135,12 @@ router.put('/:id', (req: Request, res: Response) => {
       id,
     );
   } catch (err) {
-    logger.error('Failed to save income', { error: err });
+    logger.error('Failed to save income', { request_id: req.requestId, id, userId: req.userId, error: err });
     res.status(500).json({ message: 'Failed to save income' });
     return;
   }
   const row = db.prepare('SELECT * FROM incomes WHERE id = ?').get(id) as Record<string, unknown>;
-  logger.info('Income updated', { id, userId: req.userId });
+  logger.info('Income updated', { request_id: req.requestId, id, userId: req.userId });
   res.json(mapIncome(row));
 });
 
@@ -163,11 +167,11 @@ router.delete('/:id', (req: Request, res: Response) => {
   try {
     db.prepare('DELETE FROM incomes WHERE id = ?').run(id);
   } catch (err) {
-    logger.error('Failed to delete income', { error: err });
+    logger.error('Failed to delete income', { request_id: req.requestId, id, userId: req.userId, error: err });
     res.status(500).json({ message: 'Failed to delete income' });
     return;
   }
-  logger.info('Income deleted', { id, userId: req.userId });
+  logger.info('Income deleted', { request_id: req.requestId, id, userId: req.userId });
   res.status(204).send();
 });
 

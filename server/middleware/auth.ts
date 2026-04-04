@@ -11,19 +11,32 @@ declare global {
       householdId?: string;
       householdRole?: HouseholdRole;
       systemRole?: SystemRole;
+      requestId?: string;
     }
   }
+}
+
+function authLogMeta(req: Request): Record<string, unknown> {
+  return {
+    request_id: req.requestId,
+    method: req.method,
+    path: req.path,
+    userId: req.session?.userId ?? req.userId,
+    householdId: req.householdId,
+    householdRole: req.householdRole,
+    systemRole: req.systemRole,
+  };
 }
 
 // Populate req fields from session, then require authentication
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   if (!req.session.userId) {
-    logger.debug('Auth required — no session', { path: req.path });
+    logger.debug('Auth required: no authenticated session', authLogMeta(req));
     res.status(401).json({ message: 'Authentication required' });
     return;
   }
   if (req.session.totpPending) {
-    logger.debug('Auth blocked — TOTP pending', { userId: req.session.userId });
+    logger.debug('Auth blocked: TOTP verification pending', authLogMeta(req));
     res.status(401).json({ message: 'Two-factor authentication required', totpPending: true });
     return;
   }
@@ -31,8 +44,12 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   // Absolute session lifetime — 72 hours
   const SESSION_MAX_AGE_MS = 72 * 60 * 60 * 1000;
   if (req.session.createdAt && Date.now() - req.session.createdAt > SESSION_MAX_AGE_MS) {
-    logger.info('Session expired (max age)', { userId: req.session.userId });
-    req.session.destroy(() => {});
+    logger.info('Session expired: maximum session age exceeded', authLogMeta(req));
+    req.session.destroy((err) => {
+      if (err) {
+        logger.error('Failed to destroy expired session', { ...authLogMeta(req), error: err });
+      }
+    });
     res.status(401).json({ message: 'Session expired. Please log in again.' });
     return;
   }
@@ -40,8 +57,12 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   // Inactivity timeout — 2 hours
   const SESSION_IDLE_MS = 2 * 60 * 60 * 1000;
   if (req.session.lastActivity && Date.now() - req.session.lastActivity > SESSION_IDLE_MS) {
-    logger.info('Session expired (inactivity)', { userId: req.session.userId });
-    req.session.destroy(() => {});
+    logger.info('Session expired: idle timeout exceeded', authLogMeta(req));
+    req.session.destroy((err) => {
+      if (err) {
+        logger.error('Failed to destroy idle session', { ...authLogMeta(req), error: err });
+      }
+    });
     res.status(401).json({ message: 'Session expired due to inactivity. Please log in again.' });
     return;
   }
@@ -56,6 +77,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 
 export function requireOwner(req: Request, res: Response, next: NextFunction): void {
   if (req.householdRole !== 'owner') {
+    logger.warn('Authorisation denied: household owner role required', authLogMeta(req));
     res.status(403).json({ message: 'Household owner role required' });
     return;
   }
@@ -64,6 +86,7 @@ export function requireOwner(req: Request, res: Response, next: NextFunction): v
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   if (req.systemRole !== 'admin') {
+    logger.warn('Authorisation denied: admin role required', authLogMeta(req));
     res.status(403).json({ message: 'Admin role required' });
     return;
   }

@@ -75,6 +75,8 @@ Set the verbosity of server-side logging:
 | **warn** | Warnings and potential issues only. |
 | **error** | Errors only. |
 
+`LOG_LEVEL` in the environment is only the bootstrap default. After this setting is saved in the Admin panel, the persisted database value takes precedence immediately and after restarts. Logs are emitted as JSON lines to stdout/stderr so `docker compose logs -f basicbudget` captures them directly.
+
 ## Database Backup
 
 The Database Backup section lets you export or restore a full backup of the entire BasicBudget instance — all users, households, budget data, and system settings.

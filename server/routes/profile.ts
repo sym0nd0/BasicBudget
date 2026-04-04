@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { logValidationFailure } from '../middleware/validate.js';
 import { dateTimeFormatSchema } from '../validation/schemas.js';
 import { sensitiveActionLimiter, generalApiLimiter } from '../middleware/rate-limit.js';
 import { hashPassword, verifyPassword, validatePasswordStrength } from '../auth/password.js';
@@ -11,6 +12,7 @@ import { sendEmailChangeVerification, sendEmailVerification } from '../services/
 import { auditLog } from '../services/audit.js';
 import { verifyTotp, decryptSecret } from '../auth/totp.js';
 import { verifyRecoveryCode } from '../auth/recovery-codes.js';
+import { logger } from '../services/logger.js';
 import type { User } from '../../shared/types.js';
 
 const router = Router();
@@ -44,7 +46,11 @@ router.get('/', (req: Request, res: Response) => {
 router.put('/', (req: Request, res: Response) => {
   const schema = z.object({ display_name: z.string().min(1).max(100) });
   const result = schema.safeParse(req.body);
-  if (!result.success) { res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' }); return; }
+  if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'profile.update');
+    res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
+    return;
+  }
 
   db.prepare("UPDATE users SET display_name = ?, updated_at = datetime('now') WHERE id = ?").run(result.data.display_name.trim(), req.userId!);
   const row = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId!) as Record<string, unknown>;
@@ -55,7 +61,11 @@ router.put('/', (req: Request, res: Response) => {
 router.put('/palette', (req: Request, res: Response) => {
   const schema = z.object({ colour_palette: z.enum(['default', 'deuteranopia', 'protanopia', 'tritanopia']) });
   const result = schema.safeParse(req.body);
-  if (!result.success) { res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' }); return; }
+  if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'profile.palette');
+    res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
+    return;
+  }
 
   db.prepare("UPDATE users SET colour_palette = ?, updated_at = datetime('now') WHERE id = ?").run(result.data.colour_palette, req.userId!);
   const row = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId!) as Record<string, unknown>;
@@ -66,6 +76,7 @@ router.put('/palette', (req: Request, res: Response) => {
 router.put('/datetime-format', generalApiLimiter, (req: Request, res: Response) => {
   const result = dateTimeFormatSchema.safeParse(req.body);
   if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'profile.datetime-format');
     res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
     return;
   }
@@ -79,7 +90,11 @@ router.put('/datetime-format', generalApiLimiter, (req: Request, res: Response) 
 router.put('/notify-updates', (req: Request, res: Response) => {
   const schema = z.object({ notify_updates: z.boolean() });
   const result = schema.safeParse(req.body);
-  if (!result.success) { res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' }); return; }
+  if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'profile.notify-updates');
+    res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
+    return;
+  }
 
   db.prepare("UPDATE users SET notify_updates = ?, updated_at = datetime('now') WHERE id = ?").run(
     result.data.notify_updates ? 1 : 0,
@@ -123,7 +138,11 @@ router.post('/change-email', sensitiveActionLimiter, async (req: Request, res: R
   if (!email || !password) { res.status(400).json({ message: 'email and password are required' }); return; }
 
   const emailResult = z.email().safeParse(email);
-  if (!emailResult.success) { res.status(400).json({ message: 'Invalid email address' }); return; }
+  if (!emailResult.success) {
+    logValidationFailure(req, emailResult.error.issues, 'profile.change-email');
+    res.status(400).json({ message: 'Invalid email address' });
+    return;
+  }
 
   const userRow = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId!) as Record<string, unknown> | undefined;
   if (!userRow?.password_hash) { res.status(400).json({ message: 'No local password set' }); return; }
@@ -155,7 +174,19 @@ router.post('/change-email', sensitiveActionLimiter, async (req: Request, res: R
   if (existing) { res.status(409).json({ message: 'An account with this email already exists' }); return; }
 
   const changeToken = createToken(req.userId!, 'email_change', 30, newEmail);
-  try { await sendEmailChangeVerification(newEmail, changeToken); } catch { /* ignore */ }
+  try {
+    await sendEmailChangeVerification(newEmail, changeToken);
+    logger.info('Email change verification email requested', {
+      request_id: req.requestId,
+      userId: req.userId,
+    });
+  } catch (err) {
+    logger.warn('Email change verification email failed', {
+      request_id: req.requestId,
+      userId: req.userId,
+      error: err,
+    });
+  }
 
   auditLog(req.userId!, 'email_change_requested', { newEmail }, req.ip, req.get('user-agent'));
   res.json({ message: 'A confirmation link has been sent to your new email address.' });
@@ -181,7 +212,19 @@ router.post('/resend-verification', async (req: Request, res: Response) => {
   if (userRow.email_verified) { res.status(400).json({ message: 'Email is already verified' }); return; }
 
   const verifyToken = createToken(req.userId!, 'email_verify');
-  try { await sendEmailVerification(userRow.email, verifyToken); } catch { /* ignore */ }
+  try {
+    await sendEmailVerification(userRow.email, verifyToken);
+    logger.info('Email verification resend requested', {
+      request_id: req.requestId,
+      userId: req.userId,
+    });
+  } catch (err) {
+    logger.warn('Email verification resend failed', {
+      request_id: req.requestId,
+      userId: req.userId,
+      error: err,
+    });
+  }
 
   res.json({ message: 'Verification email sent.' });
 });

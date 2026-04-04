@@ -1,12 +1,34 @@
 import rateLimit from 'express-rate-limit';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
+import { logger } from '../services/logger.js';
+
+function handleRateLimit(limitName: string, responseBody: { message: string } | string) {
+  return (req: Request, res: Response): void => {
+    logger.warn('Rate limit exceeded', {
+      request_id: req.requestId,
+      limiter: limitName,
+      method: req.method,
+      path: req.path,
+      userId: req.userId,
+      authenticated: Boolean(req.userId),
+    });
+
+    const body = typeof responseBody === 'string'
+      ? { message: responseBody }
+      : responseBody;
+    res.status(429).json(body);
+  };
+}
 
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: 'Too many login attempts. Please try again in 15 minutes.' },
+  handler: handleRateLimit(
+    'loginLimiter',
+    { message: 'Too many login attempts. Please try again in 15 minutes.' },
+  ),
 });
 
 export const otpLimiter = rateLimit({
@@ -14,7 +36,10 @@ export const otpLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: 'Too many OTP attempts. Please try again in 15 minutes.' },
+  handler: handleRateLimit(
+    'otpLimiter',
+    { message: 'Too many OTP attempts. Please try again in 15 minutes.' },
+  ),
 });
 
 export const passwordResetLimiter = rateLimit({
@@ -22,7 +47,10 @@ export const passwordResetLimiter = rateLimit({
   max: 3,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: 'Too many password reset requests. Please try again in an hour.' },
+  handler: handleRateLimit(
+    'passwordResetLimiter',
+    { message: 'Too many password reset requests. Please try again in an hour.' },
+  ),
 });
 
 export const inviteLimiter = rateLimit({
@@ -30,7 +58,10 @@ export const inviteLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: 'Too many invite requests. Please try again in an hour.' },
+  handler: handleRateLimit(
+    'inviteLimiter',
+    { message: 'Too many invite requests. Please try again in an hour.' },
+  ),
 });
 
 export const totpResetLimiter = rateLimit({
@@ -38,7 +69,10 @@ export const totpResetLimiter = rateLimit({
   max: 3,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: 'Too many 2FA reset requests. Please try again in 24 hours.' },
+  handler: handleRateLimit(
+    'totpResetLimiter',
+    { message: 'Too many 2FA reset requests. Please try again in 24 hours.' },
+  ),
 });
 
 export const registrationLimiter = rateLimit({
@@ -46,7 +80,10 @@ export const registrationLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: 'Too many registration attempts from this IP. Please try again later.' },
+  handler: handleRateLimit(
+    'registrationLimiter',
+    { message: 'Too many registration attempts from this IP. Please try again later.' },
+  ),
 });
 
 export const generalApiLimiter = rateLimit({
@@ -54,7 +91,10 @@ export const generalApiLimiter = rateLimit({
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { message: 'Too many requests. Please slow down.' },
+  handler: handleRateLimit(
+    'generalApiLimiter',
+    { message: 'Too many requests. Please slow down.' },
+  ),
 });
 
 // Skip in test mode — backup/restore integration tests make more than 5 requests to these
@@ -66,7 +106,10 @@ export const sensitiveActionLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === 'test',
-  message: { message: 'Too many attempts. Please try again in 15 minutes.' },
+  handler: handleRateLimit(
+    'sensitiveActionLimiter',
+    { message: 'Too many attempts. Please try again in 15 minutes.' },
+  ),
 });
 
 export const staticLimiter = rateLimit({
@@ -74,7 +117,7 @@ export const staticLimiter = rateLimit({
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
-  message: 'Too many requests. Please slow down.',
+  handler: handleRateLimit('staticLimiter', 'Too many requests. Please slow down.'),
 });
 
 function getRateLimitKey(req: Request): string {
@@ -88,7 +131,10 @@ export const backupStatusLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => getRateLimitKey(req),
-  message: { message: 'Too many requests. Please slow down.' },
+  handler: handleRateLimit(
+    'backupStatusLimiter',
+    { message: 'Too many requests. Please slow down.' },
+  ),
 });
 
 export const backupConfigWriteLimiter = rateLimit({
@@ -98,5 +144,8 @@ export const backupConfigWriteLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => getRateLimitKey(req),
   skip: () => process.env.NODE_ENV === 'test',
-  message: { message: 'Too many backup configuration changes. Please try again in 15 minutes.' },
+  handler: handleRateLimit(
+    'backupConfigWriteLimiter',
+    { message: 'Too many backup configuration changes. Please try again in 15 minutes.' },
+  ),
 });

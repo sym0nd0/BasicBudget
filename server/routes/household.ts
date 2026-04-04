@@ -3,6 +3,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import db from '../db.js';
 import { requireAuth, requireOwner } from '../middleware/auth.js';
+import { logValidationFailure } from '../middleware/validate.js';
 import { inviteLimiter } from '../middleware/rate-limit.js';
 import { createToken, validateAndConsumeToken } from '../auth/tokens.js';
 import { sendHouseholdInvite } from '../services/email.js';
@@ -33,7 +34,11 @@ router.get('/', (req: Request, res: Response) => {
 router.put('/', requireOwner, (req: Request, res: Response) => {
   const schema = z.object({ name: z.string().min(1).max(100) });
   const result = schema.safeParse(req.body);
-  if (!result.success) { res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' }); return; }
+  if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'household.update');
+    res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
+    return;
+  }
 
   db.prepare('UPDATE households SET name = ? WHERE id = ?').run(result.data.name.trim(), req.householdId!);
   const row = db.prepare('SELECT * FROM households WHERE id = ?').get(req.householdId!) as Record<string, unknown>;
@@ -44,7 +49,11 @@ router.put('/', requireOwner, (req: Request, res: Response) => {
 router.post('/invite', requireOwner, inviteLimiter, async (req: Request, res: Response) => {
   const schema = z.object({ email: z.email() });
   const result = schema.safeParse(req.body);
-  if (!result.success) { res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' }); return; }
+  if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'household.invite');
+    res.status(400).json({ message: result.error.issues[0]?.message ?? 'Validation error' });
+    return;
+  }
 
   const inviterRow = db.prepare('SELECT display_name FROM users WHERE id = ?').get(req.userId!) as { display_name: string } | undefined;
   const householdRow = db.prepare('SELECT name FROM households WHERE id = ?').get(req.householdId!) as { name: string } | undefined;
@@ -60,7 +69,14 @@ router.post('/invite', requireOwner, inviteLimiter, async (req: Request, res: Re
       householdRow?.name ?? 'a household',
       token,
     );
-  } catch { /* ignore */ }
+  } catch (err) {
+    logger.warn('Household invite email delivery failed', {
+      request_id: req.requestId,
+      householdId: req.householdId,
+      userId: req.userId,
+      error: err,
+    });
+  }
 
   res.json({ message: 'Invitation sent.' });
 });
@@ -85,7 +101,12 @@ router.delete('/invites/:id', requireOwner, (req: Request, res: Response) => {
      WHERE id = ? AND type = 'invite' AND new_email = ? AND used = 0`,
   ).run(id, req.householdId!);
   if (result.changes === 0) { res.status(404).json({ message: 'Invite not found.' }); return; }
-  logger.info('Invite rescinded', { id, householdId: req.householdId, rescindedBy: req.userId });
+  logger.info('Invite rescinded', {
+    request_id: req.requestId,
+    id,
+    householdId: req.householdId,
+    rescindedBy: req.userId,
+  });
   res.json({ message: 'Invite rescinded.' });
 });
 
@@ -117,6 +138,11 @@ router.post('/accept-invite', (req: Request, res: Response) => {
   req.session.householdRole = 'member';
 
   const householdRow = db.prepare('SELECT * FROM households WHERE id = ?').get(targetHouseholdId) as Record<string, unknown>;
+  logger.info('Household invite accepted', {
+    request_id: req.requestId,
+    householdId: targetHouseholdId,
+    userId: req.userId,
+  });
   res.json({ message: 'You have joined the household.', household: householdRow });
 });
 
@@ -125,7 +151,11 @@ router.put('/members/:userId/role', requireOwner, (req: Request, res: Response) 
   const targetUserId = req.params['userId'] as string;
   const schema = z.object({ role: z.enum(['owner', 'member']) });
   const result = schema.safeParse(req.body);
-  if (!result.success) { res.status(400).json({ message: 'role must be owner or member' }); return; }
+  if (!result.success) {
+    logValidationFailure(req, result.error.issues, 'household.member-role');
+    res.status(400).json({ message: 'role must be owner or member' });
+    return;
+  }
 
   // Prevent demoting sole owner
   if (result.data.role === 'member') {
@@ -138,7 +168,13 @@ router.put('/members/:userId/role', requireOwner, (req: Request, res: Response) 
   }
 
   db.prepare('UPDATE household_members SET role = ? WHERE household_id = ? AND user_id = ?').run(result.data.role, req.householdId!, targetUserId);
-  logger.info('Household member role changed', { householdId: req.householdId, targetUserId, newRole: result.data.role, changedBy: req.userId });
+  logger.info('Household member role changed', {
+    request_id: req.requestId,
+    householdId: req.householdId,
+    targetUserId,
+    newRole: result.data.role,
+    changedBy: req.userId,
+  });
   res.json({ message: 'Role updated.' });
 });
 
@@ -164,7 +200,13 @@ router.delete('/members/:userId', (req: Request, res: Response) => {
   }
 
   db.prepare('DELETE FROM household_members WHERE household_id = ? AND user_id = ?').run(req.householdId!, targetUserId);
-  logger.info('Household member removed', { householdId: req.householdId, targetUserId, removedBy: req.userId, isSelf });
+  logger.info('Household member removed', {
+    request_id: req.requestId,
+    householdId: req.householdId,
+    targetUserId,
+    removedBy: req.userId,
+    isSelf,
+  });
   res.status(204).send();
 });
 
