@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import db from '../db.js';
 import { hashPassword, verifyPassword, validatePasswordStrength } from '../auth/password.js';
-import { createToken, validateAndConsumeToken } from '../auth/tokens.js';
+import { consumeTokenById, createToken, validateAndConsumeToken, validateToken } from '../auth/tokens.js';
 import { sendEmailVerification, sendPasswordReset } from '../services/email.js';
 import { auditLog } from '../services/audit.js';
 import { deviceFingerprint, isNewDevice, recordDevice } from '../auth/device.js';
@@ -115,11 +115,19 @@ router.post('/register', registrationLimiter, async (req: Request, res: Response
 
   // If valid invite_token is provided, join that household instead of creating new one
   let targetHouseholdId: string | null = null;
+  let inviteTokenId: string | null = null;
   if (invite_token) {
-    const consumed = validateAndConsumeToken(invite_token, 'invite');
-    if (consumed?.newEmail) {
-      targetHouseholdId = consumed.newEmail; // newEmail field stores householdId for invites
+    const inviteTokenRow = validateToken(invite_token, 'invite');
+    if (!inviteTokenRow?.newEmail || !inviteTokenRow.inviteeEmail) {
+      res.status(400).json({ message: 'Invalid or expired invite token' });
+      return;
     }
+    if (inviteTokenRow.inviteeEmail.toLowerCase() !== email.toLowerCase().trim()) {
+      res.status(403).json({ message: 'This invite was sent to a different email address' });
+      return;
+    }
+    targetHouseholdId = inviteTokenRow.newEmail; // newEmail field stores householdId for invites
+    inviteTokenId = inviteTokenRow.id;
   }
 
   db.transaction(() => {
@@ -141,6 +149,10 @@ router.post('/register', registrationLimiter, async (req: Request, res: Response
         INSERT INTO household_members (household_id, user_id, role)
         VALUES (?, ?, 'owner')
       `).run(householdId, userId);
+    }
+
+    if (inviteTokenId) {
+      consumeTokenById(inviteTokenId);
     }
   })();
 
@@ -395,7 +407,25 @@ router.get('/status', (req: Request, res: Response) => {
     return;
   }
 
-  const householdId = req.session.householdId;
+  const memberRow = db.prepare(`
+    SELECT household_id, role
+    FROM household_members
+    WHERE user_id = ?
+    ORDER BY joined_at DESC
+    LIMIT 1
+  `).get(req.session.userId) as { household_id: string; role: 'owner' | 'member' } | undefined;
+  if (!memberRow) {
+    req.session.destroy(() => {});
+    const resp: AuthStatusResponse = { authenticated: false, totpPending: false };
+    res.json(resp);
+    return;
+  }
+
+  req.session.householdId = memberRow.household_id;
+  req.session.householdRole = memberRow.role;
+  req.session.systemRole = userRow.system_role as 'admin' | 'user';
+
+  const householdId = memberRow.household_id;
   let household = undefined;
   if (householdId) {
     const hRow = db.prepare('SELECT * FROM households WHERE id = ?').get(householdId) as Record<string, unknown> | undefined;
@@ -407,7 +437,7 @@ router.get('/status', (req: Request, res: Response) => {
     totpPending: Boolean(req.session.totpPending),
     user: mapUser(userRow),
     household,
-    householdRole: req.session.householdRole,
+    householdRole: memberRow.role,
   };
   res.json(resp);
 });

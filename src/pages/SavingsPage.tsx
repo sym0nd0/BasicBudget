@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSavings } from '../context/SavingsContext';
 import { useFilter } from '../context/FilterContext';
 import { useAuth } from '../context/AuthContext';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { useApi } from '../hooks/useApi';
+import { api } from '../api/client';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -71,6 +72,20 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
 
   const txUrl = `/savings-goals/transactions?from=${fromMonth}&to=${toMonth}`;
   const { data: transactions, refetch: refetchTx } = useApi<SavingsTransaction[]>(txUrl);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.processSavingsAutoContributions()
+      .then(() => {
+        if (cancelled) return;
+        refetchGoals();
+        refetchTx();
+      })
+      .catch(err => {
+        if (!cancelled) setErrorMsg((err as Error).message);
+      });
+    return () => { cancelled = true; };
+  }, [refetchGoals, refetchTx]);
 
   const showComparisons = !isRangeActive;
   const prevMonth = addMonthsToYM(activeMonth, -1);

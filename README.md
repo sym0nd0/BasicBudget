@@ -99,7 +99,7 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 - Email + password registration and login (Argon2id, 64 MB memory cost)
 - Email verification flow on registration
 - Account lockout after 5 failed login attempts (30-minute lock)
-- TOTP 2FA via authenticator app (QR code setup, 10 single-use recovery codes); status badge in settings; reset 2FA with password + OTP/recovery code; "lost access" delayed-reset flow via email (callable from settings or after failed login)
+- TOTP 2FA via authenticator app (QR code setup, 10 single-use recovery codes); status badge in settings; reset 2FA with password + OTP/recovery code; "lost access" delayed-reset flow via a 24-hour email link
 - Generic OpenID Connect (OIDC) single sign-on — any OIDC-compatible provider
 - Session management with device fingerprinting and new-device email alerts
 - Active session list with per-session revocation; sessions display parsed browser and OS instead of raw user-agent string
@@ -110,7 +110,8 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 - Every user belongs to a household (created automatically on registration)
 - **Owner** role: read and write all household entries; can customise household name; view and rescind active invites; manage member roles and remove members
 - **Member** role: read all entries, write only own entries; can leave the household at any time
-- Invite members by email (7-day expiring token); invitees who don't have an account are automatically joined to the household upon registration — no separate accept step required; role management by owner
+- Invite members by email (7-day expiring token bound to the invitee email address); invitees who don't have an account are automatically joined to the household upon registration — no separate accept step required; role management by owner
+- When a member leaves or is removed, their private items are moved into a new one-person household and existing sessions are revoked immediately
 - All financial data is isolated per household
 
 ### Admin Panel
@@ -506,6 +507,7 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 
 | Method | Path | Description |
 |---|---|---|
+| GET | `/api/health` | Health check (public) |
 | GET | `/api/auth/csrf-token` | Get CSRF token (public) |
 | GET | `/api/auth/status` | Get current session / user info |
 | GET | `/api/auth/registration-status` | Check if public registration is enabled |
@@ -525,8 +527,8 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 | POST | `/api/auth/totp/verify` | Submit OTP during login |
 | POST | `/api/auth/totp/verify-recovery` | Submit recovery code during login |
 | POST | `/api/auth/totp/disable` | Disable 2FA |
-| POST | `/api/auth/totp/request-reset` | Request delayed 2FA reset (24-hour wait, email notification) |
-| POST | `/api/auth/totp/confirm-reset` | Confirm 2FA reset with token + password |
+| POST | `/api/auth/totp/request-reset` | Request delayed 2FA reset (email link becomes usable after 24 hours) |
+| POST | `/api/auth/totp/confirm-reset` | Confirm 2FA reset with token + password from `/reset-2fa` |
 
 #### OIDC
 
@@ -564,7 +566,7 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 | Method | Path | Description |
 |---|---|---|
 | GET | `/api/invite/info?token=X` | Peek at invite details (no auth required) |
-| POST | `/api/household/accept-invite` | Accept invite and join household |
+| POST | `/api/household/accept-invite` | Accept invite and join household (must match invitee email) |
 
 ### Household
 
@@ -590,6 +592,7 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 | GET/PUT/DELETE | `/api/debts/:id` | Get / update / delete debt |
 | GET | `/api/debts/:id/repayments` | Compute full repayment schedule |
 | GET/POST | `/api/savings-goals` | List / create savings goal |
+| POST | `/api/savings-goals/process-auto-contributions` | Catch up scheduled savings contributions |
 | GET/PUT/DELETE | `/api/savings-goals/:id` | Get / update / delete savings goal |
 | GET | `/api/savings-goals/transactions` | List all savings transactions |
 | GET | `/api/savings-goals/:id/transactions` | List transactions for a specific goal |
@@ -735,6 +738,7 @@ BasicBudget/
 │   │   ├── TotpPage.tsx               # 2FA verification
 │   │   ├── ForgotPasswordPage.tsx     # Password reset request
 │   │   ├── ResetPasswordPage.tsx      # Password reset confirmation
+│   │   ├── ResetTotpPage.tsx          # Delayed 2FA reset confirmation
 │   │   ├── VerifyEmailPage.tsx        # Email verification
 │   │   ├── Dashboard.tsx              # Budget dashboard
 │   │   ├── DebtPage.tsx               # Debt management

@@ -58,8 +58,8 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 | `POST` | `/api/auth/totp/verify` | Verify TOTP code during login |
 | `POST` | `/api/auth/totp/verify-recovery` | Verify a recovery code during login |
 | `POST` | `/api/auth/totp/disable` | Disable TOTP (requires current password) |
-| `POST` | `/api/auth/totp/request-reset` | Request a TOTP reset via email |
-| `POST` | `/api/auth/totp/confirm-reset` | Confirm TOTP reset via token |
+| `POST` | `/api/auth/totp/request-reset` | Request a delayed TOTP reset email link |
+| `POST` | `/api/auth/totp/confirm-reset` | Confirm delayed TOTP reset via token + password |
 
 ## OIDC (Single Sign-On) Endpoints
 
@@ -100,10 +100,10 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 | `POST` | `/api/household/invite` | Send a household invite (owner only) |
 | `GET` | `/api/household/invites` | List active invites (owner only) |
 | `DELETE` | `/api/household/invites/:id` | Rescind an invite (owner only) |
-| `POST` | `/api/household/accept-invite` | Accept an invite and join the household |
+| `POST` | `/api/household/accept-invite` | Accept an invite and join the household (token email must match current user) |
 | `GET` | `/api/household/summary` | Household-level budget overview |
 | `PUT` | `/api/household/members/:userId/role` | Change a member's role (owner only) |
-| `DELETE` | `/api/household/members/:userId` | Remove a member or leave the household |
+| `DELETE` | `/api/household/members/:userId` | Remove a member or leave the household; private items move to a new solo household and sessions are revoked |
 
 ## Income Endpoints
 
@@ -142,6 +142,7 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 |---|---|---|
 | `GET` | `/api/savings-goals` | List all savings goals |
 | `POST` | `/api/savings-goals` | Create a new savings goal |
+| `POST` | `/api/savings-goals/process-auto-contributions` | Catch up scheduled auto-contributions |
 | `GET` | `/api/savings-goals/:id` | Get a single savings goal |
 | `PUT` | `/api/savings-goals/:id` | Update an existing savings goal |
 | `DELETE` | `/api/savings-goals/:id` | Delete a savings goal |
@@ -182,6 +183,7 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 | `DELETE` | `/api/accounts/:id` | Delete a payment account |
 | `GET` | `/api/categories` | List expense categories |
 | `GET` | `/api/version` | Current and latest version info |
+| `GET` | `/api/health` | Health check |
 
 ## Admin Endpoints (requires `system_role = 'admin'`)
 
@@ -224,3 +226,4 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
   <span style="float:right;">[[Customisation]] →</span>
 </p>
 <div style="clear:both;"></div>
+`GET /api/health` is public and returns a simple health payload for container and reverse-proxy checks.

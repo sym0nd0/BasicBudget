@@ -76,6 +76,8 @@ CREATE TABLE IF NOT EXISTS reset_tokens (
     token_hash  TEXT NOT NULL UNIQUE,
     type        TEXT NOT NULL CHECK(type IN ('password_reset','email_verify','email_change','invite','totp_reset')),
     new_email   TEXT,
+    invitee_email TEXT,
+    available_at TEXT,
     expires_at  TEXT NOT NULL,
     used        INTEGER NOT NULL DEFAULT 0,
     created_at  TEXT NOT NULL DEFAULT (datetime('now'))

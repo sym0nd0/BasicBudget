@@ -40,7 +40,7 @@ Both actions are recorded as transactions and appear in the transaction log belo
 
 ## Auto-Contributions
 
-When **Auto-contribute** is enabled on a goal, the system automatically catches up any missed monthly contributions on the next page load. For example, if the contribution day is the 1st and you open the app on the 5th, the current month's contribution is applied automatically. Months are never double-counted.
+When **Auto-contribute** is enabled on a goal, the Savings page sends an authenticated update request that catches up any missed monthly contributions before refreshing the list and transaction history. For example, if the contribution day is the 1st and you open the app on the 5th, the current month's contribution is applied automatically. Months are never double-counted.
 
 ## Household Savings Goals
 

@@ -2,11 +2,13 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { logValidationFailure } from '../middleware/validate.js';
 import { filterVisible } from '../utils/visibility.js';
 import { currentYearMonth, filterActiveInMonth, mapDebtToRecurringItem, type RecurringItem } from '../utils/recurring.js';
 import { computePayoffStrategy } from '../utils/debtPayoffStrategy.js';
 import { calculateDebtTimeline } from '../utils/debtProjection.js';
 import type { Debt, DebtDealPeriod, CategoryBreakdown, MonthlyReportRow } from '../../shared/types.js';
+import { monthParam } from '../validation/schemas.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -44,12 +46,20 @@ function monthRange(from: string, to: string): string[] {
 router.get('/overview', (req: Request, res: Response) => {
   const from = (req.query.from as string) ?? '';
   const to = (req.query.to as string) ?? '';
-  if (!from || !to) {
+  const fromResult = monthParam.safeParse(from);
+  const toResult = monthParam.safeParse(to);
+  if (!from || !to || !fromResult.success || !toResult.success) {
+    if (!fromResult.success) logValidationFailure(req, fromResult.error.issues, 'reports.overview.from');
+    if (!toResult.success) logValidationFailure(req, toResult.error.issues, 'reports.overview.to');
     res.status(400).json({ message: 'from and to are required' });
     return;
   }
+  if (fromResult.data > toResult.data) {
+    res.status(400).json({ message: 'from must be before or equal to to' });
+    return;
+  }
 
-  const months = monthRange(from, to);
+  const months = monthRange(fromResult.data, toResult.data);
   if (months.length > 120) {
     res.status(400).json({ message: 'Range too large (max 120 months)' });
     return;
@@ -75,7 +85,10 @@ router.get('/overview', (req: Request, res: Response) => {
     const activeExpenses = filterActiveInMonth(allExpenses, month);
     const activeDebts = filterActiveInMonth(debtItems, month);
 
-    const income_pence = activeIncomes.reduce((s, i) => s + (i.effective_pence ?? 0), 0);
+    const incomeRows = householdOnly
+      ? activeIncomes.filter(i => Boolean(i.is_household))
+      : activeIncomes;
+    const income_pence = incomeRows.reduce((s, i) => s + (i.effective_pence ?? 0), 0);
     const expenses_pence = householdOnly
       ? activeExpenses.filter(e => Boolean(e.is_household)).reduce((s, e) => s + (e.effective_pence ?? 0), 0)
       : activeExpenses.reduce((s, e) => s + Math.round((e.effective_pence ?? 0) * ((e.split_ratio as number) ?? 1)), 0);
@@ -85,6 +98,7 @@ router.get('/overview', (req: Request, res: Response) => {
 
     let savings_pence = 0;
     for (const s of allSavings) {
+      if (householdOnly && !s.is_household) continue;
       const c = (s.monthly_contribution_pence as number) ?? 0;
       savings_pence += s.is_household ? Math.ceil(c / memberCount) : c;
     }

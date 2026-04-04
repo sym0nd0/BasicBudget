@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { HouseholdRole, SystemRole } from '../../shared/types.js';
+import db from '../db.js';
 import { logger } from '../services/logger.js';
 
 // Augment Express.Request with auth fields populated by session
@@ -67,6 +68,30 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     return;
   }
   req.session.lastActivity = Date.now();
+
+  const userRow = db.prepare('SELECT system_role FROM users WHERE id = ?').get(req.session.userId) as { system_role: SystemRole } | undefined;
+  const memberRow = db.prepare(`
+    SELECT household_id, role
+    FROM household_members
+    WHERE user_id = ?
+    ORDER BY joined_at DESC
+    LIMIT 1
+  `).get(req.session.userId) as { household_id: string; role: HouseholdRole } | undefined;
+
+  if (!userRow || !memberRow) {
+    logger.warn('Auth blocked: session user no longer has an active account or household membership', authLogMeta(req));
+    req.session.destroy((err) => {
+      if (err) {
+        logger.error('Failed to destroy stale authorisation session', { ...authLogMeta(req), error: err });
+      }
+    });
+    res.status(401).json({ message: 'Session expired. Please log in again.' });
+    return;
+  }
+
+  req.session.householdId = memberRow.household_id;
+  req.session.householdRole = memberRow.role;
+  req.session.systemRole = userRow.system_role;
 
   req.userId = req.session.userId;
   req.householdId = req.session.householdId;

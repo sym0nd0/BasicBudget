@@ -99,13 +99,22 @@ export async function sendHouseholdInvite(
   );
 }
 
-export async function sendTotpResetNotification(to: string): Promise<void> {
+export async function sendTotpResetNotification(to: string, token: string, availableAt: string): Promise<void> {
+  const url = `${config.APP_URL}/reset-2fa?token=${token}`;
+  const availableDate = new Date(availableAt).toLocaleString('en-GB', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+    timeZone: 'Europe/London',
+  });
+
   await sendMail(
     'totp_reset_notification',
     to,
     'Two-factor authentication reset requested',
     `<p>A request to reset your two-factor authentication has been initiated.</p>
-     <p>This will take effect in 24 hours. If you did not request this, please contact support immediately.</p>`,
+     <p>This reset link becomes available after <strong>${escapeHtml(availableDate)}</strong> and expires 24 hours after the request was made.</p>
+     <p><a href="${url}">${url}</a></p>
+     <p>If you did not request this, please contact support immediately.</p>`,
   );
 }
 

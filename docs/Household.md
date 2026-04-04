@@ -26,6 +26,8 @@ The [Household summary page](/household) shows only items flagged as household i
 
 An invitation email is sent with a unique link valid for **7 days**.
 
+Invite links are bound to the invited email address. If you sign in with a different account, the invite will be rejected and the token remains unused.
+
 ## Accepting an Invite
 
 - **Existing users:** Click the link in the invitation email. You will be asked to confirm joining the household.
@@ -38,7 +40,7 @@ If an invite expires, the owner must send a new one.
 - **Owner removing a member:** Go to household settings, find the member, and click **Remove**.
 - **Member leaving:** Go to household settings and click **Leave Household**.
 
-When a member leaves or is removed, their personal items remain in their account but are no longer visible to the household.
+When a member leaves or is removed, their personal items are moved into a new one-person household and their existing sessions are revoked. Household-shared items remain in the original household.
 
 ## Household Summary Page
 

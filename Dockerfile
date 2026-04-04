@@ -22,7 +22,7 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -q --spider http://localhost:${PORT:-3000}/api/auth/status || exit 1
+  CMD wget -q --spider http://localhost:${PORT:-3000}/api/health || exit 1
 EXPOSE 3000
 ENV NODE_ENV=production
 ENV PORT=3000

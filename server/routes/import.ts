@@ -49,12 +49,12 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
   let skipped = 0;
 
   if (importType === 'expenses') {
-    const existingExpenses = db.prepare('SELECT name, amount_pence, type FROM expenses WHERE household_id = ?').all(req.householdId!) as
-      { name: string; amount_pence: number; type: string }[];
+    const existingExpenses = db.prepare('SELECT name, amount_pence FROM expenses WHERE household_id = ?').all(req.householdId!) as
+      { name: string; amount_pence: number }[];
 
     // Phase 1 — validation pass (no DB writes)
     type ExpenseRow = {
-      name: string; amount: number; day: number; category: string; type: string;
+      name: string; amount: number; day: number; category: string;
       isHousehold: boolean; splitRatio: number; recurrenceType: string; isRecurring: number;
       startDate: string | null; endDate: string | null; notes: string | null;
       accountName: string | null;
@@ -71,7 +71,6 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
         if (amount <= 0) throw new Error('amount must be > 0');
         const day = parseInt(row.day ?? '1', 10);
         const category = isValidCategory(row.category?.trim()) ? row.category.trim() : 'Other';
-        const type = row.type?.trim() === 'variable' ? 'variable' : 'fixed';
         const isHousehold = /^(yes|true|1)$/i.test(row.household ?? '');
         const splitRatioRaw = row.split_ratio ? parseFloat(row.split_ratio) : null;
         const splitRatio = splitRatioRaw !== null && !isNaN(splitRatioRaw)
@@ -82,7 +81,7 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
         const startDate = row.start_date ? (parseUkDate(row.start_date) ?? row.start_date) : null;
         const endDate = row.end_date ? (parseUkDate(row.end_date) ?? row.end_date) : null;
         validRows.push({
-          name, amount, day: isNaN(day) ? 1 : day, category, type, isHousehold,
+          name, amount, day: isNaN(day) ? 1 : day, category, isHousehold,
           splitRatio, recurrenceType, isRecurring, startDate, endDate,
           notes: row.notes ?? null, accountName: row.account?.trim() ?? null,
         });
@@ -101,7 +100,7 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
       for (const r of validRows) {
         const isDup = existingExpenses.some(
           ex => ex.name.toLowerCase() === r.name.toLowerCase()
-            && ex.amount_pence === r.amount && ex.type === r.type
+            && ex.amount_pence === r.amount
         );
         if (isDup) { skipped++; continue; }
 
@@ -114,18 +113,18 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
         const id = randomUUID();
         db.prepare(`
           INSERT INTO expenses
-            (id, household_id, user_id, name, amount_pence, posting_day, account_id, type, category,
+            (id, household_id, user_id, name, amount_pence, posting_day, account_id, category,
              is_household, split_ratio, is_recurring, recurrence_type,
              start_date, end_date, notes)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
           id, req.householdId!, req.userId!, r.name, r.amount, r.day,
-          accountId, r.type, r.category, r.isHousehold ? 1 : 0, r.splitRatio,
+          accountId, r.category, r.isHousehold ? 1 : 0, r.splitRatio,
           r.isRecurring, r.recurrenceType,
           r.startDate, r.endDate, r.notes,
         );
         imported.push(id);
-        existingExpenses.push({ name: r.name, amount_pence: r.amount, type: r.type });
+        existingExpenses.push({ name: r.name, amount_pence: r.amount });
       }
     })();
   } else if (importType === 'incomes') {
