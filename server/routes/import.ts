@@ -14,6 +14,23 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 
 type ExpenseCategoryType = (typeof EXPENSE_CATEGORIES)[number];
 
+interface ExistingExpenseRow {
+  readonly user_id: string;
+  readonly contributor_user_id: string | null;
+  readonly name: string;
+  readonly amount_pence: number;
+  readonly posting_day: number;
+  readonly account_id: string | null;
+  readonly category: string;
+  readonly is_household: number;
+  readonly split_ratio: number;
+  readonly is_recurring: number;
+  readonly recurrence_type: string;
+  readonly start_date: string | null;
+  readonly end_date: string | null;
+  readonly notes: string | null;
+}
+
 function isValidCategory(c: string): c is ExpenseCategoryType {
   return (EXPENSE_CATEGORIES as readonly string[]).includes(c);
 }
@@ -28,6 +45,47 @@ function parseRecurrenceType(val: string | undefined): string {
 function parseIsRecurring(val: string | undefined): number {
   if (val === undefined || val === '') return 1;
   return /^(yes|true|1)$/i.test(val) ? 1 : 0;
+}
+
+function norm(v: unknown): string | null {
+  if (v === null || v === undefined || v === '') return null;
+  if (typeof v === 'string') return v.trim().toLowerCase();
+  if (typeof v === 'boolean') return v ? '1' : '0';
+  return String(v);
+}
+
+function expenseRowsMatch(
+  existing: ExistingExpenseRow,
+  imported: {
+    readonly userId: string;
+    readonly name: string;
+    readonly amount: number;
+    readonly day: number;
+    readonly accountId: string | null;
+    readonly category: string;
+    readonly isHousehold: boolean;
+    readonly splitRatio: number;
+    readonly isRecurring: number;
+    readonly recurrenceType: string;
+    readonly startDate: string | null;
+    readonly endDate: string | null;
+    readonly notes: string | null;
+  },
+): boolean {
+  return norm(existing.user_id) === norm(imported.userId)
+    && norm(existing.contributor_user_id) === null
+    && norm(existing.name) === norm(imported.name)
+    && norm(existing.amount_pence) === norm(imported.amount)
+    && norm(existing.posting_day) === norm(imported.day)
+    && norm(existing.account_id) === norm(imported.accountId)
+    && norm(existing.category) === norm(imported.category)
+    && norm(existing.is_household) === norm(imported.isHousehold)
+    && norm(existing.split_ratio) === norm(imported.splitRatio)
+    && norm(existing.is_recurring) === norm(imported.isRecurring)
+    && norm(existing.recurrence_type) === norm(imported.recurrenceType)
+    && norm(existing.start_date) === norm(imported.startDate)
+    && norm(existing.end_date) === norm(imported.endDate)
+    && norm(existing.notes) === norm(imported.notes);
 }
 
 router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
@@ -49,8 +107,13 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
   let skipped = 0;
 
   if (importType === 'expenses') {
-    const existingExpenses = db.prepare('SELECT name, amount_pence FROM expenses WHERE household_id = ?').all(req.householdId!) as unknown as
-      { name: string; amount_pence: number }[];
+    const existingExpenses = db.prepare(`
+      SELECT user_id, contributor_user_id, name, amount_pence, posting_day, account_id,
+             category, is_household, split_ratio, is_recurring, recurrence_type,
+             start_date, end_date, notes
+      FROM expenses
+      WHERE household_id = ?
+    `).all(req.householdId!) as unknown as ExistingExpenseRow[];
 
     // Phase 1 — validation pass (no DB writes)
     type ExpenseRow = {
@@ -98,17 +161,28 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
     // Phase 2 — atomic insert
     db.transaction(() => {
       for (const r of validRows) {
-        const isDup = existingExpenses.some(
-          ex => ex.name.toLowerCase() === r.name.toLowerCase()
-            && ex.amount_pence === r.amount
-        );
-        if (isDup) { skipped++; continue; }
-
         let accountId: string | null = null;
         if (r.accountName) {
           const acct = db.prepare('SELECT id FROM accounts WHERE household_id = ? AND LOWER(name) = LOWER(?)').get(req.householdId!, r.accountName) as { id: string } | undefined;
           accountId = acct?.id ?? null;
         }
+
+        const isDup = existingExpenses.some(ex => expenseRowsMatch(ex, {
+          userId: req.userId!,
+          name: r.name,
+          amount: r.amount,
+          day: r.day,
+          accountId,
+          category: r.category,
+          isHousehold: r.isHousehold,
+          splitRatio: r.splitRatio,
+          isRecurring: r.isRecurring,
+          recurrenceType: r.recurrenceType,
+          startDate: r.startDate,
+          endDate: r.endDate,
+          notes: r.notes,
+        }));
+        if (isDup) { skipped++; continue; }
 
         const id = randomUUID();
         db.prepare(`
@@ -124,7 +198,22 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
           r.startDate, r.endDate, r.notes,
         );
         imported.push(id);
-        existingExpenses.push({ name: r.name, amount_pence: r.amount });
+        existingExpenses.push({
+          user_id: req.userId!,
+          contributor_user_id: null,
+          name: r.name,
+          amount_pence: r.amount,
+          posting_day: r.day,
+          account_id: accountId,
+          category: r.category,
+          is_household: r.isHousehold ? 1 : 0,
+          split_ratio: r.splitRatio,
+          is_recurring: r.isRecurring,
+          recurrence_type: r.recurrenceType,
+          start_date: r.startDate,
+          end_date: r.endDate,
+          notes: r.notes,
+        });
       }
     })();
   } else if (importType === 'incomes') {

@@ -226,4 +226,3 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
   <span style="float:right;">[[Customisation]] →</span>
 </p>
 <div style="clear:both;"></div>
-`GET /api/health` is public and returns a simple health payload for container and reverse-proxy checks.
