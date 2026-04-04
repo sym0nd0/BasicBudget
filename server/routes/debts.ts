@@ -24,9 +24,12 @@ function mapDebt(row: Record<string, unknown>): Debt {
   };
 }
 
+function getDebtDealPeriods(debtId: string): DebtDealPeriod[] {
+  return db.prepare('SELECT * FROM debt_deal_periods WHERE debt_id = ? ORDER BY start_date').all(debtId) as unknown as DebtDealPeriod[];
+}
+
 function enrichDebtWithPeriods(debt: Debt): Debt {
-  const periods = db.prepare('SELECT * FROM debt_deal_periods WHERE debt_id = ? ORDER BY start_date').all(debt.id) as DebtDealPeriod[];
-  return { ...debt, deal_periods: periods };
+  return { ...debt, deal_periods: getDebtDealPeriods(debt.id) };
 }
 
 // GET /api/debts  or  GET /api/debts?month=YYYY-MM
@@ -170,10 +173,11 @@ router.put('/:id', (req: Request, res: Response) => {
   const dealPeriods = body.deal_periods as Omit<DebtDealPeriod, 'id' | 'debt_id' | 'created_at'>[] | undefined;
   const reminderMonths = body.reminder_months !== undefined ? body.reminder_months : existing.reminder_months;
   const endDate = body.end_date !== undefined ? body.end_date : (existing.end_date as string | null);
+  const dealPeriodsToValidate = dealPeriods ?? getDebtDealPeriods(id);
 
   // Validate deal periods don't extend past debt end date
   if (endDate) {
-    for (const period of dealPeriods ?? []) {
+    for (const period of dealPeriodsToValidate) {
       if (period.start_date > endDate) {
         res.status(400).json({ message: `Deal period cannot start after debt end date (${endDate})` });
         return;

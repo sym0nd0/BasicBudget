@@ -25,6 +25,12 @@ declare module 'express-session' {
 
 const router = Router();
 
+class InviteTokenConsumedError extends Error {
+  constructor() {
+    super('Invite token already used');
+  }
+}
+
 // Pre-computed Argon2id hash for timing normalisation (prevents user enumeration)
 let dummyHash: string | null = null;
 async function getDummyHash(): Promise<string> {
@@ -130,31 +136,39 @@ router.post('/register', registrationLimiter, async (req: Request, res: Response
     inviteTokenId = inviteTokenRow.id;
   }
 
-  db.transaction(() => {
-    db.prepare(`
-      INSERT INTO users (id, email, display_name, password_hash, system_role)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(userId, email.toLowerCase().trim(), name, hash, isFirstUser ? 'admin' : 'user');
-
-    if (targetHouseholdId) {
-      // Join the invited household as member
+  try {
+    db.transaction(() => {
       db.prepare(`
-        INSERT INTO household_members (household_id, user_id, role)
-        VALUES (?, ?, 'member')
-      `).run(targetHouseholdId, userId);
-    } else {
-      // Create new household
-      db.prepare('INSERT INTO households (id, name) VALUES (?, ?)').run(householdId, `${name}'s Household`);
-      db.prepare(`
-        INSERT INTO household_members (household_id, user_id, role)
-        VALUES (?, ?, 'owner')
-      `).run(householdId, userId);
-    }
+        INSERT INTO users (id, email, display_name, password_hash, system_role)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(userId, email.toLowerCase().trim(), name, hash, isFirstUser ? 'admin' : 'user');
 
-    if (inviteTokenId) {
-      consumeTokenById(inviteTokenId);
+      if (targetHouseholdId) {
+        // Join the invited household as member
+        db.prepare(`
+          INSERT INTO household_members (household_id, user_id, role)
+          VALUES (?, ?, 'member')
+        `).run(targetHouseholdId, userId);
+      } else {
+        // Create new household
+        db.prepare('INSERT INTO households (id, name) VALUES (?, ?)').run(householdId, `${name}'s Household`);
+        db.prepare(`
+          INSERT INTO household_members (household_id, user_id, role)
+          VALUES (?, ?, 'owner')
+        `).run(householdId, userId);
+      }
+
+      if (inviteTokenId && !consumeTokenById(inviteTokenId)) {
+        throw new InviteTokenConsumedError();
+      }
+    })();
+  } catch (err) {
+    if (err instanceof InviteTokenConsumedError) {
+      res.status(400).json({ message: 'Invalid or expired invite token' });
+      return;
     }
-  })();
+    throw err;
+  }
 
   // Send verification email (don't fail registration if email fails)
   try {

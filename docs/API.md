@@ -1,6 +1,6 @@
 # API
 
-BasicBudget exposes a REST API used by its own frontend. You can use this API to build integrations, scripts, or automation. All endpoints require an active session cookie obtained by logging in.
+BasicBudget exposes a REST API used by its own frontend. You can use this API to build integrations, scripts, or automation. Most endpoints require an authenticated session cookie obtained by logging in. Public or pre-authentication exceptions include `/api/health`, `/api/version`, `/api/invite/info`, `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/forgot-password`, `/api/auth/reset-password`, `/api/auth/verify-email`, `/api/auth/status`, `/api/auth/csrf-token`, `/api/auth/registration-status`, `/api/auth/oidc/enabled`, `/api/auth/oidc/login`, `/api/auth/oidc/callback`, `/api/auth/totp/verify`, `/api/auth/totp/verify-recovery`, and `/api/auth/totp/confirm-reset`.
 
 ## Base URL
 
@@ -12,7 +12,7 @@ Replace `localhost:3000` with your instance's URL.
 
 ## Authentication
 
-All API requests require an active session. Log in via `POST /api/auth/login` to obtain a session cookie, then include it in subsequent requests.
+Most API requests require an active authenticated session. Log in via `POST /api/auth/login` to obtain a session cookie, then include it in subsequent requests. Public or pre-authentication exceptions are listed in the introduction above.
 
 ```bash
 curl -c cookies.txt -X POST http://localhost:3000/api/auth/login \

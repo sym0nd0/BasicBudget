@@ -46,12 +46,20 @@ function monthRange(from: string, to: string): string[] {
 router.get('/overview', (req: Request, res: Response) => {
   const from = (req.query.from as string) ?? '';
   const to = (req.query.to as string) ?? '';
+  if (!from || !to) {
+    res.status(400).json({ message: 'from and to are required' });
+    return;
+  }
   const fromResult = monthParam.safeParse(from);
   const toResult = monthParam.safeParse(to);
-  if (!from || !to || !fromResult.success || !toResult.success) {
+  if (!fromResult.success || !toResult.success) {
     if (!fromResult.success) logValidationFailure(req, fromResult.error.issues, 'reports.overview.from');
     if (!toResult.success) logValidationFailure(req, toResult.error.issues, 'reports.overview.to');
-    res.status(400).json({ message: 'from and to are required' });
+    res.status(400).json({
+      message: !fromResult.success
+        ? 'from must be in YYYY-MM format'
+        : 'to must be in YYYY-MM format',
+    });
     return;
   }
   if (fromResult.data > toResult.data) {

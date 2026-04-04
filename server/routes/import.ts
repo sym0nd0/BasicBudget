@@ -49,7 +49,7 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
   let skipped = 0;
 
   if (importType === 'expenses') {
-    const existingExpenses = db.prepare('SELECT name, amount_pence FROM expenses WHERE household_id = ?').all(req.householdId!) as
+    const existingExpenses = db.prepare('SELECT name, amount_pence FROM expenses WHERE household_id = ?').all(req.householdId!) as unknown as
       { name: string; amount_pence: number }[];
 
     // Phase 1 — validation pass (no DB writes)

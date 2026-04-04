@@ -19,8 +19,12 @@ export function ResetTotpPage() {
     try {
       await api.totpConfirmReset(token, password);
       navigate('/login?reset2fa=1');
-    } catch (err) {
-      setError((err as Error).message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError(String(err) || 'Unknown error');
+      }
     } finally {
       setLoading(false);
     }

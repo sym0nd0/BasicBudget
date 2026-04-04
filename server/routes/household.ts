@@ -28,61 +28,59 @@ function moveUserToSoloHousehold(userId: string, sourceHouseholdId: string): str
   const fallbackName = userRow?.display_name?.trim() || userRow?.email?.split('@')[0] || 'My';
   const newHouseholdId = randomUUID();
 
-  db.transaction(() => {
-    db.prepare('INSERT INTO households (id, name) VALUES (?, ?)').run(newHouseholdId, `${fallbackName}'s Household`);
-    db.prepare(`
-      INSERT INTO household_members (household_id, user_id, role)
-      VALUES (?, ?, 'owner')
-    `).run(newHouseholdId, userId);
+  db.prepare('INSERT INTO households (id, name) VALUES (?, ?)').run(newHouseholdId, `${fallbackName}'s Household`);
+  db.prepare(`
+    INSERT INTO household_members (household_id, user_id, role)
+    VALUES (?, ?, 'owner')
+  `).run(newHouseholdId, userId);
 
-    db.prepare(`
-      UPDATE accounts
-      SET household_id = ?
-      WHERE household_id = ? AND user_id = ? AND is_joint = 0
-    `).run(newHouseholdId, sourceHouseholdId, userId);
+  db.prepare(`
+    UPDATE accounts
+    SET household_id = ?
+    WHERE household_id = ? AND user_id = ? AND is_joint = 0
+  `).run(newHouseholdId, sourceHouseholdId, userId);
 
-    db.prepare(`
-      UPDATE incomes
-      SET household_id = ?
-      WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
-    `).run(newHouseholdId, sourceHouseholdId, userId, userId);
+  db.prepare(`
+    UPDATE incomes
+    SET household_id = ?
+    WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
+  `).run(newHouseholdId, sourceHouseholdId, userId, userId);
 
-    db.prepare(`
-      UPDATE expenses
-      SET household_id = ?
-      WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
-    `).run(newHouseholdId, sourceHouseholdId, userId, userId);
+  db.prepare(`
+    UPDATE expenses
+    SET household_id = ?
+    WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
+  `).run(newHouseholdId, sourceHouseholdId, userId, userId);
 
-    db.prepare(`
-      UPDATE debts
-      SET household_id = ?
-      WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
-    `).run(newHouseholdId, sourceHouseholdId, userId, userId);
+  db.prepare(`
+    UPDATE debts
+    SET household_id = ?
+    WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
+  `).run(newHouseholdId, sourceHouseholdId, userId, userId);
 
-    const movedGoalIds = db.prepare(`
-      SELECT id
-      FROM savings_goals
-      WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
-    `).all(sourceHouseholdId, userId, userId) as Array<{ id: string }>;
+  const movedGoalIds = db.prepare(`
+    SELECT id
+    FROM savings_goals
+    WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
+  `).all(sourceHouseholdId, userId, userId) as Array<{ id: string }>;
 
-    db.prepare(`
-      UPDATE savings_goals
-      SET household_id = ?
-      WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
-    `).run(newHouseholdId, sourceHouseholdId, userId, userId);
+  db.prepare(`
+    UPDATE savings_goals
+    SET household_id = ?
+    WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
+  `).run(newHouseholdId, sourceHouseholdId, userId, userId);
 
-    for (const goal of movedGoalIds) {
-      db.prepare('UPDATE savings_transactions SET household_id = ? WHERE savings_goal_id = ?').run(newHouseholdId, goal.id);
-    }
+  for (const goal of movedGoalIds) {
+    db.prepare('UPDATE savings_transactions SET household_id = ? WHERE savings_goal_id = ?').run(newHouseholdId, goal.id);
+  }
 
-    db.prepare(`
-      UPDATE debt_balance_snapshots
-      SET household_id = ?
-      WHERE household_id = ? AND debt_id IN (
-        SELECT id FROM debts WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
-      )
-    `).run(newHouseholdId, sourceHouseholdId, newHouseholdId, userId, userId);
-  })();
+  db.prepare(`
+    UPDATE debt_balance_snapshots
+    SET household_id = ?
+    WHERE household_id = ? AND debt_id IN (
+      SELECT id FROM debts WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
+    )
+  `).run(newHouseholdId, sourceHouseholdId, newHouseholdId, userId, userId);
 
   return newHouseholdId;
 }
@@ -219,15 +217,31 @@ router.post('/accept-invite', (req: Request, res: Response) => {
 
   const targetHouseholdId = inviteToken.newEmail;
 
-  // Check if user is already a member
-  const existing = db.prepare('SELECT 1 FROM household_members WHERE household_id = ? AND user_id = ?').get(targetHouseholdId, req.userId!);
-  if (existing) {
-    res.status(409).json({ message: 'You are already a member of this household' });
-    return;
-  }
+  try {
+    db.transaction(() => {
+      const existing = db.prepare('SELECT 1 FROM household_members WHERE household_id = ? AND user_id = ?').get(targetHouseholdId, req.userId!);
+      if (existing) {
+        throw new Error('already-member');
+      }
 
-  consumeTokenById(inviteToken.id);
-  db.prepare("INSERT INTO household_members (household_id, user_id, role) VALUES (?, ?, 'member')").run(targetHouseholdId, req.userId!);
+      db.prepare('DELETE FROM household_members WHERE user_id = ?').run(req.userId!);
+      db.prepare("INSERT INTO household_members (household_id, user_id, role) VALUES (?, ?, 'member')").run(targetHouseholdId, req.userId!);
+
+      if (!consumeTokenById(inviteToken.id)) {
+        throw new Error('invite-consumed');
+      }
+    })();
+  } catch (err) {
+    if (err instanceof Error && err.message === 'already-member') {
+      res.status(409).json({ message: 'You are already a member of this household' });
+      return;
+    }
+    if (err instanceof Error && err.message === 'invite-consumed') {
+      res.status(400).json({ message: 'Invalid or expired invite token' });
+      return;
+    }
+    throw err;
+  }
 
   // Update session
   req.session.householdId = targetHouseholdId;
@@ -308,8 +322,11 @@ router.delete('/members/:userId', (req: Request, res: Response) => {
   }
 
   const sourceHouseholdId = req.householdId!;
-  db.prepare('DELETE FROM household_members WHERE household_id = ? AND user_id = ?').run(sourceHouseholdId, targetUserId);
-  const newHouseholdId = moveUserToSoloHousehold(targetUserId, sourceHouseholdId);
+  let newHouseholdId = '';
+  db.transaction(() => {
+    db.prepare('DELETE FROM household_members WHERE household_id = ? AND user_id = ?').run(sourceHouseholdId, targetUserId);
+    newHouseholdId = moveUserToSoloHousehold(targetUserId, sourceHouseholdId);
+  })();
   revokeUserSessions(targetUserId);
   logger.info('Household member removed', {
     request_id: req.requestId,

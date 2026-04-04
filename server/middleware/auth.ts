@@ -69,14 +69,14 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   }
   req.session.lastActivity = Date.now();
 
-  const userRow = db.prepare('SELECT system_role FROM users WHERE id = ?').get(req.session.userId) as { system_role: SystemRole } | undefined;
+  const userRow = db.prepare('SELECT system_role FROM users WHERE id = ?').get(req.session.userId) as unknown as { system_role: SystemRole } | undefined;
   const memberRow = db.prepare(`
     SELECT household_id, role
     FROM household_members
     WHERE user_id = ?
     ORDER BY joined_at DESC
     LIMIT 1
-  `).get(req.session.userId) as { household_id: string; role: HouseholdRole } | undefined;
+  `).get(req.session.userId) as unknown as { household_id: string; role: HouseholdRole } | undefined;
 
   if (!userRow || !memberRow) {
     logger.warn('Auth blocked: session user no longer has an active account or household membership', authLogMeta(req));

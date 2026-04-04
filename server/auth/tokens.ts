@@ -79,8 +79,9 @@ export function validateToken(
   };
 }
 
-export function consumeTokenById(id: string): void {
-  db.prepare('UPDATE reset_tokens SET used = 1 WHERE id = ? AND used = 0').run(id);
+export function consumeTokenById(id: string): boolean {
+  const result = db.prepare('UPDATE reset_tokens SET used = 1 WHERE id = ? AND used = 0').run(id);
+  return result.changes === 1;
 }
 
 export function validateAndConsumeToken(
@@ -89,7 +90,7 @@ export function validateAndConsumeToken(
 ): { userId: string; newEmail?: string | null; inviteeEmail?: string | null } | null {
   const row = validateToken(rawToken, type);
   if (!row) return null;
-  consumeTokenById(row.id);
+  if (!consumeTokenById(row.id)) return null;
   return { userId: row.userId, newEmail: row.newEmail, inviteeEmail: row.inviteeEmail };
 }
 

@@ -61,6 +61,7 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SavingsGoal | undefined>();
+  const [pageError, setPageError] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Combined deposit/withdrawal modal
@@ -78,11 +79,12 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
     api.processSavingsAutoContributions()
       .then(() => {
         if (cancelled) return;
+        setPageError(null);
         refetchGoals();
         refetchTx();
       })
       .catch(err => {
-        if (!cancelled) setErrorMsg((err as Error).message);
+        if (!cancelled) setPageError((err as Error).message);
       });
     return () => { cancelled = true; };
   }, [refetchGoals, refetchTx]);
@@ -183,6 +185,12 @@ export function SavingsPage({ onMenuClick }: SavingsPageProps) {
           <FilterBar />
         </Card>
       </div>
+
+      {pageError && (
+        <Card className="mb-5">
+          <p className="text-sm text-[var(--color-danger)]">{pageError}</p>
+        </Card>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5 items-stretch">
