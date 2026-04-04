@@ -276,10 +276,15 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
 router.post('/logout', (req: Request, res: Response) => {
   const userId = req.session.userId;
   req.session.destroy((err) => {
+    if (err) {
+      logger.error('Logout session destroy failed', { request_id: req.requestId, userId, error: err });
+      res.status(500).json({ message: 'Failed to log out' });
+      return;
+    }
+
     res.clearCookie('bb.sid');
     res.clearCookie('bb.csrf');
     if (userId) auditLog(userId, 'logout', {}, req.ip, req.get('user-agent'));
-    if (err) logger.error('Logout session destroy failed', { request_id: req.requestId, userId, error: err });
     if (userId) logger.info('Logout', { request_id: req.requestId, userId });
     res.status(204).send();
   });

@@ -190,6 +190,11 @@ function stopScheduler(): void {
   nextBackupTime = null;
 }
 
+/** Stops the running scheduler without restarting it. Used during process shutdown. */
+export function stopAutoBackup(): void {
+  stopScheduler();
+}
+
 function startScheduler(cfg: BackupScheduleConfig): void {
   const intervalMs = cfg.interval_hours * 60 * 60 * 1000;
 

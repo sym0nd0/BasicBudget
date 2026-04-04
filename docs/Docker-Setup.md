@@ -17,14 +17,13 @@ services:
     image: ghcr.io/sym0nd0/basicbudget:latest
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "3000"
     environment:
       SESSION_SECRET: your-long-random-secret
       TOTP_ENCRYPTION_KEY: your-32-char-hex-key
       APP_URL: https://budget.example.com
       CORS_ORIGIN: https://budget.example.com
       LOG_LEVEL: info
-      NODE_ENV: production
     volumes:
       - ./data:/app/data
 ```
@@ -35,7 +34,7 @@ Start the container:
 docker compose up -d
 ```
 
-BasicBudget will be available at `http://localhost:3000` (or your configured `APP_URL`).
+BasicBudget will be published on container port `3000`; inspect the assigned host port with `docker compose ps` or put a reverse proxy in front of the container.
 
 View container logs with:
 

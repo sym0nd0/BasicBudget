@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 import db from '../db.js';
 import { requireAuth, requireOwner } from '../middleware/auth.js';
@@ -46,7 +46,7 @@ router.put('/', requireOwner, (req: Request, res: Response) => {
 });
 
 // POST /api/household/invite
-router.post('/invite', requireOwner, inviteLimiter, async (req: Request, res: Response) => {
+router.post('/invite', requireOwner, inviteLimiter, async (req: Request, res: Response, next: NextFunction) => {
   const schema = z.object({ email: z.email() });
   const result = schema.safeParse(req.body);
   if (!result.success) {
@@ -70,12 +70,28 @@ router.post('/invite', requireOwner, inviteLimiter, async (req: Request, res: Re
       token,
     );
   } catch (err) {
+    db.prepare(`
+      DELETE FROM reset_tokens
+      WHERE id = (
+        SELECT id
+        FROM reset_tokens
+        WHERE type = 'invite'
+          AND user_id = ?
+          AND new_email = ?
+          AND invitee_email = ?
+          AND used = 0
+        ORDER BY created_at DESC
+        LIMIT 1
+      )
+    `).run(req.userId!, req.householdId!, result.data.email);
     logger.warn('Household invite email delivery failed', {
       request_id: req.requestId,
       householdId: req.householdId,
       userId: req.userId,
       error: err,
     });
+    next(err);
+    return;
   }
 
   res.json({ message: 'Invitation sent.' });
@@ -167,7 +183,18 @@ router.put('/members/:userId/role', requireOwner, (req: Request, res: Response) 
     }
   }
 
-  db.prepare('UPDATE household_members SET role = ? WHERE household_id = ? AND user_id = ?').run(result.data.role, req.householdId!, targetUserId);
+  const roleUpdate = db.prepare('UPDATE household_members SET role = ? WHERE household_id = ? AND user_id = ?').run(result.data.role, req.householdId!, targetUserId);
+  if (roleUpdate.changes === 0) {
+    logger.warn('Household member role update skipped because no row matched', {
+      request_id: req.requestId,
+      householdId: req.householdId,
+      targetUserId,
+      newRole: result.data.role,
+      changedBy: req.userId,
+    });
+    res.status(404).json({ message: 'Member not found' });
+    return;
+  }
   logger.info('Household member role changed', {
     request_id: req.requestId,
     householdId: req.householdId,

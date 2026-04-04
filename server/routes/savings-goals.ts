@@ -185,7 +185,7 @@ router.post('/', (req: Request, res: Response) => {
     })();
   } catch (err) {
     logger.error('Failed to save savings goal', { request_id: req.requestId, id, userId: req.userId, error: err });
-    res.status(400).json({ message: (err as Error).message });
+    res.status(500).json({ message: 'Failed to save savings goal' });
     return;
   }
   const row = db.prepare('SELECT * FROM savings_goals WHERE id = ?').get(id) as Record<string, unknown>;
@@ -318,7 +318,7 @@ router.put('/:id', (req: Request, res: Response) => {
     })();
   } catch (err) {
     logger.error('Failed to update savings goal', { request_id: req.requestId, id, userId: req.userId, error: err });
-    res.status(400).json({ message: (err as Error).message });
+    res.status(500).json({ message: 'Failed to update savings goal' });
     return;
   }
   const row = db.prepare('SELECT * FROM savings_goals WHERE id = ?').get(id) as Record<string, unknown>;
@@ -342,7 +342,7 @@ router.delete('/:id', (req: Request, res: Response) => {
     db.prepare('DELETE FROM savings_goals WHERE id = ?').run(id);
   } catch (err) {
     logger.error('Failed to delete savings goal', { request_id: req.requestId, id, userId: req.userId, error: err });
-    res.status(400).json({ message: (err as Error).message });
+    res.status(500).json({ message: 'Failed to delete savings goal' });
     return;
   }
   logger.info('Savings goal deleted', { request_id: req.requestId, id, userId: req.userId });

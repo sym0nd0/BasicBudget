@@ -46,7 +46,7 @@ router.post('/', (req: Request, res: Response) => {
     ).run(id, req.householdId!, req.userId!, name.trim(), sort_order, is_joint ? 1 : 0);
   } catch (err) {
     logger.error('Failed to save account', { request_id: req.requestId, id, userId: req.userId, error: err });
-    res.status(400).json({ message: (err as Error).message });
+    res.status(500).json({ message: 'Internal server error' });
     return;
   }
   const row = db.prepare('SELECT * FROM accounts WHERE id = ?').get(id) as Record<string, unknown>;
@@ -92,7 +92,7 @@ router.put('/:id', (req: Request, res: Response) => {
     }
   } catch (err) {
     logger.error('Failed to update account', { request_id: req.requestId, id, userId: req.userId, error: err });
-    res.status(400).json({ message: (err as Error).message });
+    res.status(500).json({ message: 'Internal server error' });
     return;
   }
   const row = db.prepare('SELECT * FROM accounts WHERE id = ?').get(id) as Record<string, unknown>;
@@ -117,7 +117,7 @@ router.delete('/:id', (req: Request, res: Response) => {
     db.prepare('DELETE FROM accounts WHERE id = ?').run(id);
   } catch (err) {
     logger.error('Failed to delete account', { request_id: req.requestId, id, userId: req.userId, error: err });
-    res.status(400).json({ message: (err as Error).message });
+    res.status(500).json({ message: 'Internal server error' });
     return;
   }
   logger.info('Account deleted', { request_id: req.requestId, id, userId: req.userId });

@@ -369,13 +369,13 @@ router.put('/settings/logging', (req: Request, res: Response) => {
     return;
   }
   const { level } = result.data;
-  setSetting('log.level', level);
-  auditLog(req.userId!, 'admin_log_level_changed', { level }, req.ip, req.get('user-agent'));
   logger.info('Log level changed by admin', {
     request_id: req.requestId,
     level,
     admin_id: req.userId,
   });
+  setSetting('log.level', level);
+  auditLog(req.userId!, 'admin_log_level_changed', { level }, req.ip, req.get('user-agent'));
   res.json({ message: `Log level set to ${level}` });
 });
 

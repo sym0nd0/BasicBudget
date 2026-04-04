@@ -186,6 +186,8 @@ router.post('/change-email', sensitiveActionLimiter, async (req: Request, res: R
       userId: req.userId,
       error: err,
     });
+    res.status(500).json({ message: 'Failed to send confirmation email' });
+    return;
   }
 
   auditLog(req.userId!, 'email_change_requested', { newEmail }, req.ip, req.get('user-agent'));
@@ -224,6 +226,8 @@ router.post('/resend-verification', async (req: Request, res: Response) => {
       userId: req.userId,
       error: err,
     });
+    res.status(500).json({ message: 'Failed to send verification email' });
+    return;
   }
 
   res.json({ message: 'Verification email sent.' });

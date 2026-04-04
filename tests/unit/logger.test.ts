@@ -15,7 +15,10 @@ describe('logger', () => {
     stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    const { deleteSetting } = await import('../../server/services/settings.js');
+    deleteSetting('log.level');
+
     if (originalLogLevel === undefined) {
       delete process.env.LOG_LEVEL;
     } else {
@@ -101,5 +104,28 @@ describe('logger', () => {
     const meta = logs[0]['meta'] as Record<string, unknown>;
     const serialisedError = meta['error'] as Record<string, unknown>;
     expect(serialisedError['stack']).toEqual(expect.stringContaining('Error: boom'));
+  });
+
+  it('serialises circular Error causes and arrays safely', async () => {
+    process.env.LOG_LEVEL = 'debug';
+    vi.resetModules();
+
+    const { logger } = await import('../../server/services/logger.js');
+    stdoutSpy.mockClear();
+    stderrSpy.mockClear();
+
+    const err = new Error('boom') as Error & { cause?: unknown };
+    const payload: Record<string, unknown> = { error: err, items: [] as unknown[] };
+    err.cause = payload;
+    (payload['items'] as unknown[]).push(payload);
+
+    logger.error('Circular failure', payload);
+
+    const logs = parseLogCalls(stderrSpy);
+    expect(logs).toHaveLength(1);
+    expect(logs[0]['message']).toBe('Circular failure');
+    const meta = logs[0]['meta'] as Record<string, unknown>;
+    expect(meta['items']).toEqual(['[Circular]']);
+    expect((meta['error'] as Record<string, unknown>)['cause']).toBe('[Circular]');
   });
 });

@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config.js';
 import { getSmtpConfig } from './settings.js';
+import type { SmtpConfigFull } from './settings.js';
 import { logger } from './logger.js';
 
 function escapeHtml(str: string): string {
@@ -12,8 +13,7 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function createTransport() {
-  const smtp = getSmtpConfig();
+function createTransport(smtp: SmtpConfigFull | null) {
   if (!smtp) return null;
   logger.debug('Creating SMTP transport', {
     smtp_host: smtp.host,
@@ -33,7 +33,7 @@ function createTransport() {
 
 async function sendMail(template: string, to: string, subject: string, html: string): Promise<void> {
   const smtp = getSmtpConfig();
-  const transport = createTransport();
+  const transport = createTransport(smtp);
   if (!transport) {
     logger.warn('Email delivery skipped because SMTP is not configured', { template });
     return;

@@ -1,4 +1,5 @@
 import express from 'express';
+import type { Server } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
@@ -33,7 +34,7 @@ import backupRouter from './routes/backup.js';
 import categoriesRouter from './routes/categories.js';
 import { checkAndSendDealReminders } from './services/debtNotifications.js';
 import { refreshVersionCheck, getVersionInfo } from './services/versionChecker.js';
-import { initAutoBackup } from './services/autoBackup.js';
+import { initAutoBackup, stopAutoBackup } from './services/autoBackup.js';
 import versionRouter from './routes/version.js';
 import { getCurrentLogLevel, logger } from './services/logger.js';
 
@@ -267,16 +268,37 @@ app.use((err: Error & { status?: number; code?: string }, req: express.Request, 
 });
 
 if (config.NODE_ENV !== 'test') {
+  let versionCheckInterval: ReturnType<typeof setInterval> | null = null;
+  let dealReminderDelay: ReturnType<typeof setTimeout> | null = null;
+  let dealReminderInterval: ReturnType<typeof setInterval> | null = null;
+
+  function stopBackgroundJobs(): void {
+    if (versionCheckInterval) {
+      clearInterval(versionCheckInterval);
+      versionCheckInterval = null;
+    }
+    if (dealReminderDelay) {
+      clearTimeout(dealReminderDelay);
+      dealReminderDelay = null;
+    }
+    if (dealReminderInterval) {
+      clearInterval(dealReminderInterval);
+      dealReminderInterval = null;
+    }
+    stopAutoBackup();
+  }
+
   // Version check — run immediately at startup, then every hour
   refreshVersionCheck().catch(err => logger.error('Version check failed', { error: String(err) }));
-  setInterval(() => {
+  versionCheckInterval = setInterval(() => {
     refreshVersionCheck().catch(err => logger.error('Version check failed', { error: String(err) }));
   }, 30 * 60 * 1000);
 
   // Deal reminders — 10s delay then every 24h
-  setTimeout(() => {
+  dealReminderDelay = setTimeout(() => {
+    dealReminderDelay = null;
     checkAndSendDealReminders().catch(err => logger.error('Deal reminder check failed', { error: String(err) }));
-    setInterval(() => {
+    dealReminderInterval = setInterval(() => {
       checkAndSendDealReminders().catch(err => logger.error('Deal reminder check failed', { error: String(err) }));
     }, 24 * 60 * 60 * 1000);
   }, 10_000);
@@ -284,12 +306,43 @@ if (config.NODE_ENV !== 'test') {
   // Automated backups — reads config from system_settings, starts scheduler if enabled
   initAutoBackup();
 
-  app.listen(PORT, () => {
+  const server: Server = app.listen(PORT, () => {
     logger.info('Server listening', { port: PORT });
   });
 
-  const logShutdownSignal = (signal: NodeJS.Signals): void => {
+  const logShutdownSignal = async (signal: NodeJS.Signals): Promise<void> => {
     logger.info('Shutdown signal received', { signal, port: PORT });
+
+    stopBackgroundJobs();
+
+    const shutdownTimeout = setTimeout(() => {
+      logger.error('Forced shutdown after timeout', { signal, port: PORT });
+      process.exit(1);
+    }, 10_000);
+    shutdownTimeout.unref();
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        server.close((err?: Error) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve();
+        });
+      });
+      clearTimeout(shutdownTimeout);
+      logger.info('HTTP server closed cleanly', { signal, port: PORT });
+      process.exit(0);
+    } catch (err) {
+      clearTimeout(shutdownTimeout);
+      logger.error('HTTP server shutdown failed', {
+        signal,
+        port: PORT,
+        error: err,
+      });
+      process.exit(1);
+    }
   };
 
   process.once('SIGINT', logShutdownSignal);

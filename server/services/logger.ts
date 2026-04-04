@@ -20,7 +20,7 @@ export function getCurrentLogLevel(): LogLevel {
   }
 }
 
-function serialiseError(err: Error): Record<string, unknown> {
+function serialiseError(err: Error, seen: WeakSet<object>): Record<string, unknown> {
   const output: Record<string, unknown> = {
     name: err.name,
     message: err.message,
@@ -37,21 +37,13 @@ function serialiseError(err: Error): Record<string, unknown> {
 
   const cause = (err as Error & { cause?: unknown }).cause;
   if (cause !== undefined) {
-    output['cause'] = sanitiseValue(cause, new WeakSet<object>());
+    output['cause'] = sanitiseValue(cause, seen);
   }
 
   return output;
 }
 
 function sanitiseValue(value: unknown, seen: WeakSet<object>): unknown {
-  if (value instanceof Error) {
-    return serialiseError(value);
-  }
-
-  if (Array.isArray(value)) {
-    return value.map(item => sanitiseValue(item, seen));
-  }
-
   if (!value || typeof value !== 'object') {
     return value;
   }
@@ -60,6 +52,14 @@ function sanitiseValue(value: unknown, seen: WeakSet<object>): unknown {
     return '[Circular]';
   }
   seen.add(value);
+
+  if (value instanceof Error) {
+    return serialiseError(value, seen);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(item => sanitiseValue(item, seen));
+  }
 
   const output: Record<string, unknown> = {};
   for (const [key, nestedValue] of Object.entries(value as Record<string, unknown>)) {
