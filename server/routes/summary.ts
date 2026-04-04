@@ -4,14 +4,23 @@ import db from '../db.js';
 import { filterActiveInMonth, currentYearMonth, mapDebtToRecurringItem, type RecurringItem } from '../utils/recurring.js';
 import { filterVisible } from '../utils/visibility.js';
 import { requireAuth } from '../middleware/auth.js';
+import { logValidationFailure } from '../middleware/validate.js';
 import type { BudgetSummary, CategoryBreakdown } from '../../shared/types.js';
+import { monthParam } from '../validation/schemas.js';
 
 const router = Router();
 router.use(requireAuth);
 
 // GET /api/summary?month=YYYY-MM
 router.get('/', (req: Request, res: Response) => {
-  const month = (req.query.month as string) ?? currentYearMonth();
+  const rawMonth = (req.query.month as string) ?? currentYearMonth();
+  const monthResult = monthParam.safeParse(rawMonth);
+  if (!monthResult.success) {
+    logValidationFailure(req, monthResult.error.issues, 'summary.month');
+    res.status(400).json({ message: 'Invalid month format' });
+    return;
+  }
+  const month = monthResult.data;
 
   const rawIncomes = db.prepare('SELECT * FROM incomes WHERE household_id = ?').all(req.householdId!) as Record<string, unknown>[];
   const rawExpenses = db.prepare('SELECT * FROM expenses WHERE household_id = ?').all(req.householdId!) as Record<string, unknown>[];

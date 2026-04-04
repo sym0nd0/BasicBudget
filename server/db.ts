@@ -288,6 +288,12 @@ try {
   // Column already exists, ignore
 }
 
+try {
+  db.prepare('ALTER TABLE reset_tokens ADD COLUMN available_at TEXT').run();
+} catch {
+  // Column already exists, ignore
+}
+
 // Add colour_palette column to users for accessibility palette preference
 try {
   db.prepare("ALTER TABLE users ADD COLUMN colour_palette TEXT NOT NULL DEFAULT 'default'").run();

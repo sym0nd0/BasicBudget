@@ -1,18 +1,89 @@
 import { Router } from 'express';
 import type { NextFunction, Request, Response } from 'express';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import db from '../db.js';
 import { requireAuth, requireOwner } from '../middleware/auth.js';
 import { logValidationFailure } from '../middleware/validate.js';
 import { inviteLimiter } from '../middleware/rate-limit.js';
-import { createToken, validateAndConsumeToken } from '../auth/tokens.js';
+import { consumeTokenById, createToken, validateToken } from '../auth/tokens.js';
 import { sendHouseholdInvite } from '../services/email.js';
 import { filterActiveInMonth, currentYearMonth, mapDebtToRecurringItem, type RecurringItem } from '../utils/recurring.js';
 import type { HouseholdOverview, CategoryBreakdown, SavingsGoal } from '../../shared/types.js';
 import { logger } from '../services/logger.js';
+import { monthParam } from '../validation/schemas.js';
 
 const router = Router();
 router.use(requireAuth);
+
+function revokeUserSessions(userId: string): void {
+  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
+}
+
+function moveUserToSoloHousehold(userId: string, sourceHouseholdId: string): string {
+  const userRow = db.prepare('SELECT display_name, email FROM users WHERE id = ?').get(userId) as {
+    display_name: string;
+    email: string;
+  } | undefined;
+  const fallbackName = userRow?.display_name?.trim() || userRow?.email?.split('@')[0] || 'My';
+  const newHouseholdId = randomUUID();
+
+  db.prepare('INSERT INTO households (id, name) VALUES (?, ?)').run(newHouseholdId, `${fallbackName}'s Household`);
+  db.prepare(`
+    INSERT INTO household_members (household_id, user_id, role)
+    VALUES (?, ?, 'owner')
+  `).run(newHouseholdId, userId);
+
+  db.prepare(`
+    UPDATE accounts
+    SET household_id = ?
+    WHERE household_id = ? AND user_id = ? AND is_joint = 0
+  `).run(newHouseholdId, sourceHouseholdId, userId);
+
+  db.prepare(`
+    UPDATE incomes
+    SET household_id = ?
+    WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
+  `).run(newHouseholdId, sourceHouseholdId, userId, userId);
+
+  db.prepare(`
+    UPDATE expenses
+    SET household_id = ?
+    WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
+  `).run(newHouseholdId, sourceHouseholdId, userId, userId);
+
+  db.prepare(`
+    UPDATE debts
+    SET household_id = ?
+    WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
+  `).run(newHouseholdId, sourceHouseholdId, userId, userId);
+
+  const movedGoalIds = db.prepare(`
+    SELECT id
+    FROM savings_goals
+    WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
+  `).all(sourceHouseholdId, userId, userId) as Array<{ id: string }>;
+
+  db.prepare(`
+    UPDATE savings_goals
+    SET household_id = ?
+    WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
+  `).run(newHouseholdId, sourceHouseholdId, userId, userId);
+
+  for (const goal of movedGoalIds) {
+    db.prepare('UPDATE savings_transactions SET household_id = ? WHERE savings_goal_id = ?').run(newHouseholdId, goal.id);
+  }
+
+  db.prepare(`
+    UPDATE debt_balance_snapshots
+    SET household_id = ?
+    WHERE household_id = ? AND debt_id IN (
+      SELECT id FROM debts WHERE household_id = ? AND is_household = 0 AND (user_id = ? OR contributor_user_id = ?)
+    )
+  `).run(newHouseholdId, sourceHouseholdId, newHouseholdId, userId, userId);
+
+  return newHouseholdId;
+}
 
 // GET /api/household
 router.get('/', (req: Request, res: Response) => {
@@ -131,23 +202,46 @@ router.post('/accept-invite', (req: Request, res: Response) => {
   const { token } = req.body as { token?: string };
   if (!token) { res.status(400).json({ message: 'Token is required' }); return; }
 
-  const consumed = validateAndConsumeToken(token, 'invite');
-  if (!consumed || !consumed.newEmail) {
+  const inviteToken = validateToken(token, 'invite');
+  if (!inviteToken?.newEmail || !inviteToken.inviteeEmail) {
     // newEmail field was re-used to store householdId for invites
     res.status(400).json({ message: 'Invalid or expired invite token' });
     return;
   }
 
-  const targetHouseholdId = consumed.newEmail;
-
-  // Check if user is already a member
-  const existing = db.prepare('SELECT 1 FROM household_members WHERE household_id = ? AND user_id = ?').get(targetHouseholdId, req.userId!);
-  if (existing) {
-    res.status(409).json({ message: 'You are already a member of this household' });
+  const userRow = db.prepare('SELECT email FROM users WHERE id = ?').get(req.userId!) as { email: string } | undefined;
+  if (!userRow || userRow.email.toLowerCase() !== inviteToken.inviteeEmail.toLowerCase()) {
+    res.status(403).json({ message: 'This invite was sent to a different email address' });
     return;
   }
 
-  db.prepare("INSERT INTO household_members (household_id, user_id, role) VALUES (?, ?, 'member')").run(targetHouseholdId, req.userId!);
+  const targetHouseholdId = inviteToken.newEmail;
+
+  try {
+    db.transaction(() => {
+      const existing = db.prepare('SELECT 1 FROM household_members WHERE household_id = ? AND user_id = ?').get(targetHouseholdId, req.userId!);
+      if (existing) {
+        throw new Error('already-member');
+      }
+
+      db.prepare('DELETE FROM household_members WHERE user_id = ?').run(req.userId!);
+      db.prepare("INSERT INTO household_members (household_id, user_id, role) VALUES (?, ?, 'member')").run(targetHouseholdId, req.userId!);
+
+      if (!consumeTokenById(inviteToken.id)) {
+        throw new Error('invite-consumed');
+      }
+    })();
+  } catch (err) {
+    if (err instanceof Error && err.message === 'already-member') {
+      res.status(409).json({ message: 'You are already a member of this household' });
+      return;
+    }
+    if (err instanceof Error && err.message === 'invite-consumed') {
+      res.status(400).json({ message: 'Invalid or expired invite token' });
+      return;
+    }
+    throw err;
+  }
 
   // Update session
   req.session.householdId = targetHouseholdId;
@@ -202,6 +296,7 @@ router.put('/members/:userId/role', requireOwner, (req: Request, res: Response) 
     newRole: result.data.role,
     changedBy: req.userId,
   });
+  revokeUserSessions(targetUserId);
   res.json({ message: 'Role updated.' });
 });
 
@@ -226,10 +321,17 @@ router.delete('/members/:userId', (req: Request, res: Response) => {
     }
   }
 
-  db.prepare('DELETE FROM household_members WHERE household_id = ? AND user_id = ?').run(req.householdId!, targetUserId);
+  const sourceHouseholdId = req.householdId!;
+  let newHouseholdId = '';
+  db.transaction(() => {
+    db.prepare('DELETE FROM household_members WHERE household_id = ? AND user_id = ?').run(sourceHouseholdId, targetUserId);
+    newHouseholdId = moveUserToSoloHousehold(targetUserId, sourceHouseholdId);
+  })();
+  revokeUserSessions(targetUserId);
   logger.info('Household member removed', {
     request_id: req.requestId,
-    householdId: req.householdId,
+    householdId: sourceHouseholdId,
+    newHouseholdId,
     targetUserId,
     removedBy: req.userId,
     isSelf,
@@ -239,7 +341,14 @@ router.delete('/members/:userId', (req: Request, res: Response) => {
 
 // GET /api/household/summary?month=YYYY-MM
 router.get('/summary', (req: Request, res: Response) => {
-  const month = (req.query.month as string) ?? currentYearMonth();
+  const rawMonth = (req.query.month as string) ?? currentYearMonth();
+  const monthResult = monthParam.safeParse(rawMonth);
+  if (!monthResult.success) {
+    logValidationFailure(req, monthResult.error.issues, 'household.summary.month');
+    res.status(400).json({ message: 'Invalid month format' });
+    return;
+  }
+  const month = monthResult.data;
 
   const allIncomes = db.prepare('SELECT * FROM incomes WHERE household_id = ?').all(req.householdId!) as RecurringItem[];
   const allExpenses = db.prepare('SELECT * FROM expenses WHERE household_id = ?').all(req.householdId!) as RecurringItem[];
@@ -248,7 +357,9 @@ router.get('/summary', (req: Request, res: Response) => {
   const activeIncomes = filterActiveInMonth(allIncomes, month);
   const activeExpenses = filterActiveInMonth(allExpenses, month);
 
-  const totalIncomePence = activeIncomes.reduce((s, i) => s + (i.effective_pence ?? 0), 0);
+  const totalIncomePence = activeIncomes
+    .filter(i => Boolean(i.is_household))
+    .reduce((s, i) => s + (i.effective_pence ?? 0), 0);
   const sharedExpensesPence = activeExpenses.filter(e => Boolean(e.is_household)).reduce((s, e) => s + (e.effective_pence ?? 0), 0);
   const soleExpensesPence = activeExpenses.filter(e => !e.is_household).reduce((s, e) => s + (e.effective_pence ?? 0), 0);
   const allDebtItems = allDebts.map(mapDebtToRecurringItem);

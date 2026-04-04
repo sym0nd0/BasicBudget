@@ -178,6 +178,9 @@ app.use((req, res, next) => {
 app.use('/api', generalApiLimiter);
 
 // 8. Auth routes
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', version: getVersionInfo().current });
+});
 app.use('/api/auth', authRouter);
 app.use('/api/auth/totp', totpRouter);
 app.use('/api/auth/oidc', oidcRouter);

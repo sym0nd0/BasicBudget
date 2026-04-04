@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import db from '../db.js';
 import { hashPassword, verifyPassword, validatePasswordStrength } from '../auth/password.js';
-import { createToken, validateAndConsumeToken } from '../auth/tokens.js';
+import { consumeTokenById, createToken, validateAndConsumeToken, validateToken } from '../auth/tokens.js';
 import { sendEmailVerification, sendPasswordReset } from '../services/email.js';
 import { auditLog } from '../services/audit.js';
 import { deviceFingerprint, isNewDevice, recordDevice } from '../auth/device.js';
@@ -24,6 +24,12 @@ declare module 'express-session' {
 }
 
 const router = Router();
+
+class InviteTokenConsumedError extends Error {
+  constructor() {
+    super('Invite token already used');
+  }
+}
 
 // Pre-computed Argon2id hash for timing normalisation (prevents user enumeration)
 let dummyHash: string | null = null;
@@ -115,34 +121,54 @@ router.post('/register', registrationLimiter, async (req: Request, res: Response
 
   // If valid invite_token is provided, join that household instead of creating new one
   let targetHouseholdId: string | null = null;
+  let inviteTokenId: string | null = null;
   if (invite_token) {
-    const consumed = validateAndConsumeToken(invite_token, 'invite');
-    if (consumed?.newEmail) {
-      targetHouseholdId = consumed.newEmail; // newEmail field stores householdId for invites
+    const inviteTokenRow = validateToken(invite_token, 'invite');
+    if (!inviteTokenRow?.newEmail || !inviteTokenRow.inviteeEmail) {
+      res.status(400).json({ message: 'Invalid or expired invite token' });
+      return;
     }
+    if (inviteTokenRow.inviteeEmail.toLowerCase() !== email.toLowerCase().trim()) {
+      res.status(403).json({ message: 'This invite was sent to a different email address' });
+      return;
+    }
+    targetHouseholdId = inviteTokenRow.newEmail; // newEmail field stores householdId for invites
+    inviteTokenId = inviteTokenRow.id;
   }
 
-  db.transaction(() => {
-    db.prepare(`
-      INSERT INTO users (id, email, display_name, password_hash, system_role)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(userId, email.toLowerCase().trim(), name, hash, isFirstUser ? 'admin' : 'user');
+  try {
+    db.transaction(() => {
+      db.prepare(`
+        INSERT INTO users (id, email, display_name, password_hash, system_role)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(userId, email.toLowerCase().trim(), name, hash, isFirstUser ? 'admin' : 'user');
 
-    if (targetHouseholdId) {
-      // Join the invited household as member
-      db.prepare(`
-        INSERT INTO household_members (household_id, user_id, role)
-        VALUES (?, ?, 'member')
-      `).run(targetHouseholdId, userId);
-    } else {
-      // Create new household
-      db.prepare('INSERT INTO households (id, name) VALUES (?, ?)').run(householdId, `${name}'s Household`);
-      db.prepare(`
-        INSERT INTO household_members (household_id, user_id, role)
-        VALUES (?, ?, 'owner')
-      `).run(householdId, userId);
+      if (targetHouseholdId) {
+        // Join the invited household as member
+        db.prepare(`
+          INSERT INTO household_members (household_id, user_id, role)
+          VALUES (?, ?, 'member')
+        `).run(targetHouseholdId, userId);
+      } else {
+        // Create new household
+        db.prepare('INSERT INTO households (id, name) VALUES (?, ?)').run(householdId, `${name}'s Household`);
+        db.prepare(`
+          INSERT INTO household_members (household_id, user_id, role)
+          VALUES (?, ?, 'owner')
+        `).run(householdId, userId);
+      }
+
+      if (inviteTokenId && !consumeTokenById(inviteTokenId)) {
+        throw new InviteTokenConsumedError();
+      }
+    })();
+  } catch (err) {
+    if (err instanceof InviteTokenConsumedError) {
+      res.status(400).json({ message: 'Invalid or expired invite token' });
+      return;
     }
-  })();
+    throw err;
+  }
 
   // Send verification email (don't fail registration if email fails)
   try {
@@ -395,7 +421,25 @@ router.get('/status', (req: Request, res: Response) => {
     return;
   }
 
-  const householdId = req.session.householdId;
+  const memberRow = db.prepare(`
+    SELECT household_id, role
+    FROM household_members
+    WHERE user_id = ?
+    ORDER BY joined_at DESC
+    LIMIT 1
+  `).get(req.session.userId) as { household_id: string; role: 'owner' | 'member' } | undefined;
+  if (!memberRow) {
+    req.session.destroy(() => {});
+    const resp: AuthStatusResponse = { authenticated: false, totpPending: false };
+    res.json(resp);
+    return;
+  }
+
+  req.session.householdId = memberRow.household_id;
+  req.session.householdRole = memberRow.role;
+  req.session.systemRole = userRow.system_role as 'admin' | 'user';
+
+  const householdId = memberRow.household_id;
   let household = undefined;
   if (householdId) {
     const hRow = db.prepare('SELECT * FROM households WHERE id = ?').get(householdId) as Record<string, unknown> | undefined;
@@ -407,7 +451,7 @@ router.get('/status', (req: Request, res: Response) => {
     totpPending: Boolean(req.session.totpPending),
     user: mapUser(userRow),
     household,
-    householdRole: req.session.householdRole,
+    householdRole: memberRow.role,
   };
   res.json(resp);
 });

@@ -47,7 +47,7 @@ If you have lost access to your authenticator, enter one of your saved recovery 
 If you have lost both your authenticator and your recovery codes:
 
 - **Immediate reset (with password + OTP):** Not possible if OTP is unavailable. Contact your administrator.
-- **24-hour delayed reset:** Submit a reset request from the login page. After a 24-hour waiting period (to protect against unauthorised resets), 2FA will be removed from your account and you will receive an email confirmation.
+- **24-hour delayed reset:** Submit a reset request from the login page or Settings. You will receive an email with a `/reset-2fa` link that only becomes usable after a 24-hour waiting period. Open that link and confirm your password to disable 2FA.
 
 Administrators can immediately remove 2FA from any account via the [Admin panel](Admin).
 
@@ -81,6 +81,8 @@ Go to **Settings → Security → Active Sessions** to see all devices and brows
 ### Revoking a Session
 
 Click **Revoke** next to any session to log out that device immediately.
+
+Household member removals and role changes also revoke the affected user's existing sessions immediately.
 
 ### New Device Email Alerts
 

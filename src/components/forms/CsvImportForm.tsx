@@ -11,14 +11,14 @@ interface CsvImportFormProps {
 type ImportType = 'expenses' | 'incomes' | 'debts' | 'savings';
 
 const COLUMN_HINTS: Record<ImportType, string> = {
-  expenses: 'name, amount, day, category, type, household, split_ratio, account, recurrence_type, is_recurring, notes, start_date, end_date',
+  expenses: 'name, amount, day, category, household, split_ratio, account, recurrence_type, is_recurring, notes, start_date, end_date',
   incomes: 'name, amount, day, contributor, gross_or_net, recurrence_type, is_recurring, notes, start_date, end_date',
   debts: 'name, balance, interest_rate, minimum_payment, overpayment, compounding_frequency, day, is_household, split_ratio, recurrence_type, is_recurring, notes, start_date, end_date',
   savings: 'name, target_amount, current_amount, monthly_contribution, is_household, target_date, notes',
 };
 
 const TEMPLATE_HEADERS: Record<ImportType, string> = {
-  expenses: 'name,amount,day,category,type,household,split_ratio,account,recurrence_type,is_recurring,notes,start_date,end_date',
+  expenses: 'name,amount,day,category,household,split_ratio,account,recurrence_type,is_recurring,notes,start_date,end_date',
   incomes: 'name,amount,day,contributor,gross_or_net,recurrence_type,is_recurring,notes,start_date,end_date',
   debts: 'name,balance,interest_rate,minimum_payment,overpayment,compounding_frequency,day,is_household,split_ratio,recurrence_type,is_recurring,notes,start_date,end_date',
   savings: 'name,target_amount,current_amount,monthly_contribution,is_household,target_date,notes',

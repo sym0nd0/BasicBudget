@@ -294,9 +294,10 @@ router.post('/request-reset', requireAuth, totpResetLimiter, async (req: Request
   const userRow = db.prepare('SELECT email FROM users WHERE id = ?').get(req.userId!) as { email: string } | undefined;
   if (!userRow) { res.status(404).json({ message: 'User not found' }); return; }
 
-  createToken(req.userId!, 'totp_reset');
+  const availableAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const token = createToken(req.userId!, 'totp_reset', 48 * 60, undefined, availableAt);
   try {
-    await sendTotpResetNotification(userRow.email);
+    await sendTotpResetNotification(userRow.email, token, availableAt);
   } catch (err) {
     logger.warn('TOTP reset notification email failed', {
       request_id: req.requestId,

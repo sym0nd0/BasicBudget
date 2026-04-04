@@ -21,6 +21,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { TotpPage } from './pages/TotpPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { ResetTotpPage } from './pages/ResetTotpPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 import { AdminSettingsPage } from './pages/AdminSettingsPage';
@@ -72,6 +73,7 @@ export default function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/reset-2fa" element={<ResetTotpPage />} />
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/accept-invite" element={<AcceptInvitePage />} />
             {/* Protected routes */}

@@ -1,6 +1,6 @@
 # API
 
-BasicBudget exposes a REST API used by its own frontend. You can use this API to build integrations, scripts, or automation. All endpoints require an active session cookie obtained by logging in.
+BasicBudget exposes a REST API used by its own frontend. You can use this API to build integrations, scripts, or automation. Most endpoints require an authenticated session cookie obtained by logging in. Public or pre-authentication exceptions include `/api/health`, `/api/version`, `/api/invite/info`, `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/forgot-password`, `/api/auth/reset-password`, `/api/auth/verify-email`, `/api/auth/status`, `/api/auth/csrf-token`, `/api/auth/registration-status`, `/api/auth/oidc/enabled`, `/api/auth/oidc/login`, `/api/auth/oidc/callback`, `/api/auth/totp/verify`, `/api/auth/totp/verify-recovery`, and `/api/auth/totp/confirm-reset`.
 
 ## Base URL
 
@@ -12,7 +12,7 @@ Replace `localhost:3000` with your instance's URL.
 
 ## Authentication
 
-All API requests require an active session. Log in via `POST /api/auth/login` to obtain a session cookie, then include it in subsequent requests.
+Most API requests require an active authenticated session. Log in via `POST /api/auth/login` to obtain a session cookie, then include it in subsequent requests. Public or pre-authentication exceptions are listed in the introduction above.
 
 ```bash
 curl -c cookies.txt -X POST http://localhost:3000/api/auth/login \
@@ -58,8 +58,8 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 | `POST` | `/api/auth/totp/verify` | Verify TOTP code during login |
 | `POST` | `/api/auth/totp/verify-recovery` | Verify a recovery code during login |
 | `POST` | `/api/auth/totp/disable` | Disable TOTP (requires current password) |
-| `POST` | `/api/auth/totp/request-reset` | Request a TOTP reset via email |
-| `POST` | `/api/auth/totp/confirm-reset` | Confirm TOTP reset via token |
+| `POST` | `/api/auth/totp/request-reset` | Request a delayed TOTP reset email link |
+| `POST` | `/api/auth/totp/confirm-reset` | Confirm delayed TOTP reset via token + password |
 
 ## OIDC (Single Sign-On) Endpoints
 
@@ -100,10 +100,10 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 | `POST` | `/api/household/invite` | Send a household invite (owner only) |
 | `GET` | `/api/household/invites` | List active invites (owner only) |
 | `DELETE` | `/api/household/invites/:id` | Rescind an invite (owner only) |
-| `POST` | `/api/household/accept-invite` | Accept an invite and join the household |
+| `POST` | `/api/household/accept-invite` | Accept an invite and join the household (token email must match current user) |
 | `GET` | `/api/household/summary` | Household-level budget overview |
 | `PUT` | `/api/household/members/:userId/role` | Change a member's role (owner only) |
-| `DELETE` | `/api/household/members/:userId` | Remove a member or leave the household |
+| `DELETE` | `/api/household/members/:userId` | Remove a member or leave the household; private items move to a new solo household and sessions are revoked |
 
 ## Income Endpoints
 
@@ -142,6 +142,7 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 |---|---|---|
 | `GET` | `/api/savings-goals` | List all savings goals |
 | `POST` | `/api/savings-goals` | Create a new savings goal |
+| `POST` | `/api/savings-goals/process-auto-contributions` | Catch up scheduled auto-contributions |
 | `GET` | `/api/savings-goals/:id` | Get a single savings goal |
 | `PUT` | `/api/savings-goals/:id` | Update an existing savings goal |
 | `DELETE` | `/api/savings-goals/:id` | Delete a savings goal |
@@ -182,6 +183,7 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 | `DELETE` | `/api/accounts/:id` | Delete a payment account |
 | `GET` | `/api/categories` | List expense categories |
 | `GET` | `/api/version` | Current and latest version info |
+| `GET` | `/api/health` | Health check |
 
 ## Admin Endpoints (requires `system_role = 'admin'`)
 

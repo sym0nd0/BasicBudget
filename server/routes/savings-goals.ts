@@ -38,6 +38,7 @@ function processAutoContributions(householdId: string, userId: string): void {
       const goalId = goal.id as string;
       const contribDay = (goal.contribution_day as number) ?? 1;
       const monthly = goal.monthly_contribution_pence as number;
+      const actorUserId = (goal.contributor_user_id as string | null) || (goal.user_id as string) || userId;
 
       const latest = db.prepare(
         "SELECT created_at FROM savings_transactions WHERE savings_goal_id = ? AND type = 'contribution' ORDER BY created_at DESC LIMIT 1"
@@ -60,7 +61,7 @@ function processAutoContributions(householdId: string, userId: string): void {
         balance += monthly;
         const txId = randomUUID();
         const createdAt = `${ym}-${String(contribDay).padStart(2, '0')} 00:00:00`;
-        const result = insertTx.run(txId, goalId, householdId, userId, monthly, balance, createdAt);
+        const result = insertTx.run(txId, goalId, householdId, actorUserId, monthly, balance, createdAt);
         if (result.changes === 0) {
           // Duplicate skipped — re-sync balance from the existing row for this month
           const existing = db.prepare(
@@ -80,9 +81,14 @@ function processAutoContributions(householdId: string, userId: string): void {
   doProcess();
 }
 
+// POST /api/savings-goals/process-auto-contributions
+router.post('/process-auto-contributions', (req: Request, res: Response) => {
+  processAutoContributions(req.householdId!, req.userId!);
+  res.status(204).send();
+});
+
 // GET /api/savings-goals/transactions — must be before /:id routes
 router.get('/transactions', (req: Request, res: Response) => {
-  processAutoContributions(req.householdId!, req.userId!);
   const from = req.query.from as string | undefined;
   const to = req.query.to as string | undefined;
 
@@ -91,8 +97,9 @@ router.get('/transactions', (req: Request, res: Response) => {
     FROM savings_transactions t
     JOIN savings_goals g ON g.id = t.savings_goal_id
     WHERE t.household_id = ?
+      AND (g.user_id = ? OR g.contributor_user_id = ? OR g.is_household = 1)
   `;
-  const params: unknown[] = [req.householdId!];
+  const params: unknown[] = [req.householdId!, req.userId!, req.userId!];
 
   if (from) { sql += ' AND substr(t.created_at, 1, 7) >= ?'; params.push(from); }
   if (to)   { sql += ' AND substr(t.created_at, 1, 7) <= ?'; params.push(to); }
@@ -104,7 +111,6 @@ router.get('/transactions', (req: Request, res: Response) => {
 
 // GET /api/savings-goals
 router.get('/', (req: Request, res: Response) => {
-  processAutoContributions(req.householdId!, req.userId!);
   const rows = db.prepare('SELECT * FROM savings_goals WHERE household_id = ? ORDER BY created_at').all(req.householdId!) as Record<string, unknown>[];
   const visible = filterVisible(rows, req.userId!);
   let goals = visible.map(mapGoal);
@@ -198,6 +204,10 @@ router.get('/:id/transactions', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
   const goal = db.prepare('SELECT * FROM savings_goals WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!goal) { res.status(404).json({ message: 'Savings goal not found' }); return; }
+  if (filterVisible([goal], req.userId!).length === 0) {
+    res.status(404).json({ message: 'Savings goal not found' });
+    return;
+  }
 
   const from = req.query.from as string | undefined;
   const to = req.query.to as string | undefined;

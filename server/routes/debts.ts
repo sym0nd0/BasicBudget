@@ -11,7 +11,7 @@ import type { Debt, DebtDealPeriod } from '../../shared/types.js';
 import { logger } from '../services/logger.js';
 import { computeRepayments } from '../utils/debtRepayments.js';
 import { getDebtSnapshotForMonth } from '../utils/debtProjection.js';
-import { debtSchema } from '../validation/schemas.js';
+import { debtSchema, monthParam } from '../validation/schemas.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -24,9 +24,12 @@ function mapDebt(row: Record<string, unknown>): Debt {
   };
 }
 
+function getDebtDealPeriods(debtId: string): DebtDealPeriod[] {
+  return db.prepare('SELECT * FROM debt_deal_periods WHERE debt_id = ? ORDER BY start_date').all(debtId) as unknown as DebtDealPeriod[];
+}
+
 function enrichDebtWithPeriods(debt: Debt): Debt {
-  const periods = db.prepare('SELECT * FROM debt_deal_periods WHERE debt_id = ? ORDER BY start_date').all(debt.id) as DebtDealPeriod[];
-  return { ...debt, deal_periods: periods };
+  return { ...debt, deal_periods: getDebtDealPeriods(debt.id) };
 }
 
 // GET /api/debts  or  GET /api/debts?month=YYYY-MM
@@ -38,7 +41,13 @@ router.get('/', (req: Request, res: Response) => {
   let debts = visible.map(mapDebt).map(enrichDebtWithPeriods);
 
   if (month) {
-    debts = getDebtSnapshotForMonth(debts, month, currentYearMonth());
+    const monthResult = monthParam.safeParse(month);
+    if (!monthResult.success) {
+      logValidationFailure(req, monthResult.error.issues, 'debts.month');
+      res.status(400).json({ message: 'Invalid month format' });
+      return;
+    }
+    debts = getDebtSnapshotForMonth(debts, monthResult.data, currentYearMonth());
   }
 
   res.json(debts);
@@ -161,13 +170,14 @@ router.put('/:id', (req: Request, res: Response) => {
   }
   const updIsHousehold = body.is_household !== undefined ? Boolean(body.is_household) : Boolean(existing.is_household);
   const updSplitRatio = updIsHousehold ? 0.5 : 1.0;
-  const dealPeriods = (body.deal_periods ?? []) as Omit<DebtDealPeriod, 'id' | 'debt_id' | 'created_at'>[];
+  const dealPeriods = body.deal_periods as Omit<DebtDealPeriod, 'id' | 'debt_id' | 'created_at'>[] | undefined;
   const reminderMonths = body.reminder_months !== undefined ? body.reminder_months : existing.reminder_months;
   const endDate = body.end_date !== undefined ? body.end_date : (existing.end_date as string | null);
+  const dealPeriodsToValidate = dealPeriods ?? getDebtDealPeriods(id);
 
   // Validate deal periods don't extend past debt end date
   if (endDate) {
-    for (const period of dealPeriods) {
+    for (const period of dealPeriodsToValidate) {
       if (period.start_date > endDate) {
         res.status(400).json({ message: `Deal period cannot start after debt end date (${endDate})` });
         return;
@@ -219,16 +229,18 @@ router.put('/:id', (req: Request, res: Response) => {
           .run(randomUUID(), id, req.householdId!, body.balance_pence, today);
       }
 
-      // Replace all deal periods with new ones (auto-generate labels based on index)
-      db.prepare('DELETE FROM debt_deal_periods WHERE debt_id = ?').run(id);
-      for (let i = 0; i < dealPeriods.length; i++) {
-        const period = dealPeriods[i];
-        const periodId = randomUUID();
-        const label = `Period ${i + 1}`;
-        db.prepare(`
-          INSERT INTO debt_deal_periods (id, debt_id, label, interest_rate, start_date, end_date)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `).run(periodId, id, label, period.interest_rate, period.start_date, period.end_date ?? null);
+      if (dealPeriods !== undefined) {
+        // Replace all deal periods only when the payload explicitly supplies them.
+        db.prepare('DELETE FROM debt_deal_periods WHERE debt_id = ?').run(id);
+        for (let i = 0; i < dealPeriods.length; i++) {
+          const period = dealPeriods[i];
+          const periodId = randomUUID();
+          const label = `Period ${i + 1}`;
+          db.prepare(`
+            INSERT INTO debt_deal_periods (id, debt_id, label, interest_rate, start_date, end_date)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `).run(periodId, id, label, period.interest_rate, period.start_date, period.end_date ?? null);
+        }
       }
     })();
   } catch (err) {
@@ -277,6 +289,10 @@ router.get('/:id/repayments', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
   const row = db.prepare('SELECT * FROM debts WHERE id = ? AND household_id = ?').get(id, req.householdId!) as Record<string, unknown> | undefined;
   if (!row) {
+    res.status(404).json({ message: 'Debt not found' });
+    return;
+  }
+  if (filterVisible([row], req.userId!).length === 0) {
     res.status(404).json({ message: 'Debt not found' });
     return;
   }

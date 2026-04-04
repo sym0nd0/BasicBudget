@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
+import { randomUUID } from 'node:crypto';
+import db from '../../server/db.js';
 import { requireAuth, requireOwner, requireAdmin } from '../../server/middleware/auth.js';
 
 function makeReq(session: Record<string, unknown> = {}): Partial<Request> {
@@ -33,11 +35,29 @@ describe('requireAuth', () => {
   });
 
   it('passes authenticated requests', () => {
-    const req = makeReq({ userId: 'u1', totpPending: false }) as Request;
-    const res = makeRes() as unknown as Response;
-    const next = vi.fn() as NextFunction;
-    requireAuth(req, res, next);
-    expect(next).toHaveBeenCalled();
+    const userId = randomUUID();
+    const householdId = randomUUID();
+    try {
+      db.prepare(`
+        INSERT INTO users (id, email, display_name, password_hash, system_role)
+        VALUES (?, ?, ?, ?, 'user')
+      `).run(userId, `${userId}@example.com`, 'Auth Test User', 'hash');
+      db.prepare('INSERT INTO households (id, name) VALUES (?, ?)').run(householdId, 'Auth Test Household');
+      db.prepare(`
+        INSERT INTO household_members (household_id, user_id, role)
+        VALUES (?, ?, 'owner')
+      `).run(householdId, userId);
+
+      const req = makeReq({ userId, totpPending: false }) as Request;
+      const res = makeRes() as unknown as Response;
+      const next = vi.fn() as NextFunction;
+      requireAuth(req, res, next);
+      expect(next).toHaveBeenCalled();
+    } finally {
+      db.prepare('DELETE FROM household_members WHERE household_id = ? AND user_id = ?').run(householdId, userId);
+      db.prepare('DELETE FROM households WHERE id = ?').run(householdId);
+      db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+    }
   });
 });
 

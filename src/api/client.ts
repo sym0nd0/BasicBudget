@@ -136,6 +136,11 @@ export const api = {
     request<{ message: string }>('/auth/totp/disable', { method: 'POST', body: JSON.stringify({ password, token, code }) }),
   totpRequestReset: () =>
     request<{ message: string }>('/auth/totp/request-reset', { method: 'POST' }),
+  totpConfirmReset: (token: string, password: string) =>
+    request<{ message: string }>('/auth/totp/confirm-reset', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    }),
 
   // ── Profile ──
   getProfile: () => request<User>('/auth/profile'),
@@ -151,7 +156,7 @@ export const api = {
       body: JSON.stringify({ date_format, time_format }),
     }),
   changePassword: (currentPassword: string, newPassword: string) =>
-    request<{ message: string }>('/auth/change-password', {
+    request<{ message: string }>('/auth/profile/change-password', {
       method: 'POST',
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
@@ -228,6 +233,8 @@ export const api = {
     request<SavingsGoal>(`/savings-goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteSavingsGoal: (id: string) =>
     request<void>(`/savings-goals/${id}`, { method: 'DELETE' }),
+  processSavingsAutoContributions: () =>
+    request<void>('/savings-goals/process-auto-contributions', { method: 'POST' }),
   getSavingsTransactions: (goalId: string, from?: string, to?: string) => {
     const params = new URLSearchParams();
     if (from) params.set('from', from);
