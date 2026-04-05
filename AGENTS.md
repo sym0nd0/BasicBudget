@@ -25,6 +25,7 @@ BasicBudget is a React 19 + Vite frontend with an Express 5 + SQLite backend. Sh
 - Work on a named branch only. Never commit directly to `master`.
 - If user-facing behaviour, API shape, config, or operations change, review and update `README.md` and the relevant page under `docs/`.
 - Bump `package.json` to the correct semver for committed changes.
+- Do not open draft PRs.
 - Fill out `.github/PULL_REQUEST_TEMPLATE.md` completely when opening a PR.
 - Do not merge, tag, or release without explicit user approval.
 

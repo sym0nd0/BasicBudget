@@ -12,6 +12,7 @@ Thumbs.db
 *.log
 *.stackdump
 public/assets/
+public/index.html
 
 .worktrees/
 /docs/superpowers/
