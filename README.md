@@ -142,9 +142,10 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 
 ### Income Management
 - Add, edit, and delete income sources with contributor names
+- Mark income as household income so `/household` only includes entries where `is_household = true`
 - Record the day of month income is received; track as gross or net
 - Set recurrence type: monthly, weekly, fortnightly, or yearly
-- Optional start and end dates for time-bounded income entries
+- Start date is required for weekly and fortnightly income; other income types have optional start and end dates
 - Sortable table columns (name, amount, day, type)
 
 ### Expense Management
@@ -153,7 +154,7 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 - Assign expenses to a named payment account, including joint accounts visible to all household members
 - Assign expenses to specific household members for tracking contributions
 - Mark expenses as household expenses with a configurable split ratio so only your share counts in budget summaries
-- Set recurrence type (including fortnightly) and optional start/end dates
+- Set recurrence type (including fortnightly); weekly and fortnightly expenses require a start date, while other expense types have optional start/end dates
 - Sortable table columns (name, amount, your share, day, category, type)
 
 ### Debt Management

@@ -38,7 +38,7 @@ If an invite expires, the owner must send a new one.
 ## Removing Members / Leaving
 
 - **Owner removing a member:** Go to **Settings** → **Household**, load the members list, and click **Remove**.
-- **Member leaving:** Ask a household owner to remove your account.
+- **Member leaving:** A member may leave their own household by calling `DELETE /api/household/members/:userId` with their own user id. Owners may also remove members through the same endpoint. The current UI only exposes the owner-side **Settings** → **Household** → **Remove** flow.
 
 When a member leaves or is removed, their personal items are moved into a new one-person household and their existing sessions are revoked. Household-shared items remain in the original household.
 

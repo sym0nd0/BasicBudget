@@ -27,7 +27,7 @@ The Reports page is divided into four sections:
 | **[[Debt Charts\|Debt-Charts]]** | Debt projection line chart, debt payoff timeline (snowball/avalanche), debt-to-income ratio chart |
 | **Monthly Overview** | Per-month income, expenses, debt, savings, savings rate, and disposable values |
 
-## Monthly Detail Table
+## Monthly Overview
 
 A table at the bottom of the page shows one row per month with income, expenses, debt, savings, savings rate, and disposable columns.
 

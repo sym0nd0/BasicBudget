@@ -14,6 +14,7 @@ Click **Add Income** to open the form. Fill in the fields and click **Save**.
 | **Amount** | The income amount in pounds. |
 | **Posting Day** | The day of the month the income is received (1–31). |
 | **Contributor** | The household member this income belongs to. |
+| **Household** | Tick **Household income** to set `is_household = true` and include the entry in `/household`. |
 | **Gross / Net** | Toggle whether the amount is gross (before tax) or net (take-home). |
 | **Recurrence** | How often the income occurs: One-off, Monthly, Weekly, Yearly, or Fortnightly. |
 | **Start Date** | The first date this income is active. Leave blank for "always". |
@@ -36,7 +37,7 @@ Click the **edit icon** on any row to update an entry. Click the **delete icon**
 
 ## Household Income
 
-Income assigned to a contributor appears under that household member's name. The Household page aggregates household-level income totals from entries marked as household at the server/API layer.
+Income assigned to a contributor appears under that household member's name. The [Household page](/household) only includes income entries where `is_household = true`. You set this flag in the Income add/edit form by ticking **Household income** before saving.
 
 ---
 

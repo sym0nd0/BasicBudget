@@ -1,6 +1,6 @@
 import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from 'node:child_process';
-import { chromium, request as playwrightRequest, type BrowserContext, type Page } from 'playwright';
-import { existsSync, rmSync, mkdirSync, cpSync, readFileSync, writeFileSync } from 'node:fs';
+import { chromium, request as playwrightRequest, type Browser, type BrowserContext, type Page } from 'playwright';
+import { existsSync, rmSync, mkdirSync, cpSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 
@@ -93,6 +93,9 @@ function startServer(): ChildProcessWithoutNullStreams {
   server.stderr?.on('data', (data) => {
     console.error(`Server error: ${data}`);
   });
+  server.stdout?.on('data', (data) => {
+    process.stdout.write(data);
+  });
 
   return server;
 }
@@ -153,15 +156,18 @@ async function main(): Promise<void> {
   const originalPublicIndex = existsSync(publicIndexPath)
     ? readFileSync(publicIndexPath, 'utf8')
     : null;
-  console.log('Copying frontend assets...');
-  cpSync(distDir, publicDir, { recursive: true, force: true });
-
-  // Ensure screenshots directory exists
-  mkdirSync(SCREENSHOTS_DIR, { recursive: true });
-
-  let server = startServer();
-
+  let browser: Browser | null = null;
+  let server: ChildProcessWithoutNullStreams | null = null;
+  let exitCode = 0;
   try {
+    console.log('Copying frontend assets...');
+    cpSync(distDir, publicDir, { recursive: true, force: true });
+
+    // Ensure screenshots directory exists
+    mkdirSync(SCREENSHOTS_DIR, { recursive: true });
+
+    server = startServer();
+
     // Wait for server to be ready
     console.log('Waiting for server startup...');
     await waitForServer();
@@ -182,7 +188,7 @@ async function main(): Promise<void> {
 
     // Launch Playwright
     console.log('\nLaunching Playwright...');
-    const browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({ headless: true });
     const context = await browser.newContext();
     const page = await context.newPage();
 
@@ -238,16 +244,28 @@ async function main(): Promise<void> {
 
     // Clean up
     console.log('\nCleaning up...');
-    await browser.close();
+    console.log('\n✓ Screenshots generated successfully!\n');
+    console.log(`Screenshots saved to: ${SCREENSHOTS_DIR}\n`);
+  } catch (error) {
+    exitCode = 1;
+    console.error('\n✗ Screenshot generation failed:', error instanceof Error ? error.message : error);
+  } finally {
+    if (browser) {
+      await browser.close().catch(() => {});
+    }
 
-    // Kill server and wait for exit before deleting DB (avoids EPERM on Windows)
-    await stopServer(server);
+    if (server) {
+      await stopServer(server).catch(() => {});
+    }
 
-    if (originalPublicIndex !== null) {
+    if (originalPublicIndex === null) {
+      if (existsSync(publicIndexPath)) {
+        unlinkSync(publicIndexPath);
+      }
+    } else {
       writeFileSync(publicIndexPath, originalPublicIndex, 'utf8');
     }
 
-    // Delete demo database (retry for Windows file-lock delays)
     for (let i = 0; i < 5; i++) {
       try {
         if (existsSync(DEMO_DB_PATH)) rmSync(DEMO_DB_PATH);
@@ -259,25 +277,9 @@ async function main(): Promise<void> {
         await sleep(1000);
       }
     }
-
-    console.log('\n✓ Screenshots generated successfully!\n');
-    console.log(`Screenshots saved to: ${SCREENSHOTS_DIR}\n`);
-    process.exit(0);
-  } catch (error) {
-    console.error('\n✗ Screenshot generation failed:', error instanceof Error ? error.message : error);
-
-    // Kill server and wait before cleanup to avoid EPERM
-    await stopServer(server);
-
-    if (originalPublicIndex !== null) {
-      writeFileSync(publicIndexPath, originalPublicIndex, 'utf8');
-    }
-
-    if (existsSync(DEMO_DB_PATH)) {
-      try { rmSync(DEMO_DB_PATH); } catch { /* ignore */ }
-    }
-    process.exit(1);
   }
+
+  process.exitCode = exitCode;
 }
 
 main();

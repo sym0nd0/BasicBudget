@@ -15,7 +15,7 @@ This page provides a detailed reference for the CSV import feature. For an overv
 | `account` | No | Payment account name (case-insensitive match against existing accounts) |
 | `recurrence_type` | Yes | `one-off`, `monthly`, `weekly`, `yearly`, or `fortnightly` |
 | `is_recurring` | No | `yes`, `true`, or `1`; blank defaults to recurring |
-| `start_date` | No | `DD/MM/YYYY` or ISO date |
+| `start_date` | No | `DD/MM/YYYY` or ISO date. Required when `recurrence_type` is `weekly` or `fortnightly` and `is_recurring` is truthy |
 | `end_date` | No | `DD/MM/YYYY` or ISO date |
 | `notes` | No | Free text |
 
@@ -30,7 +30,7 @@ This page provides a detailed reference for the CSV import feature. For an overv
 | `gross_or_net` | No | `gross` or `net` |
 | `recurrence_type` | Yes | `one-off`, `monthly`, `weekly`, `yearly`, or `fortnightly` |
 | `is_recurring` | No | `yes`, `true`, or `1`; blank defaults to recurring |
-| `start_date` | No | `DD/MM/YYYY` or ISO date |
+| `start_date` | No | `DD/MM/YYYY` or ISO date. Required when `recurrence_type` is `weekly` or `fortnightly` and `is_recurring` is truthy |
 | `end_date` | No | `DD/MM/YYYY` or ISO date |
 | `notes` | No | Free text |
 

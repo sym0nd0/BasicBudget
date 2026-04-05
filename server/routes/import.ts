@@ -143,6 +143,9 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
         const isRecurring = parseIsRecurring(row.is_recurring);
         const startDate = row.start_date ? (parseUkDate(row.start_date) ?? row.start_date) : null;
         const endDate = row.end_date ? (parseUkDate(row.end_date) ?? row.end_date) : null;
+        if (isRecurring && (recurrenceType === 'weekly' || recurrenceType === 'fortnightly') && !startDate) {
+          throw new Error('start_date is required for weekly/fortnightly rows');
+        }
         validRows.push({
           name, amount, day: isNaN(day) ? 1 : day, category, isHousehold,
           splitRatio, recurrenceType, isRecurring, startDate, endDate,
@@ -241,6 +244,9 @@ router.post('/csv', upload.single('file'), (req: Request, res: Response) => {
         const isRecurring = parseIsRecurring(row.is_recurring);
         const startDate = row.start_date ? (parseUkDate(row.start_date) ?? row.start_date) : null;
         const endDate = row.end_date ? (parseUkDate(row.end_date) ?? row.end_date) : null;
+        if (isRecurring && (recurrenceType === 'weekly' || recurrenceType === 'fortnightly') && !startDate) {
+          throw new Error('start_date is required for weekly/fortnightly rows');
+        }
         validRows.push({
           name, amount, day: isNaN(day) ? 28 : day,
           contributorName: row.contributor?.trim() ?? null,
