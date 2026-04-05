@@ -76,7 +76,7 @@ Server imports must use `.js` extensions even for `.ts` source files (NodeNext r
 `better-sqlite3` returns all rows as `Record<string, unknown>`. Two patterns are in use:
 
 - **Booleans**: SQLite stores `INTEGER 0/1`. Always coerce with `Boolean(row.is_recurring)` — never rely on the raw value being a JS boolean.
-- **Interface casts**: Cast through `unknown` — `row as unknown as MyInterface` — because `Record<string, unknown>` doesn't structurally overlap typed interfaces.
+- **Interface casts**: Validate or narrow SQLite row data at the boundary with runtime checks, Zod, or a dedicated validator function before converting it to an interface. `unknown as Type` is a last-resort fallback only after explicit validation, because `Record<string, unknown>` doesn't structurally overlap typed interfaces.
 - **`req.params` values**: `@types/express` v5 types these as `string | string[]`. Use `req.params['key'] as string`.
 
 ### Recurring engine (`server/utils/recurring.ts`)
@@ -460,7 +460,7 @@ If there are no breaking changes, omit this section entirely — do not include 
 
 These rules apply to every file in the project without exception.
 
-1. **No `any` types** — use `unknown` with a type guard, or a typed interface. Cast through `unknown` when narrowing SQLite rows (`row as unknown as MyInterface`).
+1. **No `any` types** — use `unknown` with a type guard, Zod, or another explicit row-validation step at the boundary. `unknown as Type` is a last-resort fallback only after explicit validation when narrowing SQLite rows.
 2. **Immutability by default** — prefer `const` over `let`; use `readonly` on interface properties where mutation is not intended; favour non-mutating array methods (`map`, `filter`, `reduce`) over `push`/`splice`.
 3. **Explicit error handling** — never write an empty `catch {}` block unless the comment explains why swallowing the error is intentional. Always log or rethrow.
 4. **No hardcoded secrets** — all secrets and environment-specific values must come from environment variables accessed via `server/config.ts` (server) or `import.meta.env` (client). Never commit real secrets.

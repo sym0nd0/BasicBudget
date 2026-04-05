@@ -214,4 +214,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). All work must be done on a named branch 
 
 ## Licence
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [MIT Licence](LICENSE).
