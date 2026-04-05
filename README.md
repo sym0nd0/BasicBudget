@@ -8,7 +8,7 @@
 
 A multi-user personal budgeting and debt management application built with React 19, TypeScript, and a Node.js/SQLite backend. BasicBudget helps households track monthly income and expenses, manage debts with full repayment schedules, track savings goals, and visualise their financial picture through interactive charts — with per-household data isolation, optional TOTP 2FA, and OIDC single sign-on.
 
-> **Disclaimer:** BasicBudget was entirely created using [Claude Code](https://claude.com/claude-code) by Anthropic. As with any AI-generated code, caution should be exercised — use entirely at your own risk. PRs and contributions are welcome; even more so, if someone who knows what they're actually doing forks it and improves it.
+> **Disclaimer:** BasicBudget was entirely created using LLMs ([Claude Code](https://claude.com/claude-code) by Anthropic and [Codex](https://openai.com/codex/) by OpenAI. As with any AI-generated code, caution should be exercised — use entirely at your own risk. PRs and contributions are welcome; even more so, if someone who knows what they're actually doing forks it and improves it.
 
 ## Documentation
 
