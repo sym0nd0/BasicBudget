@@ -10,8 +10,8 @@ Each debt entry shows:
 
 - The current outstanding balance (with a change indicator vs the previous month)
 - The APR and monthly interest charge
-- Minimum payment and any overpayment
-- A **View Schedule** button to see the full repayment projection
+- Minimum payment, overpayment, and your share of the monthly payment
+- Click a debt row to expand the full repayment projection and any deal periods
 
 The **Total Debt** and **Monthly Payments** summary cards also show change indicators vs the previous month.
 

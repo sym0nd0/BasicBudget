@@ -33,7 +33,7 @@ If you have a debt with a promotional interest rate (e.g. a 0% balance transfer)
 
 1. Open the debt's edit form.
 2. Add a **Deal Period** with an end date.
-3. Enable **Email Reminder** and set the number of days in advance to be notified.
+3. Set **Deal Period Reminder** to the number of months before expiry when you want the email to be sent.
 
 BasicBudget sends the email automatically when the reminder date arrives, provided SMTP is configured.
 

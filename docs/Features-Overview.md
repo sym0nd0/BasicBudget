@@ -9,7 +9,7 @@ A comprehensive list of everything BasicBudget can do.
 - **Expense tracking** — fixed and variable expenses with categories, payment accounts, recurrence type, and household split ratio
 - **Month locking** — lock past months to prevent accidental edits to historical data
 - **Duplicate detection** — warns before saving an entry identical to an existing one
-- **Filter bar** — filter entries by contributor, account, category, or recurrence type; toggle a date range picker to cycle through a from/to month window
+- **Filter bar** — switch between single-month, preset ranges, or custom from/to month windows; the Expenses page also supports a category filter
 
 ## Debt Tracking
 
@@ -35,16 +35,15 @@ A comprehensive list of everything BasicBudget can do.
 
 ## Reports & Analytics
 
-- **Time-range selection** — 1 week, 1 month, 3 months, YTD, 1 year, 2 years, 5 years, or all time
-- **Overview cards** — total income, expenses, disposable income, savings rate, and total debt with trend indicators
+- **Time-range selection** — 1M, 3M, 6M, 12M, or a custom from/to month range
+- **Overview cards** — total income, expenses, debt payments, savings, and disposable income with trend indicators
 - **Income vs expenses chart** — grouped bar chart comparing monthly income and expenses
-- **Disposable income trend** — line chart of monthly disposable income
-- **Savings rate chart** — monthly savings rate as a percentage of income
+- **Disposable income & savings rate chart** — monthly disposable income and savings percentage over time
 - **Expense breakdown donut** — spending by category for the selected period
 - **Category trends** — stacked area chart of category spending over time
 - **Debt projection chart** — forward projection of combined debt balance to payoff date
-- **Debt-to-income ratio** — historical chart of debt relative to annual income
-- **Monthly detail table** — sortable table with per-month income, expenses, disposable income, and savings rate
+- **Debt-to-income ratio** — historical chart of debt payments relative to income
+- **Monthly detail table** — per-month income, expenses, debt, savings, savings rate, and disposable values
 
 ## Data Management
 
@@ -64,10 +63,10 @@ A comprehensive list of everything BasicBudget can do.
 
 ## Administration
 
-- **User management** — promote/demote admins, lock/unlock accounts, remove 2FA, delete users
+- **User management** — promote/demote admins, lock/unlock accounts, and delete users
 - **SMTP configuration** — configure outgoing email for invitations, alerts, and reminders
 - **OIDC configuration** — set up single sign-on at runtime without restarting the server
-- **Expense categories** — add, remove, and reorder expense categories
+- **Expense categories** — add, remove, and reset expense categories
 - **Registration control** — enable or disable public self-registration
 - **Database backup and restore** — download a full JSON backup; restore atomically from a backup file; automated scheduled backups to server disk with configurable interval and retention
 - **Audit log** — searchable, paginated log of significant actions

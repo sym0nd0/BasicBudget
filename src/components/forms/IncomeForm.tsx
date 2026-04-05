@@ -25,6 +25,7 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
   const [amount, setAmount] = useState(initial ? penceToPoundsStr(initial.amount_pence) : '');
   const [postingDay, setPostingDay] = useState(String(initial?.posting_day ?? '28'));
   const [contributorUserId, setContributorUserId] = useState(initial?.contributor_user_id ?? '');
+  const [isHousehold, setIsHousehold] = useState(initial?.is_household ?? false);
   const [grossOrNet, setGrossOrNet] = useState<'gross' | 'net'>(initial?.gross_or_net ?? 'net');
   const [isRecurring, setIsRecurring] = useState(initial?.is_recurring ?? true);
   const [recurrenceType, setRecurrenceType] = useState<'monthly' | 'weekly' | 'yearly' | 'fortnightly'>(
@@ -83,6 +84,7 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
       amount_pence: poundsToPence(amount),
       posting_day: parseInt(postingDay),
       contributor_user_id: contributorUserId || null,
+      is_household: isHousehold,
       gross_or_net: grossOrNet,
       is_recurring: isRecurring,
       recurrence_type: recurrenceType,
@@ -213,6 +215,15 @@ export function IncomeForm({ initial, onSave, onCancel }: IncomeFormProps) {
           onChange={e => setEndDate(e.target.value)}
         />
       </div>
+      <label className="flex items-center gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={isHousehold}
+          onChange={e => setIsHousehold(e.target.checked)}
+          className="w-4 h-4 rounded border-[var(--color-border)] accent-[var(--color-primary)]"
+        />
+        <span className="text-sm text-[var(--color-text)]">Household income</span>
+      </label>
       <Input
         label="Notes (optional)"
         value={notes}

@@ -9,10 +9,14 @@ import { requireAuth } from '../middleware/auth.js';
 import { logValidationFailure } from '../middleware/validate.js';
 import type { Expense } from '../../shared/types.js';
 import { logger } from '../services/logger.js';
-import { expenseSchema, monthParam } from '../validation/schemas.js';
+import { expenseSchema, expenseUpdateSchema, monthParam } from '../validation/schemas.js';
 
 const router = Router();
 router.use(requireAuth);
+
+function requiresStartDate(isRecurring: boolean, recurrenceType: string | null | undefined): boolean {
+  return isRecurring && (recurrenceType === 'weekly' || recurrenceType === 'fortnightly');
+}
 
 /** Generate YYYY-MM strings between from and to (inclusive) */
 function monthRange(from: string, to: string): string[] {
@@ -157,7 +161,7 @@ router.post('/', (req: Request, res: Response) => {
 // PUT /api/expenses/:id
 router.put('/:id', (req: Request, res: Response) => {
   const id = req.params['id'] as string;
-  const result = expenseSchema.partial().safeParse(req.body);
+  const result = expenseUpdateSchema.safeParse(req.body);
   if (!result.success) {
     logValidationFailure(req, result.error.issues, 'expense.update');
     res.status(400).json({ message: 'Validation error' });
@@ -174,6 +178,12 @@ router.put('/:id', (req: Request, res: Response) => {
     return;
   }
   const startDate = (body.start_date ?? existing.start_date) as string | null;
+  const isRecurring = body.is_recurring !== undefined ? body.is_recurring : Boolean(existing.is_recurring);
+  const recurrenceType = body.recurrence_type ?? existing.recurrence_type as string | undefined;
+  if (requiresStartDate(isRecurring, recurrenceType) && !startDate) {
+    res.status(400).json({ message: 'Start date is required for weekly/fortnightly items' });
+    return;
+  }
   if (startDate) {
     const ym = startDate.slice(0, 7);
     if (isMonthLocked(ym, req.householdId!)) {
@@ -205,8 +215,8 @@ router.put('/:id', (req: Request, res: Response) => {
       body.category ?? existing.category,
       isHousehold,
       splitRatio,
-      body.is_recurring !== undefined ? (body.is_recurring ? 1 : 0) : existing.is_recurring,
-      body.recurrence_type ?? existing.recurrence_type,
+      isRecurring ? 1 : 0,
+      recurrenceType ?? existing.recurrence_type,
       body.start_date !== undefined ? body.start_date : existing.start_date,
       body.end_date !== undefined ? body.end_date : existing.end_date,
       body.notes !== undefined ? body.notes : existing.notes,

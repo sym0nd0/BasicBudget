@@ -5,9 +5,27 @@ import { z } from 'zod';
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD');
 export const monthParam = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Month must be YYYY-MM');
 
+function requireStartDateForWeeklyFortnightly<T extends {
+  is_recurring?: boolean;
+  recurrence_type?: string;
+  start_date?: string | null;
+}>(value: T, ctx: z.RefinementCtx): void {
+  if (
+    value.is_recurring === true
+    && (value.recurrence_type === 'weekly' || value.recurrence_type === 'fortnightly')
+    && !value.start_date
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['start_date'],
+      message: 'Start date is required for weekly/fortnightly items',
+    });
+  }
+}
+
 // ─── Expenses ─────────────────────────────────────────────────────────────────
 
-export const expenseSchema = z.object({
+export const expenseSchemaBase = z.object({
   name: z.string().min(1).max(200),
   amount_pence: z.number().int().min(0),
   posting_day: z.number().int().min(1).max(31).optional(),
@@ -22,10 +40,12 @@ export const expenseSchema = z.object({
   end_date: dateStr.nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
 });
+export const expenseSchema = expenseSchemaBase.superRefine(requireStartDateForWeeklyFortnightly);
+export const expenseUpdateSchema = expenseSchemaBase.partial();
 
 // ─── Income ───────────────────────────────────────────────────────────────────
 
-export const incomeSchema = z.object({
+export const incomeSchemaBase = z.object({
   name: z.string().min(1).max(200),
   amount_pence: z.number().int().min(0),
   posting_day: z.number().int().min(1).max(31).optional(),
@@ -38,6 +58,8 @@ export const incomeSchema = z.object({
   end_date: dateStr.nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
 });
+export const incomeSchema = incomeSchemaBase.superRefine(requireStartDateForWeeklyFortnightly);
+export const incomeUpdateSchema = incomeSchemaBase.partial();
 
 // ─── Debts ────────────────────────────────────────────────────────────────────
 

@@ -24,9 +24,9 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 | [Savings](docs/Savings.md) | Savings goals and progress tracking |
 | [Reports](docs/Reports.md) | Reports and charts |
 | [Household](docs/Household.md) | Multi-user households |
-| [Settings](docs/Settings.md) | Profile, accounts, CSV import, appearance |
+| [Settings](docs/Settings.md) | Accounts, CSV import/export, appearance, security, household, month locking |
 | [Authentication](docs/Authentication.md) | Login, 2FA, OIDC, sessions |
-| [Admin](docs/Admin.md) | User management, SMTP, OIDC, categories |
+| [Admin](docs/Admin.md) | User management, system settings, backup, audit log |
 
 ## Screenshots
 
@@ -48,9 +48,13 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 |---|---|
 | <img src="docs/screenshots/household-dark.png" alt="Household" width="350"> | <img src="docs/screenshots/settings-dark.png" alt="Settings" width="350"> |
 
-| Admin Settings | |
+| Admin Users | Admin Settings |
 |---|---|
-| <img src="docs/screenshots/admin-settings-dark.png" alt="Admin Settings" width="350"> | |
+| <img src="docs/screenshots/admin-users-dark.png" alt="Admin Users" width="350"> | <img src="docs/screenshots/admin-settings-dark.png" alt="Admin Settings" width="350"> |
+
+| Admin Audit Log | |
+|---|---|
+| <img src="docs/screenshots/admin-audit-log-dark.png" alt="Admin Audit Log" width="350"> | |
 
 ### Light theme
 
@@ -70,9 +74,13 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 |---|---|
 | <img src="docs/screenshots/household-light.png" alt="Household" width="350"> | <img src="docs/screenshots/settings-light.png" alt="Settings" width="350"> |
 
-| Admin Settings | |
+| Admin Users | Admin Settings |
 |---|---|
-| <img src="docs/screenshots/admin-settings-light.png" alt="Admin Settings" width="350"> | |
+| <img src="docs/screenshots/admin-users-light.png" alt="Admin Users" width="350"> | <img src="docs/screenshots/admin-settings-light.png" alt="Admin Settings" width="350"> |
+
+| Admin Audit Log | |
+|---|---|
+| <img src="docs/screenshots/admin-audit-log-light.png" alt="Admin Audit Log" width="350"> | |
 
 ---
 
@@ -134,9 +142,10 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 
 ### Income Management
 - Add, edit, and delete income sources with contributor names
+- Mark income as household income so `/household` only includes entries where `is_household = true`
 - Record the day of month income is received; track as gross or net
 - Set recurrence type: monthly, weekly, fortnightly, or yearly
-- Optional start and end dates for time-bounded income entries
+- Start date is required for weekly and fortnightly income; other income types have optional start and end dates
 - Sortable table columns (name, amount, day, type)
 
 ### Expense Management
@@ -145,7 +154,7 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 - Assign expenses to a named payment account, including joint accounts visible to all household members
 - Assign expenses to specific household members for tracking contributions
 - Mark expenses as household expenses with a configurable split ratio so only your share counts in budget summaries
-- Set recurrence type (including fortnightly) and optional start/end dates
+- Set recurrence type (including fortnightly); weekly and fortnightly expenses require a start date, while other expense types have optional start/end dates
 - Sortable table columns (name, amount, your share, day, category, type)
 
 ### Debt Management
@@ -169,7 +178,7 @@ Full user documentation is available in the [`docs/`](docs/) directory:
 - **Spending section** — expense breakdown donut chart showing spending proportions by category across the entire period
 - **Debt section** — debt projection line chart displaying all debts' balances over time with per-debt visibility
 - **Detail section** — exact monthly figures in tabular format for reference
-- **Flexible time ranges** — single time range selector governs all reports (1W, 1M, 3M, YTD, 1Y, 2Y, 5Y, All)
+- **Flexible time ranges** — single time range selector governs all reports (1M, 3M, 6M, 12M, Custom)
 
 ### Settings & Appearance
 - Manage named payment accounts, including joint accounts shared across all household members; month locking to prevent edits on closed months
@@ -585,22 +594,25 @@ All routes are prefixed with `/api`. All data routes require a valid session (`r
 | Method | Path | Description |
 |---|---|---|
 | GET/POST | `/api/incomes` | List / create income |
-| GET/PUT/DELETE | `/api/incomes/:id` | Get / update / delete income |
+| PUT/DELETE | `/api/incomes/:id` | Update / delete income |
 | GET/POST | `/api/expenses` | List / create expense |
-| GET/PUT/DELETE | `/api/expenses/:id` | Get / update / delete expense |
+| PUT/DELETE | `/api/expenses/:id` | Update / delete expense |
 | GET/POST | `/api/debts` | List / create debt |
-| GET/PUT/DELETE | `/api/debts/:id` | Get / update / delete debt |
+| PUT/DELETE | `/api/debts/:id` | Update / delete debt |
 | GET | `/api/debts/:id/repayments` | Compute full repayment schedule |
 | GET/POST | `/api/savings-goals` | List / create savings goal |
 | POST | `/api/savings-goals/process-auto-contributions` | Catch up scheduled savings contributions |
-| GET/PUT/DELETE | `/api/savings-goals/:id` | Get / update / delete savings goal |
+| PUT/DELETE | `/api/savings-goals/:id` | Update / delete savings goal |
 | GET | `/api/savings-goals/transactions` | List all savings transactions |
 | GET | `/api/savings-goals/:id/transactions` | List transactions for a specific goal |
 | POST | `/api/savings-goals/:id/transactions` | Create a deposit or withdrawal |
 | GET/POST | `/api/accounts` | List / create account |
-| GET/PUT/DELETE | `/api/accounts/:id` | Get / update / delete account |
+| PUT/DELETE | `/api/accounts/:id` | Update / delete account |
 | GET | `/api/categories` | Get expense categories |
 | GET | `/api/summary` | Budget summary with category breakdown |
+| GET | `/api/reports/overview` | Monthly report rows for a date range |
+| GET | `/api/reports/debt-projection` | Debt projection data |
+| GET | `/api/reports/debt-payoff-timeline` | Debt payoff timeline projection |
 | GET | `/api/version` | Get current and latest version info |
 | GET | `/api/months` | List locked months |
 | POST | `/api/months/:ym/lock` | Lock a month (prevent edits) |

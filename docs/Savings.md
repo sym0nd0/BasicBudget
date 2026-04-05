@@ -24,10 +24,12 @@ Click **Add Savings** to open the form. Fill in the fields and click **Save**.
 
 Each goal shows:
 
-- A **progress bar** indicating how close you are to the target.
+- A **progress bar** indicating how close you are to the target, only when a target amount is set.
 - The **current amount** and **target amount**.
 - **Months to goal** — calculated from the current amount, target amount, and monthly contribution.
 - An **Auto** badge when auto-contribute is enabled.
+- An **Achieved!** badge when the goal reaches its target.
+- A **New** badge in the goal's first displayed month.
 
 ## Deposits and Withdrawals
 
@@ -48,7 +50,7 @@ Goals marked as **Household Goals** appear on the [Household](Household) summary
 
 ## Filter Bar
 
-The filter bar at the top of the page controls the date range for the transaction log and the Savings Balance chart. Use the preset pills (1M, 3M, 6M, 12M) or select a custom date range.
+The filter bar at the top of the page controls the date range for the transaction log and the Savings Balance chart. Use 1M, 3M, 6M, 12M, or a custom from/to range.
 
 ## Savings Balance Chart
 

@@ -6,7 +6,6 @@
 
 - Ensure Caps Lock is off.
 - Try the **Forgot Password** link (requires SMTP to be configured).
-- An admin can reset your password via the [[Admin]] panel → User Management.
 
 ### Account locked after failed attempts
 
@@ -66,7 +65,7 @@ If you see `Access-Control-Allow-Origin` errors in the browser console:
 ## Email Not Sending
 
 - Verify SMTP settings in the [[Admin]] panel → SMTP Configuration.
-- Use **Test Email** to send a test message and check for errors.
+- Use **Send test email** to send a test message and check for errors.
 - Check that port 587 or 465 is not blocked by your firewall or hosting provider.
 - Review server logs for SMTP connection errors.
 

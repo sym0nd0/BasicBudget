@@ -31,6 +31,7 @@ Debt entries track outstanding balances on credit cards, loans, and mortgages, w
 Savings goal entries track progress towards financial targets such as an emergency fund, holiday, or home deposit.
 
 - Go to **Savings** → **Add Goal**
+- The current button label is **Add Savings**
 - Key fields: Name, Target Amount, Current Amount, Monthly Contribution, Target Date
 - See [[Savings]] for the full field reference
 
@@ -42,8 +43,8 @@ All four entry types share some common fields:
 |---|---|
 | **Household** | Tick to include this entry in the shared Household view. |
 | **Notes** | Optional free-text notes for your own reference. |
-| **Start Date** | The first month this entry is active (`YYYY-MM`). Leave blank to start immediately. |
-| **End Date** | The last month this entry is active. Leave blank for ongoing. |
+| **Start Date** | The first date this entry is active. Leave blank to start immediately. |
+| **End Date** | The last date this entry is active. Leave blank for ongoing. |
 
 ---
 

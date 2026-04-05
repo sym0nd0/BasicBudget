@@ -81,7 +81,7 @@ Welcome to the BasicBudget wiki. BasicBudget is a self-hosted, multi-user person
 
 | Page | Description |
 |---|---|
-| [[Settings]] | Profile, accounts, appearance, and month locking |
+| [[Settings]] | Accounts, import/export, appearance, security, household membership, and month locking |
 | [[Authentication]] | Login, 2FA, OIDC SSO, and sessions |
 | [[Admin]] | User management, SMTP, OIDC, categories, and audit log |
 

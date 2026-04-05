@@ -24,8 +24,10 @@ Use **Start Date** and **End Date** to limit when a recurring entry is active:
 
 | Field | Format | Behaviour |
 |---|---|---|
-| **Start Date** | `YYYY-MM` | Entry is not shown before this month. Leave blank to start from the beginning. |
-| **End Date** | `YYYY-MM` | Entry is not shown after this month. Leave blank for no end date. |
+| **Start Date** | `YYYY-MM-DD` | Entry is not shown before this date. Leave blank to start from the beginning for monthly and yearly entries. For weekly and fortnightly income and expense entries, `server/validation/schemas.ts` requires a start date. |
+| **End Date** | `YYYY-MM-DD` | Entry is not shown after this date. Leave blank for no end date. |
+
+If invalid or legacy data reaches the recurring engine without a required start date, `server/utils/recurring.ts` still treats yearly and fortnightly items with no `start_date` as inactive.
 
 ## Weekly Multiplier
 

@@ -23,7 +23,7 @@ After **5 consecutive failed login attempts**, your account is locked for **30 m
 ### Setting Up 2FA
 
 1. Go to **Settings → Security**.
-2. Click **Enable Two-Factor Authentication**.
+2. Click **Set up 2FA**.
 3. Scan the QR code with an authenticator app (e.g. Google Authenticator, Authy, 1Password).
 4. Enter the 6-digit code from the app to confirm setup.
 5. **Save your recovery codes** — these are shown once and allow you to access your account if you lose your authenticator device.
@@ -39,8 +39,8 @@ If you have lost access to your authenticator, enter one of your saved recovery 
 ### Disabling 2FA
 
 1. Go to **Settings → Security**.
-2. Click **Disable Two-Factor Authentication**.
-3. Enter your current TOTP code to confirm.
+2. Click **Reset 2FA**.
+3. Enter your current password plus either a 6-digit OTP or a recovery code, then click **Disable 2FA**.
 
 ### Lost Access Reset
 
@@ -48,8 +48,6 @@ If you have lost both your authenticator and your recovery codes:
 
 - **Immediate reset (with password + OTP):** Not possible if OTP is unavailable. Contact your administrator.
 - **24-hour delayed reset:** Submit a reset request from the login page or Settings. You will receive an email with a `/reset-2fa` link that only becomes usable after a 24-hour waiting period. Open that link and confirm your password to disable 2FA.
-
-Administrators can immediately remove 2FA from any account via the [Admin panel](Admin).
 
 ## OIDC Single Sign-On
 
@@ -59,24 +57,11 @@ If an administrator has configured an OIDC provider (e.g. Google, Keycloak, Auth
 
 Click the **Sign in with SSO** button. You will be redirected to the identity provider. After authenticating, you are returned to BasicBudget and logged in.
 
-### Linking an OIDC Account
-
-If you already have a BasicBudget account (with a password), you can link your OIDC identity:
-
-1. Log in with your password.
-2. Go to **Settings → Security → Linked Accounts**.
-3. Click **Link SSO Account**.
-4. Authenticate with the identity provider.
-
-### Unlinking an OIDC Account
-
-Go to **Settings → Security → Linked Accounts** and click **Unlink**. You must have a password set before unlinking.
-
 ## Sessions
 
 ### Viewing Active Sessions
 
-Go to **Settings → Security → Active Sessions** to see all devices and browsers where you are currently logged in. Each session shows the device, browser, IP address, and last activity time.
+Go to **Settings → Security → Active Sessions** and click **View active sessions** to see all sessions where you are currently logged in. Each session shows the parsed browser and operating system, the IP address, and whether it is the current session.
 
 ### Revoking a Session
 

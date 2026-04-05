@@ -14,11 +14,11 @@ Click **Add Income** to open the form. Fill in the fields and click **Save**.
 | **Amount** | The income amount in pounds. |
 | **Posting Day** | The day of the month the income is received (1–31). |
 | **Contributor** | The household member this income belongs to. |
+| **Household** | Tick **Household income** to set `is_household = true` and include the entry in `/household`. |
 | **Gross / Net** | Toggle whether the amount is gross (before tax) or net (take-home). |
 | **Recurrence** | How often the income occurs: One-off, Monthly, Weekly, Yearly, or Fortnightly. |
-| **Start Date** | The first month this income is active. Leave blank for "always". |
-| **End Date** | The last month this income is active. Leave blank for "ongoing". |
-| **Household Income** | Tick to include this income in Household summary views. |
+| **Start Date** | The first date this income is active. Leave blank for "always". |
+| **End Date** | The last date this income is active. Leave blank for "ongoing". |
 | **Notes** | Optional free-text notes. |
 
 ## Recurrence Behaviour
@@ -37,7 +37,7 @@ Click the **edit icon** on any row to update an entry. Click the **delete icon**
 
 ## Household Income
 
-Income flagged as **Household Income** appears on the [Household](Household) summary page alongside other household members' contributions. Personal (non-household) income is visible only on your own Dashboard.
+Income assigned to a contributor appears under that household member's name. The [Household page](/household) only includes income entries where `is_household = true`. You set this flag in the Income add/edit form by ticking **Household income** before saving.
 
 ---
 

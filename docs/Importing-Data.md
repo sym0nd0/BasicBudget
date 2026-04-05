@@ -7,10 +7,10 @@ BasicBudget supports bulk data import from CSV files. This is useful when migrat
 1. Go to **Settings** in the sidebar.
 2. Scroll to the **CSV Import** section.
 3. Select the import type from the dropdown: **Expenses**, **Income**, **Debts**, or **Savings Goals**.
-4. Click **Download Template** to get a CSV file with the correct column headers and example data.
+4. Click **Download template** to get a CSV file with the correct column headers.
 5. Fill in your data in the template, then save the file.
 6. Click **Choose File**, select your CSV, and click **Import**.
-7. A preview is shown before the import completes. Review the entries and confirm.
+7. If validation fails, row-level errors are shown in the dialog and no rows are written. Duplicate rows are skipped automatically.
 
 ## Supported Import Types
 
@@ -24,10 +24,10 @@ BasicBudget supports bulk data import from CSV files. This is useful when migrat
 ## Tips
 
 - Amount values must be in pounds (e.g. `50.00`), not pence.
-- Category names (for expenses) must exactly match an existing category in the Admin panel.
-- Account names (for expenses) must exactly match an existing payment account in Settings.
-- Date fields use `YYYY-MM` format (e.g. `2026-01`).
-- Boolean fields (`is_household`) accept `true` or `false`.
+- Category names (for expenses) should match an existing category; unknown values are imported as `Other`.
+- Account names (for expenses) are matched case-insensitively against existing accounts; unknown values are imported with no account assigned.
+- Date fields use `DD/MM/YYYY` format. ISO dates are accepted when already present in the file.
+- Boolean fields accept `true` or `false`; the Expenses CSV uses `household`, while Debt and Savings CSVs use `is_household`.
 
 For full column specifications for each type, see [[Data Import\|Data-Import]].
 

@@ -13,7 +13,6 @@ The Users table lists all registered accounts.
 | **Change Role** | Promote a user to Admin or demote to standard user. |
 | **Lock Account** | Prevent the user from logging in. Useful for suspended accounts. |
 | **Unlock Account** | Re-enable a locked account (including accounts locked by failed login attempts). |
-| **Remove 2FA** | Immediately remove two-factor authentication from a user's account. |
 | **Delete User** | Permanently delete the user and all their data. This cannot be undone. |
 
 ## SMTP Configuration
@@ -27,10 +26,9 @@ Configure an outgoing email server so BasicBudget can send account-related email
 | **Username** | SMTP authentication username |
 | **Password** | SMTP authentication password |
 | **From Address** | The "From" address shown on sent emails |
-| **From Name** | The display name shown on sent emails |
 | **Secure** | Enable for SSL/TLS connections (port 465) |
 
-Click **Test Email** to send a test message to your admin account and verify the configuration.
+Click **Send test email** to send a test message to your admin account and verify the configuration.
 
 ## OIDC Configuration
 
@@ -54,7 +52,6 @@ Manage the categories available for expense entries.
 |---|---|
 | **Add Category** | Create a new expense category. |
 | **Remove Category** | Delete a category. Expenses in that category will become uncategorised. |
-| **Reorder** | Drag categories to change the order they appear in dropdowns. |
 | **Reset to Defaults** | Restore the default set of categories. This does not affect existing expense assignments. |
 
 ## Registration Control
@@ -130,8 +127,8 @@ The status display shows:
 The Audit Log records significant actions performed by all users.
 
 - **Pagination** — Navigate through log entries with previous/next controls.
-- **Filter by action** — Select an action type from the dropdown to narrow the list.
-- **Filter by user** — Select a specific user to see only their actions.
+- **Filter by action** — Enter an action name such as `login_success`.
+- **Filter by user** — Enter a user ID to show only that user's actions.
 - **Expandable rows** — Click any row to expand it and see the full detail payload for that event.
 
 ---

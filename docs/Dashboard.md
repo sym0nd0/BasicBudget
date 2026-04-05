@@ -42,7 +42,7 @@ The filter bar appears above the summary cards and allows you to narrow down the
 
 | Control | Description |
 |---|---|
-| **1M** | Single-month mode. Shows a Month dropdown to pick the exact month. Defaults to the current month. |
+| **1M** | Single-month mode. Shows previous/next month buttons, a Month dropdown, and a Today shortcut when you are not on the current month. |
 | **3M** | Previous 3 full months aggregated (excludes current month). |
 | **6M** | Previous 6 full months aggregated (excludes current month). |
 | **12M** | Previous 12 full months aggregated (excludes current month). |
@@ -54,7 +54,7 @@ Changing any preset updates all summary cards and charts simultaneously.
 
 When 3M, 6M, 12M, or Custom is selected, the Dashboard aggregates totals across every month in the range rather than showing a single month:
 
-- **Summary cards** — show totals for the entire range (e.g. 3M sums income across 3 months). Change indicators are not shown in range mode.
+- **Summary cards** — show totals for the entire range (e.g. 3M sums income across 3 months) and compare against the previous equivalent period.
 - **Charts** — update to reflect the aggregated data.
 - **Category breakdown table** — shows each category's total for the range. In single-month mode, each category row shows a change indicator vs the previous month.
 
