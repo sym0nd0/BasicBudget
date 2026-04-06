@@ -3,6 +3,8 @@
 BasicBudget is a self-hosted household budgeting app for tracking income, expenses, debts, savings goals, and month-by-month trends in one place.
 
 > This project has used AI-assisted tooling during development. All outputs should be reviewed and validated by humans.
+>
+> For full setup instructions and complete documentation, see the [BasicBudget Wiki](docs/Home.md).
 
 ## Key Features
 
@@ -16,21 +18,35 @@ BasicBudget is a self-hosted household budgeting app for tracking income, expens
 - Runtime admin settings for SMTP, OIDC, expense categories, registration control, logging, backups, and audit log
 - JSON export, CSV import, month locking, colour palette preferences, and date/time format preferences
 
+## Table of Contents
+
+- [Visual Overview](#visual-overview)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Configuration](#configuration)
+- [Running the App](#running-the-app)
+- [How to Use](#how-to-use)
+- [Project Structure](#project-structure)
+- [Development](#development)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [Licence](#licence)
+
 ## Visual Overview
 
 BasicBudget follows the sidebar flow: Dashboard, Income, Expenses, Debt, Savings, Reports, Household, Settings, and admin pages.
 
 | Dashboard | Expenses |
 |---|---|
-| ![Dashboard](docs/screenshots/dashboard-light.png) | ![Expenses](docs/screenshots/expenses-light.png) |
+| ![Dashboard](docs/screenshots/dashboard-dark.png) | ![Expenses](docs/screenshots/expenses-dark.png) |
 
 | Debt | Reports |
 |---|---|
-| ![Debt](docs/screenshots/debt-light.png) | ![Reports](docs/screenshots/reports-light.png) |
+| ![Debt](docs/screenshots/debt-dark.png) | ![Reports](docs/screenshots/reports-dark.png) |
 
 | Settings | Admin Settings |
 |---|---|
-| ![Settings](docs/screenshots/settings-light.png) | ![Admin Settings](docs/screenshots/admin-settings-light.png) |
+| ![Settings](docs/screenshots/settings-dark.png) | ![Admin Settings](docs/screenshots/admin-settings-dark.png) |
 
 Full light and dark screenshot set: [docs/Screenshots.md](docs/Screenshots.md)
 
