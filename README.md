@@ -122,8 +122,6 @@ The server validates these environment variables at startup.
 | `PORT` | No | Server port for bare Node.js runs |
 | `COOKIE_SECURE` | No | Override secure-cookie behaviour for plain HTTP deployments |
 
-SMTP and OIDC are configured at runtime in **Admin → System Settings**. For backwards compatibility, legacy SMTP and OIDC environment variables are migrated into the database on first startup if those settings are still unset.
-
 ## Running the App
 
 ### Local development
