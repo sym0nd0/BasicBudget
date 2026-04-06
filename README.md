@@ -2,9 +2,14 @@
 
 BasicBudget is a self-hosted household budgeting app for tracking income, expenses, debts, savings goals, and month-by-month trends in one place.
 
-> This project has used AI-assisted tooling during development. All outputs should be reviewed and validated by humans.
->
-> For full setup instructions and complete documentation, see the [BasicBudget Wiki](docs/Home.md).
+For full setup instructions and complete documentation, see the [BasicBudget Wiki](docs/Home.md).
+
+## ⚠️ AI-Generated Code Disclaimer ⚠️
+This project was built using AI tools, including [Claude Code](https://claude.com/product/claude-code) and [OpenAI Codex](https://openai.com/codex/).
+
+Although reviewed by a human, it hasn’t been fully tested or security audited and may contain bugs or vulnerabilities.
+ 
+Please use it at your own risk. If you plan to deploy it publicly, make sure you review, test, and secure it appropriately.
 
 ## Key Features
 
