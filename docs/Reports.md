@@ -2,6 +2,20 @@
 
 The Reports page provides a historical view of your finances across a configurable time range. All charts and figures update when you change the time range.
 
+## Upcoming Bills
+
+Select **Open Upcoming Bills** from the Reports page to review outgoing bills for a selected month. The report includes:
+
+| Source | Included when |
+|---|---|
+| Expenses | The expense is active in the selected month |
+| Debt | The debt payment is active in the selected month |
+| Savings | The savings goal has auto-contributions enabled and a monthly contribution |
+
+Amounts show your share of each outgoing item. Shared expenses and debt use their split ratio, while shared savings contributions are divided across household members.
+
+The report has calendar and list views. Dates earlier than today are labelled **Past due date** because BasicBudget tracks planned due dates, not whether a bill has been paid.
+
 ## Time Range Presets
 
 Select a preset from the pill buttons at the top of the page:

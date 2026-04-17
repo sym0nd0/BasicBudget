@@ -160,6 +160,7 @@ curl -b cookies.txt -X POST http://localhost:3000/api/incomes \
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/api/reports/overview?from=YYYY-MM&to=YYYY-MM` | Overview summary for a date range |
+| `GET` | `/api/reports/upcoming-bills?month=YYYY-MM` | Upcoming outgoing bills for one month |
 | `GET` | `/api/reports/debt-projection?household_only=true` | Debt projection data |
 | `GET` | `/api/reports/debt-payoff-timeline?strategy=snowball&household_only=false` | Per-debt payoff timeline projection |
 

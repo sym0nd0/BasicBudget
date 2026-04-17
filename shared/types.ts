@@ -400,3 +400,37 @@ export interface DebtPayoffStrategyResult {
   payoff_dates: Record<string, string>;
   total_payoff_date: string | null;
 }
+
+export type UpcomingBillSource = 'expense' | 'debt' | 'savings';
+export type UpcomingBillStatus = 'past_due_date' | 'due_today' | 'upcoming';
+
+export interface UpcomingBillOccurrence {
+  id: string;
+  source: UpcomingBillSource;
+  source_id: string;
+  name: string;
+  due_date: string;
+  amount_pence: number;
+  is_household: boolean;
+  status: UpcomingBillStatus;
+  category?: string;
+  recurrence_type?: string;
+  notes?: string | null;
+}
+
+export interface UpcomingBillsSummary {
+  total_count: number;
+  total_pence: number;
+  past_due_count: number;
+  past_due_pence: number;
+  due_today_count: number;
+  due_today_pence: number;
+  upcoming_count: number;
+  upcoming_pence: number;
+}
+
+export interface UpcomingBillsReportResponse {
+  month: string;
+  summary: UpcomingBillsSummary;
+  occurrences: UpcomingBillOccurrence[];
+}
