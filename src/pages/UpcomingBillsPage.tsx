@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
+import { useAuth } from '../context/AuthContext';
 import { PageShell } from '../components/layout/PageShell';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { addMonthsToYM } from '../utils/reportRanges';
-import { formatCurrency, formatYearMonth } from '../utils/formatters';
+import { formatCurrency, formatDate, formatYearMonth } from '../utils/formatters';
 import type { UpcomingBillOccurrence, UpcomingBillsReportResponse, UpcomingBillStatus } from '../types';
 
 interface UpcomingBillsPageProps {
@@ -55,14 +56,6 @@ function sourceVariant(source: UpcomingBillOccurrence['source']): 'danger' | 'wa
   return 'success';
 }
 
-function formatDueDate(date: string): string {
-  return new Date(`${date}T00:00:00`).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
 function groupByDay(occurrences: UpcomingBillOccurrence[]): Map<number, UpcomingBillOccurrence[]> {
   const grouped = new Map<number, UpcomingBillOccurrence[]>();
   for (const occurrence of occurrences) {
@@ -73,6 +66,7 @@ function groupByDay(occurrences: UpcomingBillOccurrence[]): Map<number, Upcoming
 }
 
 export function UpcomingBillsPage({ onMenuClick }: UpcomingBillsPageProps) {
+  const { user } = useAuth();
   const [month, setMonth] = useState(currentYearMonth);
   const [viewType, setViewType] = useState<ViewType>('calendar');
   const { data, loading, error } = useApi<UpcomingBillsReportResponse>(`/reports/upcoming-bills?month=${month}`);
@@ -258,7 +252,7 @@ export function UpcomingBillsPage({ onMenuClick }: UpcomingBillsPageProps) {
                           <td className="px-5 py-3 text-center">
                             <Badge variant={sourceVariant(bill.source)}>{sourceLabel(bill.source)}</Badge>
                           </td>
-                          <td className="px-5 py-3 text-center text-[var(--color-text-muted)]">{formatDueDate(bill.due_date)}</td>
+                          <td className="px-5 py-3 text-center text-[var(--color-text-muted)]">{formatDate(bill.due_date, user)}</td>
                           <td className="px-5 py-3 text-center">
                             <Badge variant={statusVariant(bill.status)}>{statusLabel(bill.status)}</Badge>
                           </td>

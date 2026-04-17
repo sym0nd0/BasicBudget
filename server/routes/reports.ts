@@ -158,7 +158,9 @@ router.get('/upcoming-bills', (req: Request, res: Response) => {
 
   for (const goal of visibleSavings) {
     if (!goal.auto_contribute || ((goal.monthly_contribution_pence as number) ?? 0) <= 0) continue;
-    const day = String((goal.contribution_day as number | undefined) ?? 1).padStart(2, '0');
+    const rawContributionDay = Number((goal.contribution_day as number | undefined) ?? 1);
+    const contributionDay = Number.isFinite(rawContributionDay) ? Math.trunc(rawContributionDay) : 1;
+    const day = String(Math.min(Math.max(contributionDay, 1), 28)).padStart(2, '0');
     const dueDate = `${month}-${day}`;
     const monthly = goal.monthly_contribution_pence as number;
     occurrences.push({

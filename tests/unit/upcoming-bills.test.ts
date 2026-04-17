@@ -40,6 +40,18 @@ describe('getRecurringOccurrenceDates', () => {
     expect(dates).toEqual(['2026-05-01', '2026-05-15', '2026-05-29']);
   });
 
+  it('keeps fortnightly occurrences anchored across the March DST boundary', () => {
+    const dates = getRecurringOccurrenceDates({
+      is_recurring: 1,
+      recurrence_type: 'fortnightly',
+      posting_day: 5,
+      amount_pence: 1000,
+      start_date: '2026-03-20',
+    }, '2026-04');
+
+    expect(dates).toEqual(['2026-04-03', '2026-04-17']);
+  });
+
   it('keeps only occurrence dates inside start and end date bounds', () => {
     const dates = getRecurringOccurrenceDates({
       is_recurring: 1,

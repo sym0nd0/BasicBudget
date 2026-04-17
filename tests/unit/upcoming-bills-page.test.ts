@@ -23,6 +23,28 @@ vi.mock('../../src/hooks/useApi', () => ({
   },
 }));
 
+vi.mock('../../src/context/AuthContext', () => ({
+  useAuth: () => ({
+    user: {
+      id: 'user-1',
+      email: 'test@example.com',
+      display_name: 'Test User',
+      email_verified: true,
+      system_role: 'user',
+      date_format: 'DD/MM/YYYY',
+      time_format: '12h',
+    },
+    household: null,
+    householdRole: undefined,
+    loading: false,
+    totpPending: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    register: vi.fn(),
+    refreshAuth: vi.fn(),
+  }),
+}));
+
 describe('UpcomingBillsPage', () => {
   beforeEach(() => {
     mockState.data = null;
