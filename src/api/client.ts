@@ -26,6 +26,7 @@ import type {
   MonthlyReportRow,
   DebtProjectionPoint,
   DebtPayoffStrategyResult,
+  UpcomingBillsReportResponse,
 } from '../types';
 
 // ─── CSRF token management ─────────────────────────────────────────────────────
@@ -393,4 +394,6 @@ export const api = {
     request<DebtProjectionPoint[]>(`/reports/debt-projection?months=${months}`),
   getDebtPayoffTimeline: (strategy: 'snowball' | 'avalanche', householdOnly?: boolean) =>
     request<DebtPayoffStrategyResult>(`/reports/debt-payoff-timeline?strategy=${strategy}${householdOnly ? '&household_only=true' : ''}`),
+  getUpcomingBills: (month: string) =>
+    request<UpcomingBillsReportResponse>(`/reports/upcoming-bills?month=${month}`),
 };

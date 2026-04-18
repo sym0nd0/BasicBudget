@@ -15,6 +15,7 @@ import { DebtPage } from './pages/DebtPage';
 import { SavingsPage } from './pages/SavingsPage';
 import { HouseholdPage } from './pages/HouseholdPage';
 import { ReportsPage } from './pages/ReportsPage';
+import { UpcomingBillsPage } from './pages/UpcomingBillsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -46,6 +47,7 @@ function AppShell() {
                   <Route path="/debt" element={<DebtPage onMenuClick={() => setSidebarOpen(true)} />} />
                   <Route path="/savings" element={<SavingsPage onMenuClick={() => setSidebarOpen(true)} />} />
                   <Route path="/reports" element={<ReportsPage onMenuClick={() => setSidebarOpen(true)} />} />
+                  <Route path="/reports/upcoming-bills" element={<UpcomingBillsPage onMenuClick={() => setSidebarOpen(true)} />} />
                   <Route path="/household" element={<HouseholdPage onMenuClick={() => setSidebarOpen(true)} />} />
                   <Route path="/settings" element={<SettingsPage onMenuClick={() => setSidebarOpen(true)} />} />
                   <Route path="/admin/users" element={<AdminUsersPage onMenuClick={() => setSidebarOpen(true)} />} />

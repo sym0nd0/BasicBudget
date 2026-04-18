@@ -44,6 +44,11 @@ export type {
   DebtProjectionPoint,
   DebtPayoffTimelinePoint,
   DebtPayoffStrategyResult,
+  UpcomingBillSource,
+  UpcomingBillStatus,
+  UpcomingBillOccurrence,
+  UpcomingBillsSummary,
+  UpcomingBillsReportResponse,
 } from '../../shared/types';
 
 export { EXPENSE_CATEGORIES } from '../../shared/types';

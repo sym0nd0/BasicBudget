@@ -5,9 +5,18 @@ import { requireAuth } from '../middleware/auth.js';
 import { logValidationFailure } from '../middleware/validate.js';
 import { filterVisible } from '../utils/visibility.js';
 import { currentYearMonth, filterActiveInMonth, mapDebtToRecurringItem, type RecurringItem } from '../utils/recurring.js';
+import { getRecurringOccurrenceDates, getUpcomingBillStatus } from '../utils/upcomingBills.js';
 import { computePayoffStrategy } from '../utils/debtPayoffStrategy.js';
 import { calculateDebtTimeline } from '../utils/debtProjection.js';
-import type { Debt, DebtDealPeriod, CategoryBreakdown, MonthlyReportRow } from '../../shared/types.js';
+import type {
+  Debt,
+  DebtDealPeriod,
+  CategoryBreakdown,
+  MonthlyReportRow,
+  UpcomingBillOccurrence,
+  UpcomingBillsReportResponse,
+  UpcomingBillsSummary,
+} from '../../shared/types.js';
 import { monthParam } from '../validation/schemas.js';
 
 const router = Router();
@@ -41,6 +50,144 @@ function monthRange(from: string, to: string): string[] {
   }
   return months;
 }
+
+function todayDateString(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function getMemberCount(householdId: string): number {
+  const row = db.prepare('SELECT COUNT(*) as c FROM household_members WHERE household_id = ?').get(householdId) as { c: number };
+  return row.c || 1;
+}
+
+function summariseUpcomingBills(occurrences: UpcomingBillOccurrence[]): UpcomingBillsSummary {
+  const summary: UpcomingBillsSummary = {
+    total_count: occurrences.length,
+    total_pence: 0,
+    past_due_count: 0,
+    past_due_pence: 0,
+    due_today_count: 0,
+    due_today_pence: 0,
+    upcoming_count: 0,
+    upcoming_pence: 0,
+  };
+
+  for (const occurrence of occurrences) {
+    summary.total_pence += occurrence.amount_pence;
+    if (occurrence.status === 'past_due_date') {
+      summary.past_due_count++;
+      summary.past_due_pence += occurrence.amount_pence;
+    } else if (occurrence.status === 'due_today') {
+      summary.due_today_count++;
+      summary.due_today_pence += occurrence.amount_pence;
+    } else {
+      summary.upcoming_count++;
+      summary.upcoming_pence += occurrence.amount_pence;
+    }
+  }
+
+  return summary;
+}
+
+// GET /api/reports/upcoming-bills?month=YYYY-MM
+router.get('/upcoming-bills', (req: Request, res: Response) => {
+  const rawMonth = (req.query.month as string | undefined) ?? currentYearMonth();
+  const monthResult = monthParam.safeParse(rawMonth);
+  if (!monthResult.success) {
+    logValidationFailure(req, monthResult.error.issues, 'reports.upcoming-bills.month');
+    res.status(400).json({ message: 'Invalid month format' });
+    return;
+  }
+
+  const month = monthResult.data;
+  const today = todayDateString();
+  const occurrences: UpcomingBillOccurrence[] = [];
+
+  const rawExpenses = db.prepare('SELECT * FROM expenses WHERE household_id = ?').all(req.householdId!) as Record<string, unknown>[];
+  const rawDebts = db.prepare('SELECT * FROM debts WHERE household_id = ?').all(req.householdId!) as Record<string, unknown>[];
+  const rawSavings = db.prepare('SELECT * FROM savings_goals WHERE household_id = ?').all(req.householdId!) as Record<string, unknown>[];
+
+  const visibleExpenses = filterVisible(rawExpenses, req.userId!) as unknown as RecurringItem[];
+  const visibleDebtRows = filterVisible(rawDebts, req.userId!);
+  const visibleSavings = filterVisible(rawSavings, req.userId!);
+  const memberCount = getMemberCount(req.householdId!);
+
+  for (const expense of visibleExpenses) {
+    const dates = getRecurringOccurrenceDates(expense, month);
+    for (const dueDate of dates) {
+      const fullAmount = expense.amount_pence as number;
+      const splitRatio = (expense.split_ratio as number) ?? 1;
+      occurrences.push({
+        id: `expense-${String(expense.id)}-${dueDate}`,
+        source: 'expense',
+        source_id: String(expense.id),
+        name: String(expense.name),
+        due_date: dueDate,
+        amount_pence: Math.round(fullAmount * splitRatio),
+        is_household: Boolean(expense.is_household),
+        category: (expense.category as string | undefined) ?? undefined,
+        recurrence_type: expense.recurrence_type,
+        notes: (expense.notes as string | null | undefined) ?? null,
+        status: getUpcomingBillStatus(dueDate, today),
+      });
+    }
+  }
+
+  for (const debtRow of visibleDebtRows) {
+    const debtItem = mapDebtToRecurringItem(debtRow);
+    const dates = getRecurringOccurrenceDates(debtItem, month);
+    for (const dueDate of dates) {
+      const splitRatio = (debtRow.split_ratio as number) ?? 1;
+      const payment = ((debtRow.minimum_payment_pence as number) ?? 0) + ((debtRow.overpayment_pence as number) ?? 0);
+      occurrences.push({
+        id: `debt-${String(debtRow.id)}-${dueDate}`,
+        source: 'debt',
+        source_id: String(debtRow.id),
+        name: String(debtRow.name),
+        due_date: dueDate,
+        amount_pence: Math.round(payment * splitRatio),
+        is_household: Boolean(debtRow.is_household),
+        category: 'Debt',
+        recurrence_type: debtItem.recurrence_type,
+        notes: (debtRow.notes as string | null | undefined) ?? null,
+        status: getUpcomingBillStatus(dueDate, today),
+      });
+    }
+  }
+
+  for (const goal of visibleSavings) {
+    if (!goal.auto_contribute || ((goal.monthly_contribution_pence as number) ?? 0) <= 0) continue;
+    const rawContributionDay = Number((goal.contribution_day as number | undefined) ?? 1);
+    const contributionDay = Number.isFinite(rawContributionDay) ? Math.trunc(rawContributionDay) : 1;
+    const day = String(Math.min(Math.max(contributionDay, 1), 28)).padStart(2, '0');
+    const dueDate = `${month}-${day}`;
+    const monthly = goal.monthly_contribution_pence as number;
+    occurrences.push({
+      id: `savings-${String(goal.id)}-${dueDate}`,
+      source: 'savings',
+      source_id: String(goal.id),
+      name: String(goal.name),
+      due_date: dueDate,
+      amount_pence: goal.is_household ? Math.ceil(monthly / memberCount) : monthly,
+      is_household: Boolean(goal.is_household),
+      category: 'Savings',
+      recurrence_type: 'monthly',
+      notes: (goal.notes as string | null | undefined) ?? null,
+      status: getUpcomingBillStatus(dueDate, today),
+    });
+  }
+
+  occurrences.sort((a, b) => a.due_date.localeCompare(b.due_date) || a.name.localeCompare(b.name));
+
+  const response: UpcomingBillsReportResponse = {
+    month,
+    summary: summariseUpcomingBills(occurrences),
+    occurrences,
+  };
+
+  res.json(response);
+});
 
 // GET /api/reports/overview?from=YYYY-MM&to=YYYY-MM
 router.get('/overview', (req: Request, res: Response) => {
